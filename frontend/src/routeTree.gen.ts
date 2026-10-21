@@ -10,15 +10,72 @@
 
 import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as IndexRouteImport } from './app/routes/index'
+import { Route as AppRouteImport } from './app/routes/app'
+import { Route as ForgotPasswordRouteImport } from './app/routes/forgot-password'
+import { Route as OnboardingRouteImport } from './app/routes/onboarding'
+import { Route as RegisterRouteImport } from './app/routes/register'
+import { Route as ResetPasswordRouteImport } from './app/routes/reset-password'
+import { Route as VerifyEmailRouteImport } from './app/routes/verify-email'
+import { Route as AppIndexRouteImport } from './app/routes/app/index'
+import { Route as AppProfileRouteImport } from './app/routes/app/profile'
 import { Route as DesignIndexRouteImport } from './app/routes/design/index'
 import { Route as DesignAuthRouteImport } from './app/routes/design/auth'
 import { Route as DesignShellRouteImport } from './app/routes/design/shell'
 import { Route as DesignWorkspaceRouteImport } from './app/routes/design/workspace'
+import { Route as LoginIndexRouteImport } from './app/routes/login/index'
+import { Route as LoginCodeRouteImport } from './app/routes/login/code'
+import { Route as TeamRequestIdRouteImport } from './app/routes/team/$requestId'
+import { Route as USlugRouteImport } from './app/routes/u/$slug'
+import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
+import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
+import { Route as AppSettingsSecurityRouteImport } from './app/routes/app/settings/security'
+import { Route as AppTeamIndexRouteImport } from './app/routes/app/team/index'
+import { Route as AppTeamRequestIdRouteImport } from './app/routes/app/team/$requestId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
 } as any)
 const DesignIndexRoute = DesignIndexRouteImport.update({
   id: '/design/',
@@ -40,50 +97,214 @@ const DesignWorkspaceRoute = DesignWorkspaceRouteImport.update({
   path: '/design/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginCodeRoute = LoginCodeRouteImport.update({
+  id: '/login/code',
+  path: '/login/code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRequestIdRoute = TeamRequestIdRouteImport.update({
+  id: '/team/$requestId',
+  path: '/team/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const USlugRoute = USlugRouteImport.update({
+  id: '/u/$slug',
+  path: '/u/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdminImportRoute = AppAdminImportRouteImport.update({
+  id: '/admin/import',
+  path: '/admin/import',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminMembersRoute = AppAdminMembersRouteImport.update({
+  id: '/admin/members',
+  path: '/admin/members',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
+  id: '/settings/security',
+  path: '/settings/security',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTeamIndexRoute = AppTeamIndexRouteImport.update({
+  id: '/team/',
+  path: '/team/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTeamRequestIdRoute = AppTeamRequestIdRouteImport.update({
+  id: '/team/$requestId',
+  path: '/team/$requestId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/onboarding': typeof OnboardingRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/app/profile': typeof AppProfileRoute
   '/design/auth': typeof DesignAuthRoute
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
+  '/login/code': typeof LoginCodeRoute
+  '/team/$requestId': typeof TeamRequestIdRoute
+  '/u/$slug': typeof USlugRoute
+  '/app/': typeof AppIndexRoute
   '/design/': typeof DesignIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/settings/security': typeof AppSettingsSecurityRoute
+  '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/team/': typeof AppTeamIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/onboarding': typeof OnboardingRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/app/profile': typeof AppProfileRoute
   '/design/auth': typeof DesignAuthRoute
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
+  '/login/code': typeof LoginCodeRoute
+  '/team/$requestId': typeof TeamRequestIdRoute
+  '/u/$slug': typeof USlugRoute
+  '/app': typeof AppIndexRoute
   '/design': typeof DesignIndexRoute
+  '/login': typeof LoginIndexRoute
+  '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/settings/security': typeof AppSettingsSecurityRoute
+  '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/team': typeof AppTeamIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/onboarding': typeof OnboardingRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/app/profile': typeof AppProfileRoute
   '/design/auth': typeof DesignAuthRoute
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
+  '/login/code': typeof LoginCodeRoute
+  '/team/$requestId': typeof TeamRequestIdRoute
+  '/u/$slug': typeof USlugRoute
+  '/app/': typeof AppIndexRoute
   '/design/': typeof DesignIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/settings/security': typeof AppSettingsSecurityRoute
+  '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/team/': typeof AppTeamIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/design/auth' | '/design/shell' | '/design/workspace' | '/design/'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/design/auth' | '/design/shell' | '/design/workspace' | '/design'
-  id:
-    | '__root__'
     | '/'
+    | '/app'
+    | '/forgot-password'
+    | '/onboarding'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
+    | '/app/profile'
     | '/design/auth'
     | '/design/shell'
     | '/design/workspace'
+    | '/login/code'
+    | '/team/$requestId'
+    | '/u/$slug'
+    | '/app/'
     | '/design/'
+    | '/login/'
+    | '/app/admin/import'
+    | '/app/admin/members'
+    | '/app/settings/security'
+    | '/app/team/$requestId'
+    | '/app/team/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/forgot-password'
+    | '/onboarding'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
+    | '/app/profile'
+    | '/design/auth'
+    | '/design/shell'
+    | '/design/workspace'
+    | '/login/code'
+    | '/team/$requestId'
+    | '/u/$slug'
+    | '/app'
+    | '/design'
+    | '/login'
+    | '/app/admin/import'
+    | '/app/admin/members'
+    | '/app/settings/security'
+    | '/app/team/$requestId'
+    | '/app/team'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/forgot-password'
+    | '/onboarding'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
+    | '/app/profile'
+    | '/design/auth'
+    | '/design/shell'
+    | '/design/workspace'
+    | '/login/code'
+    | '/team/$requestId'
+    | '/u/$slug'
+    | '/app/'
+    | '/design/'
+    | '/login/'
+    | '/app/admin/import'
+    | '/app/admin/members'
+    | '/app/settings/security'
+    | '/app/team/$requestId'
+    | '/app/team/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  OnboardingRoute: typeof OnboardingRoute
+  RegisterRoute: typeof RegisterRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   DesignAuthRoute: typeof DesignAuthRoute
   DesignShellRoute: typeof DesignShellRoute
   DesignWorkspaceRoute: typeof DesignWorkspaceRoute
+  LoginCodeRoute: typeof LoginCodeRoute
+  TeamRequestIdRoute: typeof TeamRequestIdRoute
+  USlugRoute: typeof USlugRoute
   DesignIndexRoute: typeof DesignIndexRoute
+  LoginIndexRoute: typeof LoginIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -94,6 +315,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
     }
     '/design/': {
       id: '/design/'
@@ -123,15 +400,110 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignWorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/code': {
+      id: '/login/code'
+      path: '/login/code'
+      fullPath: '/login/code'
+      preLoaderRoute: typeof LoginCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team/$requestId': {
+      id: '/team/$requestId'
+      path: '/team/$requestId'
+      fullPath: '/team/$requestId'
+      preLoaderRoute: typeof TeamRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$slug': {
+      id: '/u/$slug'
+      path: '/u/$slug'
+      fullPath: '/u/$slug'
+      preLoaderRoute: typeof USlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/admin/import': {
+      id: '/app/admin/import'
+      path: '/admin/import'
+      fullPath: '/app/admin/import'
+      preLoaderRoute: typeof AppAdminImportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/members': {
+      id: '/app/admin/members'
+      path: '/admin/members'
+      fullPath: '/app/admin/members'
+      preLoaderRoute: typeof AppAdminMembersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings/security': {
+      id: '/app/settings/security'
+      path: '/settings/security'
+      fullPath: '/app/settings/security'
+      preLoaderRoute: typeof AppSettingsSecurityRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/team/': {
+      id: '/app/team/'
+      path: '/team'
+      fullPath: '/app/team/'
+      preLoaderRoute: typeof AppTeamIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/team/$requestId': {
+      id: '/app/team/$requestId'
+      path: '/team/$requestId'
+      fullPath: '/app/team/$requestId'
+      preLoaderRoute: typeof AppTeamRequestIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppProfileRoute: typeof AppProfileRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppAdminImportRoute: typeof AppAdminImportRoute
+  AppAdminMembersRoute: typeof AppAdminMembersRoute
+  AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
+  AppTeamRequestIdRoute: typeof AppTeamRequestIdRoute
+  AppTeamIndexRoute: typeof AppTeamIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppProfileRoute: AppProfileRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppAdminImportRoute: AppAdminImportRoute,
+  AppAdminMembersRoute: AppAdminMembersRoute,
+  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
+  AppTeamRequestIdRoute: AppTeamRequestIdRoute,
+  AppTeamIndexRoute: AppTeamIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  OnboardingRoute: OnboardingRoute,
+  RegisterRoute: RegisterRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   DesignAuthRoute: DesignAuthRoute,
   DesignShellRoute: DesignShellRoute,
   DesignWorkspaceRoute: DesignWorkspaceRoute,
+  LoginCodeRoute: LoginCodeRoute,
+  TeamRequestIdRoute: TeamRequestIdRoute,
+  USlugRoute: USlugRoute,
   DesignIndexRoute: DesignIndexRoute,
+  LoginIndexRoute: LoginIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

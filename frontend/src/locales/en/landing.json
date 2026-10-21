@@ -1,0 +1,131 @@
+{
+  "nav": {
+    "how": "How it works",
+    "students": "Students",
+    "universities": "Universities",
+    "partners": "Partners"
+  },
+  "actions": {
+    "toApp": "Go to workspace",
+    "signIn": "Sign in",
+    "start": "Get started",
+    "register": "Sign up"
+  },
+  "hero": {
+    "eyebrow": "AI platform for university innovation",
+    "title": "From idea to market — one step",
+    "subtitle": "Qadam takes a student project from the first idea to Demo Day and a meeting with an investor: an AI mentor, a team, expert review and a showcase — all in one place.",
+    "primary": "Start a project",
+    "secondary": "How it works",
+    "note": "Sign in with your university email or SSO"
+  },
+  "route": {
+    "label": "The project route: idea, incubator, AI evaluation, showcase, Demo Day, market",
+    "idea": "Idea",
+    "incubator": "Incubator",
+    "evaluation": "AI evaluation",
+    "showcase": "Showcase",
+    "demoDay": "Demo Day",
+    "market": "Market",
+    "chips": {
+      "mentor": "AI mentor at hand",
+      "rubric": "Rubric-based scoring",
+      "voting": "Live voting"
+    }
+  },
+  "how": {
+    "eyebrow": "How it works",
+    "title": "4 stages and 14 steps from problem to pitch",
+    "subtitle": "Each step is a short form with hints from the AI mentor. A finished step unlocks the next one, and the result becomes the project passport.",
+    "stageNumber": "Stage {{n}}",
+    "stages": {
+      "idea": {
+        "title": "Idea and problem",
+        "text": "Find out whose problem you solve and test it with real people."
+      },
+      "market": {
+        "title": "Market, team, money",
+        "text": "Size the market, study the competitors, build the business model and the team."
+      },
+      "product": {
+        "title": "Product, metrics, risks",
+        "text": "Define the MVP, the North Star metric, unit economics and key hypotheses."
+      },
+      "launch": {
+        "title": "Materials and launch",
+        "text": "Plan the roadmap and prepare a one-pager, a pitch deck and a startup passport."
+      }
+    },
+    "steps": {
+      "s1": "The problem and who has it",
+      "s2": "Target audience and personas",
+      "s3": "Customer journey and pains",
+      "s4": "Solution and unique value proposition",
+      "s5": "Market size: TAM/SAM/SOM",
+      "s6": "Competitors and alternatives",
+      "s7": "Business model (Lean Canvas)",
+      "s8": "Team and roles",
+      "s9": "MVP and key features",
+      "s10": "Metrics and North Star",
+      "s11": "Unit economics",
+      "s12": "Risks and hypotheses",
+      "s13": "Roadmap for 6–12 months",
+      "s14": "Pitch: one-pager, pitch deck, startup passport"
+    },
+    "highlights": {
+      "mentor": {
+        "title": "An AI mentor at every step",
+        "text": "Asks questions and suggests better wording, but never does the work for you."
+      },
+      "evaluation": {
+        "title": "Scoring by an open rubric",
+        "text": "A score on 8 criteria, red flags and 7-day experiments."
+      },
+      "showcase": {
+        "title": "Showcase and Demo Day",
+        "text": "Investors and partners see the finished projects; the best ones go on stage."
+      }
+    }
+  },
+  "audiences": {
+    "eyebrow": "Who it is for",
+    "title": "One platform for students, the university and partners",
+    "subtitle": "Everyone gets their own tools, and the data stays protected inside the university.",
+    "students": {
+      "eyebrow": "Students",
+      "title": "Turn your idea into a project",
+      "p1": "A 14-step route with an AI mentor — even if you do not know where to start",
+      "p2": "Find teammates on the “Looking for a team” board",
+      "p3": "Enter competitions, earn certificates and build a portfolio",
+      "cta": "Create an account"
+    },
+    "universities": {
+      "eyebrow": "Universities",
+      "title": "All innovation activity in one place",
+      "p1": "Faculties, groups and students are imported from CSV or XLSX",
+      "p2": "A project funnel and reports for the Ministry of Science and Higher Education",
+      "p3": "University SSO, roles and data isolation",
+      "cta": "Sign in to the university workspace"
+    },
+    "partners": {
+      "eyebrow": "Partners",
+      "title": "Discover student startups early",
+      "p1": "A showcase of projects with readiness scores",
+      "p2": "Direct contact with the teams",
+      "p3": "Join Demo Days and competitions as an expert",
+      "soon": "The showcase opens soon"
+    }
+  },
+  "cta": {
+    "title": "Take your first qadam",
+    "text": "Signing up takes a minute. After onboarding, the AI mentor helps you through the first step.",
+    "primary": "Start a project"
+  },
+  "footer": {
+    "label": "Footer navigation",
+    "apiChecking": "Checking the API…",
+    "apiOffline": "API unavailable",
+    "api": "API",
+    "rights": "© {{year}} Qadam"
+  }
+}

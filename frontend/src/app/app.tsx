@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 
+import { sessionQuery } from '@/features/auth/api';
 import { routeTree } from '@/routeTree.gen';
-import { ApiError } from '@/shared/api/client';
+import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +28,22 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+  interface StaticDataRouteOption {
+    /** Page title shown in the top bar of the signed-in area (`app:titles.*`). */
+    titleKey?: 'home' | 'profile' | 'team' | 'security' | 'members' | 'import';
+  }
 }
+
+// A session lost while working (expired, revoked in another tab): forget it and
+// return to sign-in. Initial visits are handled by the route guards instead.
+setUnauthenticatedHandler(() => {
+  const hadSession = Boolean(queryClient.getQueryState(sessionQuery.queryKey)?.data);
+  queryClient.setQueryData(sessionQuery.queryKey, null);
+  const { pathname, search } = window.location;
+  if (hadSession && (pathname.startsWith('/app') || pathname.startsWith('/onboarding'))) {
+    void router.navigate({ to: '/login', search: { redirect: pathname + search } });
+  }
+});
 
 export function App() {
   return (

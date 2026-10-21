@@ -1,0 +1,139 @@
+{
+  "members": {
+    "title": "Members",
+    "subtitle": "Students and staff of the university: roles and access to the platform.",
+    "subtitleReadOnly": "Students and staff of the university. Roles are changed by the administrator.",
+    "search": "Search members",
+    "searchPlaceholder": "Name or email",
+    "role": "Role",
+    "anyRole": "All roles",
+    "faculty": "Faculty",
+    "anyFaculty": "All faculties",
+    "table": "Member list",
+    "columns": {
+      "member": "Member",
+      "roles": "Roles",
+      "study": "Studies",
+      "status": "Status",
+      "lastActive": "Last active",
+      "actions": "Actions"
+    },
+    "course": "year {{course}}",
+    "you": "(you)",
+    "status": {
+      "active": "Active",
+      "invited": "Invited",
+      "suspended": "Suspended"
+    },
+    "empty": "No members yet",
+    "emptyText": "Import students from CSV or XLSX — they will receive invitations.",
+    "emptyFiltered": "Nobody found",
+    "emptyFilteredText": "Change the search or the filters.",
+    "actions": "Actions: {{name}}",
+    "editRoles": "Edit roles",
+    "rolesTitle": "Member roles",
+    "rolesSaved": "Roles saved",
+    "selfAdmin": "You cannot remove the administrator role from yourself — ask another administrator.",
+    "roleHints": {
+      "student": "Projects, team, competitions",
+      "supervisor": "Supervises student projects",
+      "mentor": "Advises teams",
+      "jury": "Scores competition entries",
+      "innovation_manager": "Showcase moderation, competitions, members",
+      "tenant_admin": "Full access to the university settings",
+      "leadership": "Analytics and reports, read-only",
+      "partner": "Investor or industry partner"
+    },
+    "suspend": "Suspend",
+    "activate": "Reactivate",
+    "suspendTitle": "Suspend {{name}}?",
+    "suspendText": "The member loses access to the platform at once. Their data is kept, and access can be restored.",
+    "activateTitle": "Reactivate {{name}}?",
+    "activateText": "The member will be able to sign in again.",
+    "suspended": "Member suspended",
+    "activated": "Member reactivated"
+  },
+  "import": {
+    "title": "Data import",
+    "subtitle": "Upload the university structure or a list of students from CSV or XLSX. You first see a preview with errors for every row — nothing is saved until you confirm.",
+    "kind": {
+      "label": "What to import",
+      "students": "Students",
+      "studentsText": "Email, full name, group, faculty and year. New students receive an invitation.",
+      "structure": "University structure",
+      "structureText": "Faculties, departments and study groups in three languages."
+    },
+    "upload": {
+      "drop": "Drop the file here or click to choose it",
+      "rules": "CSV (UTF-8 or Windows-1251) or XLSX up to 10 MB and 3000 rows",
+      "checking": "Checking the file…",
+      "wrongType": "A CSV or XLSX file is needed.",
+      "tooLarge": "The file is larger than 10 MB. Split it into parts."
+    },
+    "columns": {
+      "title": "File columns",
+      "text": "The first row holds the headers. Use the English names below or their Russian and Kazakh equivalents, as in the template.",
+      "studentsHint": "The roles column may list roles separated by commas: student, supervisor, mentor, jury, innovation_manager, partner. The default is student.",
+      "structureHint": "Level of study: bachelor, master, doctorate, or the Russian бакалавриат, магистратура, докторантура.",
+      "required": "* — required column",
+      "template": "Download the template"
+    },
+    "preview": {
+      "total": "Rows in the file",
+      "valid": "Without errors",
+      "invalid": "With errors",
+      "create": "To create",
+      "update": "To update",
+      "invalidHint_one": "{{count, number}} row with errors will be skipped. Fix the file and upload it again, or import the remaining rows.",
+      "invalidHint_other": "{{count, number}} rows with errors will be skipped. Fix the file and upload it again, or import the remaining rows.",
+      "title": "Preview",
+      "onlyErrors": "Only rows with errors",
+      "table": "File rows",
+      "line": "Row",
+      "action": "Action",
+      "errors": "Errors",
+      "invalidRow": "Error",
+      "actions": {
+        "create": "New record",
+        "update": "Update",
+        "skip": "No changes"
+      },
+      "more": "Show more ({{shown}} of {{total}} shown)",
+      "studentsNote": "New students receive an email inviting them to set a password.",
+      "structureNote": "Faculties, departments and groups with the same codes are updated.",
+      "another": "Upload another file",
+      "commit_one": "Import {{count, number}} row",
+      "commit_other": "Import {{count, number}} rows"
+    },
+    "done": {
+      "title": "Import finished",
+      "created_one": "{{count, number}} record created",
+      "created_other": "{{count, number}} records created",
+      "updated_one": "{{count, number}} record updated",
+      "updated_other": "{{count, number}} records updated",
+      "skipped_one": "{{count, number}} row skipped",
+      "skipped_other": "{{count, number}} rows skipped",
+      "invited_one": "{{count, number}} invitation sent",
+      "invited_other": "{{count, number}} invitations sent",
+      "again": "Import another file",
+      "toMembers": "Go to members"
+    },
+    "fields": {
+      "email": "E-mail",
+      "full_name": "Full name",
+      "group_code": "Group",
+      "faculty_code": "Faculty",
+      "course": "Year",
+      "roles": "Roles",
+      "faculty_name_kk": "Faculty (Kazakh)",
+      "faculty_name_ru": "Faculty (Russian)",
+      "faculty_name_en": "Faculty (English)",
+      "department_code": "Department",
+      "department_name_kk": "Department (Kazakh)",
+      "department_name_ru": "Department (Russian)",
+      "department_name_en": "Department (English)",
+      "study_level": "Study level",
+      "admission_year": "Admission year"
+    }
+  }
+}

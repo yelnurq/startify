@@ -52,6 +52,11 @@ export default defineConfig([
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+      // Route guards throw TanStack Router redirects, as the router expects.
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        { allow: [{ from: 'package', package: '@tanstack/router-core', name: 'Redirect' }] },
+      ],
       eqeqeq: ['error', 'always'],
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },

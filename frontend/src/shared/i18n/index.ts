@@ -47,6 +47,15 @@ i18n.on('languageChanged', (lng) => {
   document.documentElement.lang = lng;
 });
 
+/** Translation catalogues loaded on demand by the screens that need them. */
+export type Namespace =
+  'common' | 'design' | 'auth' | 'landing' | 'onboarding' | 'app' | 'team' | 'admin';
+
+/** Loads namespaces before a route renders, so no screen flashes raw keys. */
+export async function loadNamespaces(...namespaces: Namespace[]): Promise<void> {
+  await i18n.loadNamespaces(namespaces);
+}
+
 export const i18nReady = i18n
   .use(initReactI18next)
   .use(

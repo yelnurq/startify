@@ -31,7 +31,25 @@
     "collapseSidebar": "Collapse sidebar",
     "expandPanel": "Expand panel",
     "collapsePanel": "Collapse panel",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "copy": "Copy",
+    "copied": "Copied",
+    "loadMore": "Show more",
+    "edit": "Edit",
+    "open": "Open",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "delete": "Delete",
+    "retry": "Retry",
+    "send": "Send",
+    "create": "Create",
+    "apply": "Apply",
+    "reset": "Reset",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "nav": {
     "main": "Main navigation",
@@ -73,16 +91,6 @@
       "preferences": "Preferences"
     }
   },
-  "status": {
-    "title": "Platform status",
-    "apiOnline": "API is available",
-    "apiOffline": "Could not reach the API",
-    "checking": "Checking the connection…",
-    "version": "Version",
-    "commit": "Build",
-    "serverTime": "Server time",
-    "retry": "Retry"
-  },
   "notFound": {
     "title": "Page not found",
     "description": "The link may be outdated or the page may have been removed.",
@@ -108,6 +116,125 @@
       "invalid_key": "The retry key of the request is invalid.",
       "key_reused": "This request was already sent with different data.",
       "in_progress": "The request is still being processed, please wait a moment."
+    },
+    "auth": {
+      "invalid_credentials": "Wrong e-mail or password.",
+      "email_taken": "This address is already registered. Sign in or reset your password.",
+      "signup_disabled": "Self sign-up is closed at this university. Please contact the administrator.",
+      "email_domain_not_allowed": "Please sign up with your university e-mail.",
+      "consent_required": "Consent to the processing of personal data is required.",
+      "password_weak": "The password is too simple: at least 10 characters, no common passwords, no name or e-mail.",
+      "password_incorrect": "The current password is wrong.",
+      "code_invalid": "The code is wrong or has expired. Request a new one.",
+      "too_many_attempts": "Too many attempts. Try again in {{retry_after_seconds}} s.",
+      "token_invalid": "The link is invalid or has expired. Request a new one.",
+      "unauthenticated": "Sign in to continue.",
+      "session_expired": "Your session has expired. Please sign in again.",
+      "session_revoked": "Your session was ended. Please sign in again.",
+      "csrf_failed": "The request could not be confirmed. Reload the page and try again.",
+      "forbidden": "You do not have permission to do this.",
+      "oidc_failed": "University SSO sign-in failed. Try again or sign in with e-mail.",
+      "not_a_member": "This account is not part of the university yet. Sign up with the same email and password, and the account will join it.",
+      "account_suspended": "Access to this account has been suspended by the university administrator.",
+      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes."
+    },
+    "tenant": {
+      "not_found": "No university was found at this address.",
+      "suspended": "Access to the platform is suspended for this university."
+    },
+    "profile": {
+      "slug_taken": "This profile address is already taken.",
+      "not_found": "The profile does not exist or is hidden by its owner."
+    },
+    "files": {
+      "too_large": "The file is too large.",
+      "unsupported_type": "This file type is not supported.",
+      "infected": "The file failed the malware check.",
+      "scanner_unavailable": "File checking is temporarily unavailable. Please try later.",
+      "not_found": "File not found.",
+      "image_too_large": "The image is too large: at most {{max_megapixels}} megapixels.",
+      "image_too_small": "The image is too small: at least {{min_pixels}} pixels on each side.",
+      "image_invalid": "The image could not be read. Try another file."
+    },
+    "team": {
+      "not_found": "The request was not found.",
+      "own_request": "You cannot respond to your own request.",
+      "already_responded": "You have already responded to this request.",
+      "closed": "The author has closed this request.",
+      "forbidden": "Only the author can change the request."
+    },
+    "import": {
+      "invalid_file": "The file could not be read. Use CSV (UTF-8) or XLSX with headers in the first row.",
+      "unknown_columns": "The file has columns that cannot be imported: {{columns}}. Compare it with the template.",
+      "already_committed": "This import has already been applied.",
+      "not_found": "The import was not found.",
+      "empty": "The file has no data rows.",
+      "too_many_rows": "Too many rows: at most {{max}} per import.",
+      "missing_columns": "Required columns are missing: {{columns}}.",
+      "duplicate_columns": "Columns are repeated: {{columns}}."
+    },
+    "member": {
+      "not_found": "The member was not found.",
+      "cannot_demote_self": "You cannot remove the administrator role from yourself.",
+      "last_admin": "The last administrator of the university cannot lose the role or be suspended."
+    },
+    "rbac": {
+      "forbidden": "You do not have permission to do this."
+    },
+    "rate_limited": "Too many requests. Please wait a moment and try again.",
+    "session": {
+      "not_found": "The session was not found or has already ended."
+    },
+    "precondition": {
+      "failed": "Someone changed this in the meantime. Reload the page and try again."
     }
+  },
+  "roles": {
+    "student": "Student",
+    "supervisor": "Supervisor",
+    "mentor": "Mentor",
+    "jury": "Jury expert",
+    "innovation_manager": "Innovation manager",
+    "tenant_admin": "Administrator",
+    "leadership": "Leadership",
+    "partner": "Partner"
+  },
+  "studyLevels": {
+    "bachelor": "Bachelor’s",
+    "master": "Master’s",
+    "doctorate": "Doctorate"
+  },
+  "validation": {
+    "required": "Please fill in this field",
+    "email": "Enter a valid e-mail address",
+    "url": "Enter a valid link",
+    "format": "Invalid format",
+    "invalid": "Invalid value",
+    "minLength_one": "At least {{count, number}} character",
+    "minLength_other": "At least {{count, number}} characters",
+    "maxLength_one": "No more than {{count, number}} character",
+    "maxLength_other": "No more than {{count, number}} characters",
+    "minItems_one": "Choose at least {{count, number}} option",
+    "minItems_other": "Choose at least {{count, number}} options",
+    "maxItems_one": "No more than {{count, number}} item",
+    "maxItems_other": "No more than {{count, number}} items",
+    "min": "The value must be at least {{value}}",
+    "max": "The value must be at most {{value}}",
+    "too_short": "The value is too short",
+    "too_long": "The value is too long",
+    "taken": "This value is already taken",
+    "not_found": "The value was not found",
+    "invalid_email": "Enter a valid e-mail address",
+    "passwordsMismatch": "The passwords do not match",
+    "choose": "Choose a value",
+    "duplicate": "This value is repeated"
+  },
+  "tags": {
+    "add": "Add",
+    "remove": "Remove “{{tag}}”",
+    "placeholder": "Type and press Enter",
+    "suggestions": "Suggestions",
+    "limit": "Maximum reached: {{max}}",
+    "counter": "{{value}} of {{max}}"
   }
 }

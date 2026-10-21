@@ -18,11 +18,14 @@ export default defineConfig({
     timezoneId: 'Asia/Almaty',
   },
   projects: [
+    // Signs the seeded demo accounts in once per run; the API rate-limits sign-ins per IP.
+    { name: 'setup', testMatch: /\.setup\.ts$/ },
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      dependencies: ['setup'],
     },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, dependencies: ['setup'] },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

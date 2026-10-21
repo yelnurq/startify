@@ -1,0 +1,90 @@
+{
+  "roles": {
+    "developer": "Developer",
+    "designer": "Designer",
+    "data_scientist": "Data scientist / ML",
+    "marketer": "Marketer",
+    "business": "Business and finance",
+    "hardware": "Electronics engineer",
+    "domain_expert": "Domain expert",
+    "other": "Other"
+  },
+  "board": {
+    "title": "Looking for a team",
+    "subtitle": "Post a request if your project needs people, or reply to someone else's — the author gets your contacts.",
+    "create": "Post a request",
+    "tabs": {
+      "all": "All requests",
+      "mine": "My requests"
+    },
+    "search": "Search requests",
+    "searchPlaceholder": "Title, description or skill",
+    "role": "Role needed",
+    "anyRole": "Any role",
+    "skill": "Skill",
+    "skillPlaceholder": "A skill, e.g. Figma",
+    "reset": "Reset filters",
+    "empty": "Nobody is looking for a team yet",
+    "emptyText": "Post the first request — tell about your idea and who you are looking for.",
+    "emptyFiltered": "Nothing found",
+    "emptyFilteredText": "Try other words or reset the filters.",
+    "emptyMine": "You have not posted any requests yet",
+    "emptyMineText": "Tell about the project and who the team needs — replies will show up here."
+  },
+  "card": {
+    "actions": "Request actions",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "close": "Close the request",
+    "reopen": "Reopen the request",
+    "closedToast": "Request closed",
+    "reopenedToast": "Request reopened",
+    "more": "Show more",
+    "less": "Show less",
+    "roles": "Roles needed",
+    "skills": "Skills",
+    "responses_one": "{{count, number}} reply",
+    "responses_other": "{{count, number}} replies",
+    "showResponses": "Replies",
+    "respond": "Reply",
+    "responded": "You replied"
+  },
+  "form": {
+    "createTitle": "New request for teammates",
+    "editTitle": "Edit the request",
+    "description": "The clearer the request, the sooner people turn up.",
+    "title": "Title",
+    "titlePlaceholder": "For example: looking for a designer for an agritech startup",
+    "text": "Description",
+    "textHint": "What you are working on, the project stage and what the new member will do.",
+    "textPlaceholder": "We are building a service that helps farmers…",
+    "roles": "Who is needed",
+    "rolesHint": "Choose up to {{max}} roles",
+    "skills": "Skills",
+    "skillsPlaceholder": "For example: Figma",
+    "publish": "Post",
+    "created": "Request posted",
+    "updated": "Request updated"
+  },
+  "respond": {
+    "title": "Reply to the request",
+    "message": "Message to the author",
+    "hint": "What you can do and why the project interests you.",
+    "placeholder": "Hello! I design interfaces in Figma and would like to join…",
+    "privacy": "The author will see your name, faculty and contact email.",
+    "submit": "Send the reply",
+    "sent": "Reply sent",
+    "sentText": "The author will contact you by email."
+  },
+  "responses": {
+    "title": "Replies",
+    "empty": "No replies yet",
+    "emptyText": "When someone replies, their message and contacts appear here."
+  },
+  "detail": {
+    "back": "All requests",
+    "notFound": "Request not found",
+    "notFoundText": "It may have been deleted, or the link is wrong.",
+    "failed": "The request could not be opened"
+  }
+}

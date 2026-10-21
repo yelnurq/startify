@@ -24,6 +24,657 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The university of this host
+         * @description Public branding, sign-up rules and SSO providers, needed before sign-in.
+         */
+        get: operations["getCurrentTenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current session
+         * @description The signed-in user and their membership in this university, or 401 `auth.unauthenticated`.
+         */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register with e-mail and password
+         * @description Creates the account and a student membership, signs in and e-mails a verification link.
+         *     Errors: `auth.email_taken` (409), `auth.signup_disabled` and `auth.email_domain_not_allowed` (403),
+         *     `auth.consent_required`, `auth.password_weak` (422).
+         */
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with e-mail and password
+         * @description Errors: `auth.invalid_credentials` (401), `auth.too_many_attempts` (429).
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * E-mail a one-time sign-in code
+         * @description Always answers 202 so that the response does not reveal whether the address is registered.
+         */
+        post: operations["requestLoginCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/otp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with the e-mailed code
+         * @description Errors: `auth.code_invalid` (401), `auth.too_many_attempts` (429).
+         */
+        post: operations["verifyLoginCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the session tokens
+         * @description Uses the refresh cookie. Every refresh rotates the refresh token; presenting an already
+         *     rotated token revokes the whole session (`auth.session_revoked`).
+         */
+        post: operations["refreshSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign out of this session */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active sessions of the user */
+        get: operations["listSessions"];
+        put?: never;
+        post?: never;
+        /**
+         * Sign out everywhere
+         * @description Revokes every session of the user, including this one.
+         */
+        delete: operations["revokeAllSessions"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke one session */
+        delete: operations["revokeSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/email/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the e-mail address with the token from the letter
+         * @description Errors: `auth.token_invalid` (400).
+         */
+        post: operations["verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the verification letter again */
+        post: operations["resendVerificationEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * E-mail a password reset link
+         * @description Always answers 202 so that the response does not reveal whether the address is registered.
+         */
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a new password with the token from the letter
+         * @description Revokes every session of the user. Errors `auth.token_invalid`, `auth.password_weak`.
+         */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the password
+         * @description Other sessions are revoked. Errors `auth.password_incorrect`, `auth.password_weak`.
+         */
+        put: operations["changePassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oidc/{providerId}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Start single sign-on with the university identity provider */
+        get: operations["startOidc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oidc/{providerId}/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return from the identity provider */
+        get: operations["completeOidc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user with membership and profile */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update name and interface language */
+        patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/me/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Finish onboarding
+         * @description Stores language, place of study, interests and skills; marks the membership as onboarded.
+         */
+        put: operations["completeOnboarding"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update the profile
+         * @description Errors: `profile.slug_taken` (409).
+         */
+        put: operations["updateProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload a profile photo
+         * @description JPEG, PNG or WebP up to 5 MB. The image is checked for malware, re-encoded (metadata
+         *     such as GPS position is removed) and scaled to 512 px. Errors: `files.too_large` (413),
+         *     `files.unsupported_type`, `files.infected` (422), `files.scanner_unavailable` (503).
+         */
+        put: operations["uploadAvatar"];
+        post?: never;
+        /** Remove the profile photo */
+        delete: operations["deleteAvatar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profiles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public profile
+         * @description Available when the owner made the profile public; otherwise 404 `profile.not_found`.
+         */
+        get: operations["getPublicProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{fileId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a file
+         * @description Public files (avatars, covers) are available to everyone, others only to permitted users.
+         */
+        get: operations["getFileContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/faculties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Faculties with their departments */
+        get: operations["listFaculties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/study-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Study groups */
+        get: operations["listStudyGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/team-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open requests for teammates */
+        get: operations["listTeamRequests"];
+        put?: never;
+        /** Publish a request for teammates */
+        post: operations["createTeamRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/team-requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        /** One request */
+        get: operations["getTeamRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit or close a request
+         * @description Only the author (or a moderator) may change a request.
+         */
+        patch: operations["updateTeamRequest"];
+        trace?: never;
+    };
+    "/team-requests/{requestId}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Replies to a request
+         * @description The author (and moderators) see every reply with the responder's e-mail; others see only their own.
+         */
+        get: operations["listTeamResponses"];
+        put?: never;
+        /**
+         * Reply to a request
+         * @description Errors: `team.own_request`, `team.already_responded` (409), `team.closed`.
+         */
+        post: operations["respondToTeamRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Members of the university
+         * @description Requires the `tenant_admin` or `innovation_manager` role.
+         */
+        get: operations["listMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change roles or status of a member
+         * @description Requires `tenant_admin`. An administrator cannot remove their own administrator role.
+         */
+        patch: operations["updateMember"];
+        trace?: never;
+    };
+    "/admin/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a CSV or XLSX file for import
+         * @description Parses and validates the file and returns a preview; nothing is written until the
+         *     import is committed. Requires `tenant_admin`. Errors: `import.invalid_file`,
+         *     `import.unknown_columns`, `files.too_large`.
+         */
+        post: operations["createImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/imports/{importId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An import and its preview */
+        get: operations["getImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/imports/{importId}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a previewed import
+         * @description Valid rows are written; invalid rows are skipped. New students receive an invitation
+         *     letter. Errors: `import.already_committed` (409).
+         */
+        post: operations["commitImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -33,6 +684,12 @@ export interface components {
          * @enum {string}
          */
         Locale: "kk" | "ru" | "en";
+        /** @description The same text in Kazakh, Russian and English; at least one is present. */
+        LocalizedText: {
+            kk?: string;
+            ru?: string;
+            en?: string;
+        };
         Meta: {
             /** @example Qadam */
             product: string;
@@ -46,6 +703,351 @@ export interface components {
             default_locale: components["schemas"]["Locale"];
             /** Format: date-time */
             server_time: string;
+        };
+        /**
+         * @description Role of a member in the university: `student`; `supervisor` (scientific supervisor);
+         *     `mentor`; `jury` (competition expert); `innovation_manager` (commercialisation / AI centre);
+         *     `tenant_admin`; `leadership` (rector, vice-rectors, deans; read-only dashboards);
+         *     `partner` (investor, industry partner, accelerator).
+         * @enum {string}
+         */
+        Role: "student" | "supervisor" | "mentor" | "jury" | "innovation_manager" | "tenant_admin" | "leadership" | "partner";
+        /** @enum {string} */
+        StudyLevel: "bachelor" | "master" | "doctorate";
+        /** @enum {string} */
+        MembershipStatus: "active" | "invited" | "suspended";
+        SsoProvider: {
+            /** Format: uuid */
+            id: string;
+            name: components["schemas"]["LocalizedText"];
+        };
+        Tenant: {
+            /** Format: uuid */
+            id: string;
+            /** @example kazutb */
+            slug: string;
+            name: components["schemas"]["LocalizedText"];
+            short_name: components["schemas"]["LocalizedText"];
+            default_locale: components["schemas"]["Locale"];
+            primary_color: string;
+            logo_url: string | null;
+            /** @description Whether students may register on their own. */
+            self_signup: boolean;
+            /** @description Allowed e-mail domains for self sign-up; empty means any. */
+            email_domains: string[];
+            sso_providers: components["schemas"]["SsoProvider"][];
+            consent: components["schemas"]["ConsentPolicy"];
+        };
+        /** @description Personal data processing consent shown at sign-up (Law of the RK "On personal data"). */
+        ConsentPolicy: {
+            version: string;
+            text: components["schemas"]["LocalizedText"];
+        };
+        TenantBrief: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: components["schemas"]["LocalizedText"];
+            short_name: components["schemas"]["LocalizedText"];
+        };
+        User: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            email_verified: boolean;
+            full_name: string;
+            locale: components["schemas"]["Locale"];
+            avatar_url: string | null;
+            is_super_admin: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        FacultyRef: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: components["schemas"]["LocalizedText"];
+        };
+        StudyGroupRef: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+        };
+        Membership: {
+            /** Format: uuid */
+            tenant_id: string;
+            roles: components["schemas"]["Role"][];
+            status: components["schemas"]["MembershipStatus"];
+            faculty: components["schemas"]["FacultyRef"] | null;
+            department: components["schemas"]["FacultyRef"] | null;
+            group: components["schemas"]["StudyGroupRef"] | null;
+            study_level: components["schemas"]["StudyLevel"] | null;
+            course: number | null;
+            onboarded: boolean;
+        };
+        Session: {
+            user: components["schemas"]["User"];
+            membership: components["schemas"]["Membership"];
+            tenant: components["schemas"]["TenantBrief"];
+        };
+        SessionInfo: {
+            /** Format: uuid */
+            id: string;
+            user_agent: string | null;
+            ip: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at: string;
+            current: boolean;
+        };
+        RegisterRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+            full_name: string;
+            locale: components["schemas"]["Locale"];
+            /** @description Version of the personal data consent the user accepted (from `Tenant.consent`). */
+            consent_version: string;
+        };
+        LoginRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
+        EmailRequest: {
+            /** Format: email */
+            email: string;
+        };
+        LoginCodeRequest: {
+            /** Format: email */
+            email: string;
+            code: string;
+        };
+        TokenRequest: {
+            token: string;
+        };
+        PasswordResetRequest: {
+            token: string;
+            password: string;
+        };
+        PasswordChangeRequest: {
+            current_password: string;
+            new_password: string;
+        };
+        ProfileLinks: {
+            website?: string | null;
+            github?: string | null;
+            linkedin?: string | null;
+            telegram?: string | null;
+        };
+        Profile: {
+            headline: string | null;
+            bio: string | null;
+            skills: string[];
+            interests: string[];
+            links: components["schemas"]["ProfileLinks"];
+            public_slug: string;
+            is_public: boolean;
+            looking_for_team: boolean;
+        };
+        Me: {
+            user: components["schemas"]["User"];
+            membership: components["schemas"]["Membership"];
+            profile: components["schemas"]["Profile"];
+        };
+        MeUpdate: {
+            full_name?: string;
+            locale?: components["schemas"]["Locale"];
+        };
+        OnboardingRequest: {
+            locale: components["schemas"]["Locale"];
+            /** Format: uuid */
+            faculty_id?: string | null;
+            /** Format: uuid */
+            department_id?: string | null;
+            /** Format: uuid */
+            group_id?: string | null;
+            study_level?: components["schemas"]["StudyLevel"] | null;
+            course?: number | null;
+            interests: string[];
+            skills: string[];
+            has_idea: boolean;
+            /** @description One sentence about the idea, if the student already has one. */
+            idea?: string | null;
+        };
+        ProfileUpdate: {
+            headline: string | null;
+            bio: string | null;
+            skills: string[];
+            interests: string[];
+            links: components["schemas"]["ProfileLinks"];
+            public_slug: string;
+            is_public: boolean;
+            looking_for_team: boolean;
+        };
+        PublicProfile: {
+            full_name: string;
+            avatar_url: string | null;
+            headline: string | null;
+            bio: string | null;
+            skills: string[];
+            interests: string[];
+            links: components["schemas"]["ProfileLinks"];
+            faculty: components["schemas"]["FacultyRef"] | null;
+            tenant: components["schemas"]["TenantBrief"];
+            looking_for_team: boolean;
+        };
+        Department: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: components["schemas"]["LocalizedText"];
+        };
+        Faculty: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: components["schemas"]["LocalizedText"];
+            departments: components["schemas"]["Department"][];
+        };
+        StudyGroup: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            faculty_id: string;
+            /** Format: uuid */
+            department_id: string | null;
+            study_level: components["schemas"]["StudyLevel"];
+            admission_year: number | null;
+        };
+        MemberBrief: {
+            /** Format: uuid */
+            id: string;
+            full_name: string;
+            avatar_url: string | null;
+            faculty: components["schemas"]["FacultyRef"] | null;
+        };
+        /** @enum {string} */
+        TeamRole: "developer" | "designer" | "data_scientist" | "marketer" | "business" | "hardware" | "domain_expert" | "other";
+        /** @enum {string} */
+        TeamRequestStatus: "open" | "closed";
+        TeamRequest: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["MemberBrief"];
+            title: string;
+            description: string;
+            roles_needed: components["schemas"]["TeamRole"][];
+            skills: string[];
+            status: components["schemas"]["TeamRequestStatus"];
+            responses_count: number;
+            is_mine: boolean;
+            has_responded: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TeamRequestPage: {
+            items: components["schemas"]["TeamRequest"][];
+            next_cursor: string | null;
+        };
+        TeamRequestCreate: {
+            title: string;
+            description: string;
+            roles_needed: components["schemas"]["TeamRole"][];
+            skills: string[];
+        };
+        TeamRequestUpdate: {
+            title?: string;
+            description?: string;
+            roles_needed?: components["schemas"]["TeamRole"][];
+            skills?: string[];
+            status?: components["schemas"]["TeamRequestStatus"];
+        };
+        TeamResponse: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["MemberBrief"];
+            message: string;
+            /** @description Contact e-mail of the respondent, visible to the request author only. */
+            email: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        TeamResponseCreate: {
+            message: string;
+        };
+        Member: {
+            user: components["schemas"]["MemberBrief"];
+            /** Format: email */
+            email: string;
+            roles: components["schemas"]["Role"][];
+            status: components["schemas"]["MembershipStatus"];
+            group: components["schemas"]["StudyGroupRef"] | null;
+            course: number | null;
+            /** Format: date-time */
+            joined_at: string;
+            /** Format: date-time */
+            last_active_at: string | null;
+        };
+        MemberPage: {
+            items: components["schemas"]["Member"][];
+            next_cursor: string | null;
+        };
+        MemberUpdate: {
+            roles?: components["schemas"]["Role"][];
+            /** @enum {string} */
+            status?: "active" | "suspended";
+        };
+        /**
+         * @description `structure` — faculties, departments and study groups;
+         *     `students` — students with their faculty, group and course.
+         * @enum {string}
+         */
+        ImportKind: "structure" | "students";
+        /** @enum {string} */
+        ImportStatus: "preview" | "committed";
+        /** @enum {string} */
+        ImportRowAction: "create" | "update" | "skip";
+        ImportRow: {
+            /** @description Line number in the file (1 is the header). */
+            line: number;
+            values: {
+                [key: string]: string;
+            };
+            action: components["schemas"]["ImportRowAction"];
+            errors: components["schemas"]["FieldError"][];
+        };
+        ImportSummary: {
+            total: number;
+            valid: number;
+            invalid: number;
+            to_create: number;
+            to_update: number;
+        };
+        ImportJob: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["ImportKind"];
+            status: components["schemas"]["ImportStatus"];
+            file_name: string;
+            columns: string[];
+            summary: components["schemas"]["ImportSummary"];
+            rows: components["schemas"]["ImportRow"][];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            committed_at: string | null;
+        };
+        ImportResult: {
+            created: number;
+            updated: number;
+            skipped: number;
+            invited: number;
         };
         FieldError: {
             /** @description JSON pointer-like path of the invalid field, e.g. `steps.problem.statement`. */
@@ -91,11 +1093,23 @@ export interface components {
         };
     };
     parameters: {
+        /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+        IfMatch: string;
         /** @description Client-generated unique key that makes a creating request safe to retry. */
         IdempotencyKey: string;
+        /** @description Opaque cursor from `next_cursor` of the previous page. */
+        Cursor: string;
+        Limit: number;
+        RequestId: string;
+        ImportId: string;
     };
     requestBodies: never;
-    headers: never;
+    headers: {
+        /** @description Version of the resource; send it back in `If-Match` to update safely. */
+        ETag: string;
+        /** @description `qadam_at` (access), `qadam_rt` (refresh) and `qadam_csrf` (CSRF token). */
+        SessionCookies: string;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
@@ -116,6 +1130,957 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Meta"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCurrentTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active session. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    register: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Registered and signed in; session cookies are set. */
+            201: {
+                headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed in; session cookies are set. */
+            200: {
+                headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    requestLoginCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description If the address is registered, a code is on its way. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    verifyLoginCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed in; session cookies are set. */
+            200: {
+                headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    refreshSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New session cookies are set. */
+            204: {
+                headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed out; session cookies are cleared. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sessions, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["SessionInfo"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeAllSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All sessions revoked; cookies are cleared. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Address confirmed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    resendVerificationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A new letter is on its way. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description If the address is registered, a link is on its way. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    startOidc: {
+        parameters: {
+            query?: {
+                /** @description Path inside the application to return to after sign-in. */
+                redirect?: string;
+            };
+            header?: never;
+            path: {
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the identity provider. */
+            302: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    completeOidc: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+            };
+            header?: never;
+            path: {
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect into the application, signed in (or to the sign-in page with an error). */
+            302: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    completeOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    uploadAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Photo removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPublicProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProfile"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getFileContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file content. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listFaculties: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Faculties sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Faculty"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listStudyGroups: {
+        parameters: {
+            query?: {
+                faculty_id?: string;
+                department_id?: string;
+                /** @description Prefix of the group code, e.g. `ВТиПО-23`. */
+                q?: string;
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching groups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["StudyGroup"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listTeamRequests: {
+        parameters: {
+            query?: {
+                /** @description Full-text search in title, description and skills. */
+                q?: string;
+                role?: components["schemas"]["TeamRole"];
+                skill?: string;
+                /** @description Only requests of the signed-in user, including closed ones. */
+                mine?: boolean;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of requests, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRequestPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createTeamRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description The request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRequest"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getTeamRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRequest"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateTeamRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamRequestUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated request. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRequest"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listTeamResponses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Replies, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["TeamResponse"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    respondToTeamRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamResponseCreate"];
+            };
+        };
+        responses: {
+            /** @description The reply. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamResponse"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: {
+                /** @description Search by name or e-mail. */
+                q?: string;
+                role?: components["schemas"]["Role"];
+                faculty_id?: string;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of members sorted by name. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated member. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    kind: components["schemas"]["ImportKind"];
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The import preview. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    commitImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The outcome. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
                 };
             };
             default: components["responses"]["Problem"];

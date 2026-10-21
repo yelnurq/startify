@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { StatusPage } from '@/features/system/status-page';
+import { LandingPage } from '@/features/landing/landing-page';
+import { loadNamespaces } from '@/shared/i18n';
 
 export const Route = createFileRoute('/')({
-  component: StatusPage,
+  loader: () => loadNamespaces('landing'),
+  component: LandingPage,
 });

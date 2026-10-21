@@ -1,0 +1,169 @@
+{
+  "nav": {
+    "home": "Home",
+    "profile": "My profile",
+    "team": "Looking for a team",
+    "administration": "Administration",
+    "members": "Members",
+    "import": "Data import",
+    "settings": "Settings",
+    "security": "Security"
+  },
+  "titles": {
+    "home": "Home",
+    "profile": "My profile",
+    "team": "Looking for a team",
+    "security": "Security",
+    "members": "Members",
+    "import": "Data import"
+  },
+  "user": {
+    "menu": "User menu"
+  },
+  "dashboard": {
+    "roles": "Your roles",
+    "greeting": {
+      "morning": "Good morning, {{name}}!",
+      "day": "Good afternoon, {{name}}!",
+      "evening": "Good evening, {{name}}!",
+      "night": "Good night, {{name}}!"
+    },
+    "verify": {
+      "title": "Confirm your email",
+      "text": "We sent an email to {{email}}. Follow the link in it to unlock everything on the platform."
+    },
+    "incubator": {
+      "badge": "Coming soon",
+      "title": "Project incubator",
+      "text": "In the next release your project will live here: 4 stages, 14 steps and an AI mentor. Meanwhile, complete your profile and gather a team — the road is easier together.",
+      "findTeam": "Find a team",
+      "fillProfile": "Complete the profile",
+      "track": "Incubator stages",
+      "stages": {
+        "idea": "Idea and problem",
+        "market": "Market, team, money",
+        "product": "Product, metrics, risks",
+        "launch": "Materials and launch"
+      }
+    },
+    "requests": {
+      "title": "New requests for teammates",
+      "all": "All requests",
+      "empty": "Nobody is looking for teammates yet. Be the first!",
+      "create": "Post a request"
+    },
+    "profile": {
+      "ring": "Profile {{value}}% complete",
+      "title": "Your profile",
+      "counter": "{{done}} of {{total}} done",
+      "items": {
+        "email": "Confirm your email",
+        "avatar": "Upload a photo",
+        "headline": "Say what you do",
+        "bio": "Tell about yourself",
+        "skills": "Add at least 3 skills",
+        "links": "Add a GitHub, website or Telegram link",
+        "public": "Make the profile public"
+      },
+      "done": "done",
+      "todo": "not done",
+      "cta": "Complete the profile"
+    },
+    "study": {
+      "title": "Studies",
+      "faculty": "Faculty",
+      "department": "Department",
+      "group": "Group",
+      "level": "Programme",
+      "levelCourse": "{{level}}, year {{course}}",
+      "interests": "Interests"
+    },
+    "admin": {
+      "title": "University management"
+    }
+  },
+  "profile": {
+    "title": "My profile",
+    "subtitle": "This is how teammates, mentors and the jury see you. You can send the public link to partners.",
+    "saved": "Profile saved",
+    "unsaved": "There are unsaved changes",
+    "avatar": {
+      "rules": "JPEG, PNG, WebP or GIF up to 10 MB, at least 64 × 64 pixels",
+      "uploaded": "Photo updated",
+      "change": "Change photo",
+      "upload": "Upload a photo",
+      "remove": "Remove"
+    },
+    "link": {
+      "hidden": "The profile is hidden. Turn on “Public profile” to share a link.",
+      "title": "Public link"
+    },
+    "sections": {
+      "about": "About",
+      "skills": "Skills and interests",
+      "skillsText": "Teams find you by them on the “Looking for a team” board.",
+      "links": "Links",
+      "visibility": "Visibility"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "headline": "Headline",
+      "headlineHint": "One line under your name",
+      "headlinePlaceholder": "For example: third-year student, frontend developer",
+      "bio": "About you",
+      "bioPlaceholder": "What you do, which projects you have made, what you want to try",
+      "skills": "Skills",
+      "interests": "Interests",
+      "website": "Website",
+      "websitePlaceholder": "https://",
+      "github": "GitHub",
+      "githubPlaceholder": "https://github.com/username",
+      "linkedin": "LinkedIn",
+      "linkedinPlaceholder": "https://linkedin.com/in/username",
+      "telegram": "Telegram",
+      "telegramPlaceholder": "@username",
+      "telegramFormat": "Enter a Telegram username: 5–32 Latin letters, digits or _",
+      "isPublic": "Public profile",
+      "isPublicHint": "Anyone with the link can see the profile, even without signing in",
+      "lookingForTeam": "Looking for a team",
+      "lookingForTeamHint": "We show a mark on your profile and suggest you to request authors",
+      "slug": "Profile address",
+      "slugHint": "Link: {{url}}",
+      "slugFormat": "3–40 characters: Latin letters, digits and hyphens, no hyphen at the start or end"
+    }
+  },
+  "publicProfile": {
+    "toApp": "Go to workspace",
+    "notFound": "Profile not found",
+    "failed": "The profile could not be opened",
+    "lookingForTeam": "Looking for a team",
+    "about": "About",
+    "links": "Links"
+  },
+  "security": {
+    "title": "Security",
+    "subtitle": "Devices you are signed in on, and your password.",
+    "sessions": {
+      "title": "Active sessions",
+      "subtitle": "If you do not recognise a device, end its session and change your password.",
+      "othersHint": "Ends every session except the one on this device.",
+      "others": "Sign out of other devices",
+      "confirmTitle": "Sign out of other devices?",
+      "confirmText": "Sessions to end: {{n}}. You stay signed in on this device.",
+      "revokedOthers": "Sessions on other devices have ended",
+      "unknownDevice": "Unknown device",
+      "current": "This device",
+      "signedIn": "signed in {{date}}",
+      "lastUsed": "active {{when}}",
+      "revoke": "End",
+      "revoked": "Session ended"
+    },
+    "password": {
+      "title": "Change password",
+      "subtitle": "After the change, sessions on other devices end.",
+      "changed": "Password changed",
+      "changedText": "Sessions on other devices have ended.",
+      "submit": "Change password"
+    }
+  }
+}
