@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Qadam",
+    "tagline": "The AI platform for university innovation and project work"
+  },
+  "language": {
+    "label": "Language",
+    "kk": "Қазақша",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "status": {
+    "title": "Platform status",
+    "apiOnline": "API is available",
+    "apiOffline": "Could not reach the API",
+    "checking": "Checking the connection…",
+    "version": "Version",
+    "commit": "Build",
+    "serverTime": "Server time",
+    "retry": "Retry"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The link may be outdated or the page may have been removed.",
+    "back": "Go to the home page"
+  },
+  "errors": {
+    "internal": "Something went wrong. Please try again.",
+    "network": "No connection to the server. Check your internet connection.",
+    "route": {
+      "not_found": "The requested resource was not found.",
+      "method_not_allowed": "This action is not available for the resource."
+    },
+    "request": {
+      "malformed": "The server could not read the request.",
+      "invalid_parameter": "The request contains an invalid parameter.",
+      "too_large": "The amount of data is too large.",
+      "timeout": "The server did not respond in time. Please try again."
+    },
+    "validation": {
+      "failed": "Some fields are filled in incorrectly."
+    },
+    "idempotency": {
+      "invalid_key": "The retry key of the request is invalid.",
+      "key_reused": "This request was already sent with different data.",
+      "in_progress": "The request is still being processed, please wait a moment."
+    }
+  }
+}
