@@ -9,6 +9,72 @@
     "ru": "Русский",
     "en": "English"
   },
+  "theme": {
+    "label": "Оформление",
+    "light": "Светлое",
+    "dark": "Тёмное",
+    "system": "Как в системе",
+    "switchToLight": "Включить светлое оформление",
+    "switchToDark": "Включить тёмное оформление",
+    "switchToSystem": "Оформление как в системе"
+  },
+  "actions": {
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "confirm": "Подтвердить",
+    "save": "Сохранить",
+    "undo": "Отменить",
+    "remove": "Удалить",
+    "search": "Поиск",
+    "openMenu": "Открыть меню",
+    "expandSidebar": "Развернуть боковую панель",
+    "collapseSidebar": "Свернуть боковую панель",
+    "expandPanel": "Развернуть панель",
+    "collapsePanel": "Свернуть панель",
+    "skipToContent": "Перейти к содержимому"
+  },
+  "nav": {
+    "main": "Основная навигация",
+    "home": "Главная",
+    "designSystem": "Дизайн-система"
+  },
+  "field": {
+    "optional": "необязательно",
+    "counter": "{{value}} / {{max}}"
+  },
+  "presence": {
+    "online": "В сети"
+  },
+  "avatars": {
+    "more_one": "Ещё {{count, number}} участник",
+    "more_few": "Ещё {{count, number}} участника",
+    "more_many": "Ещё {{count, number}} участников",
+    "more_other": "Ещё {{count, number}} участника"
+  },
+  "breadcrumbs": "Навигационная цепочка",
+  "stepper": {
+    "done": "Завершено",
+    "current": "Текущий шаг",
+    "todo": "Не начато",
+    "locked": "Недоступно"
+  },
+  "trend": {
+    "up": "Рост",
+    "down": "Снижение",
+    "flat": "Без изменений"
+  },
+  "commandPalette": {
+    "title": "Командная палитра",
+    "placeholder": "Найти раздел, проект или действие…",
+    "empty": "Ничего не найдено",
+    "hintNavigate": "навигация",
+    "hintSelect": "выбрать",
+    "hintClose": "закрыть",
+    "groups": {
+      "navigation": "Переходы",
+      "preferences": "Настройки"
+    }
+  },
   "status": {
     "title": "Состояние платформы",
     "apiOnline": "API доступен",

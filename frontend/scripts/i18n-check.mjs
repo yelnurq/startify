@@ -1,11 +1,13 @@
-// Verifies that every locale has exactly the same translation keys, no empty
-// values and the same {{interpolation}} placeholders. Exits non-zero on problems.
+// Verifies the translation catalogues: every locale has the same keys as the
+// reference (ru), exactly the plural forms its language needs, no empty values
+// and the same {{interpolation}} placeholders. Exits non-zero on problems.
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = path.join(import.meta.dirname, '..', 'src', 'locales');
 const reference = 'ru';
 const locales = readdirSync(root).filter((name) => !name.startsWith('.'));
+const PLURAL = /_(zero|one|two|few|many|other)$/;
 
 function flatten(value, prefix = '', out = new Map()) {
   for (const [key, child] of Object.entries(value)) {
@@ -34,18 +36,42 @@ function load(locale) {
   return catalog;
 }
 
+/** Base key → { plural forms present, a sample value }. */
+function group(catalog) {
+  const groups = new Map();
+  for (const [key, value] of catalog) {
+    const base = key.replace(PLURAL, '');
+    const form = PLURAL.exec(key)?.[1];
+    const entry = groups.get(base) ?? { forms: new Set(), value };
+    if (form) entry.forms.add(form);
+    groups.set(base, entry);
+  }
+  return groups;
+}
+
 const catalogs = new Map(locales.map((l) => [l, load(l)]));
-const base = catalogs.get(reference);
+const base = group(catalogs.get(reference));
 const problems = [];
 
 for (const [locale, catalog] of catalogs) {
+  const needed = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+  const groups = group(catalog);
   for (const key of base.keys()) {
-    if (!catalog.has(key)) problems.push(`${locale}: missing ${key}`);
+    if (!groups.has(key)) problems.push(`${locale}: missing ${key}`);
+  }
+  for (const [key, { forms }] of groups) {
+    if (!base.has(key)) problems.push(`${locale}: extra key ${key} (not in ${reference})`);
+    const plural = forms.size > 0 || (base.get(key)?.forms.size ?? 0) > 0;
+    if (plural) {
+      for (const form of needed) {
+        if (!forms.has(form)) problems.push(`${locale}: ${key} lacks plural form "${form}"`);
+      }
+    }
   }
   for (const [key, value] of catalog) {
-    if (!base.has(key)) problems.push(`${locale}: extra key ${key} (not in ${reference})`);
     if (value.trim() === '') problems.push(`${locale}: empty value for ${key}`);
-    if (base.has(key) && placeholders(value) !== placeholders(base.get(key))) {
+    const ref = base.get(key.replace(PLURAL, ''))?.value;
+    if (ref !== undefined && placeholders(value) !== placeholders(ref)) {
       problems.push(`${locale}: placeholders of ${key} differ from ${reference}`);
     }
   }

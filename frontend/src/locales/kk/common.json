@@ -9,6 +9,70 @@
     "ru": "Русский",
     "en": "English"
   },
+  "theme": {
+    "label": "Көрініс",
+    "light": "Ашық",
+    "dark": "Қараңғы",
+    "system": "Жүйедегідей",
+    "switchToLight": "Ашық көрініске ауысу",
+    "switchToDark": "Қараңғы көрініске ауысу",
+    "switchToSystem": "Жүйедегі көріністі қолдану"
+  },
+  "actions": {
+    "close": "Жабу",
+    "cancel": "Бас тарту",
+    "confirm": "Растау",
+    "save": "Сақтау",
+    "undo": "Қайтару",
+    "remove": "Жою",
+    "search": "Іздеу",
+    "openMenu": "Мәзірді ашу",
+    "expandSidebar": "Бүйір панелін жаю",
+    "collapseSidebar": "Бүйір панелін жию",
+    "expandPanel": "Панельді жаю",
+    "collapsePanel": "Панельді жию",
+    "skipToContent": "Негізгі мазмұнға өту"
+  },
+  "nav": {
+    "main": "Негізгі навигация",
+    "home": "Басты бет",
+    "designSystem": "Дизайн-жүйе"
+  },
+  "field": {
+    "optional": "міндетті емес",
+    "counter": "{{value}} / {{max}}"
+  },
+  "presence": {
+    "online": "Желіде"
+  },
+  "avatars": {
+    "more_one": "Тағы {{count, number}} қатысушы",
+    "more_other": "Тағы {{count, number}} қатысушы"
+  },
+  "breadcrumbs": "Навигациялық тізбек",
+  "stepper": {
+    "done": "Аяқталды",
+    "current": "Ағымдағы қадам",
+    "todo": "Басталмаған",
+    "locked": "Қолжетімсіз"
+  },
+  "trend": {
+    "up": "Өсу",
+    "down": "Төмендеу",
+    "flat": "Өзгеріссіз"
+  },
+  "commandPalette": {
+    "title": "Командалар палитрасы",
+    "placeholder": "Бөлімді, жобаны немесе әрекетті табу…",
+    "empty": "Ештеңе табылмады",
+    "hintNavigate": "жылжу",
+    "hintSelect": "таңдау",
+    "hintClose": "жабу",
+    "groups": {
+      "navigation": "Өту",
+      "preferences": "Баптаулар"
+    }
+  },
   "status": {
     "title": "Платформа күйі",
     "apiOnline": "API қолжетімді",

@@ -9,6 +9,70 @@
     "ru": "Русский",
     "en": "English"
   },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "switchToLight": "Switch to light appearance",
+    "switchToDark": "Switch to dark appearance",
+    "switchToSystem": "Use the system appearance"
+  },
+  "actions": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "undo": "Undo",
+    "remove": "Remove",
+    "search": "Search",
+    "openMenu": "Open menu",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "expandPanel": "Expand panel",
+    "collapsePanel": "Collapse panel",
+    "skipToContent": "Skip to content"
+  },
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "designSystem": "Design system"
+  },
+  "field": {
+    "optional": "optional",
+    "counter": "{{value}} / {{max}}"
+  },
+  "presence": {
+    "online": "Online"
+  },
+  "avatars": {
+    "more_one": "{{count, number}} more member",
+    "more_other": "{{count, number}} more members"
+  },
+  "breadcrumbs": "Breadcrumb",
+  "stepper": {
+    "done": "Completed",
+    "current": "Current step",
+    "todo": "Not started",
+    "locked": "Locked"
+  },
+  "trend": {
+    "up": "Increase",
+    "down": "Decrease",
+    "flat": "No change"
+  },
+  "commandPalette": {
+    "title": "Command palette",
+    "placeholder": "Find a section, project or action…",
+    "empty": "Nothing found",
+    "hintNavigate": "navigate",
+    "hintSelect": "select",
+    "hintClose": "close",
+    "groups": {
+      "navigation": "Go to",
+      "preferences": "Preferences"
+    }
+  },
   "status": {
     "title": "Platform status",
     "apiOnline": "API is available",
