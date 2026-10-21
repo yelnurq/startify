@@ -1,0 +1,15 @@
+.git
+.github
+**/node_modules
+frontend/dist
+frontend/coverage
+frontend/playwright-report
+frontend/test-results
+backend/bin
+backend/coverage.*
+deploy/data
+docs
+*.md
+!frontend/**/*.md
+.env
+.env.*

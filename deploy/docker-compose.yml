@@ -1,0 +1,160 @@
+# Full Qadam stack for development and on-prem installation.
+#   make dev        # build and start everything
+#   make down       # stop
+# Values come from the repository-level .env (see .env.example).
+name: qadam
+
+x-backend-env: &backend-env
+  QADAM_ENV: ${QADAM_ENV:-development}
+  QADAM_APP_PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+  QADAM_APP_DEFAULT_LOCALE: ${DEFAULT_LOCALE:-kk}
+  QADAM_DATABASE_URL: postgres://qadam_app:${APP_DB_PASSWORD}@postgres:5432/qadam?sslmode=disable
+  QADAM_DATABASE_MIGRATE_URL: postgres://qadam:${POSTGRES_PASSWORD}@postgres:5432/qadam?sslmode=disable
+  QADAM_VALKEY_ADDR: valkey:6379
+  QADAM_LOG_LEVEL: ${LOG_LEVEL:-info}
+  QADAM_LOG_FORMAT: json
+  # Requests reach the API through the web container on the compose network.
+  QADAM_HTTP_TRUSTED_PROXIES: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qadam
+      POSTGRES_USER: qadam
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-54329}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qadam -d qadam"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes", "--save", "300", "10"]
+    volumes:
+      - valkey-data:/data
+    ports:
+      - "${VALKEY_PORT:-63799}:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # MinIO built from upstream sources by Chainguard (upstream publishes no images
+  # any more, see docs/DECISIONS.md). Pinned by digest; override with MINIO_IMAGE.
+  minio:
+    image: ${MINIO_IMAGE:-cgr.dev/chainguard/minio@sha256:32c504bea4574d8f29d719b37bc0dad920ecf3e22b81dc5cea0bb105af2ce10f}
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "${MINIO_PORT:-9900}:9000"
+      - "${MINIO_CONSOLE_PORT:-9901}:9001"
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    command: ["gotenberg", "--api-timeout=60s", "--chromium-auto-start=true"]
+    ports:
+      - "${GOTENBERG_PORT:-3300}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav-data:/var/lib/clamav
+    ports:
+      - "${CLAMAV_PORT:-33100}:3310"
+
+  # Catches every outgoing e-mail in development: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/docker/api.Dockerfile
+      args:
+        VERSION: ${VERSION:-0.1.0-dev}
+        COMMIT: ${COMMIT:-dev}
+        BUILT_AT: ${BUILT_AT:-unknown}
+    image: qadam/api:${VERSION:-dev}
+    command: ["/app/migrate", "up"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: qadam/api:${VERSION:-dev}
+    restart: unless-stopped
+    command: ["/app/api"]
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "/app/api", "healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    image: qadam/api:${VERSION:-dev}
+    restart: unless-stopped
+    command: ["/app/worker"]
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/app/worker", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/docker/web.Dockerfile
+    image: qadam/web:${VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-3000}:8080"
+
+volumes:
+  postgres-data:
+  valkey-data:
+  minio-data:
+  clamav-data:
