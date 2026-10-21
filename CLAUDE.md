@@ -1,0 +1,75 @@
+# CLAUDE.md — правила проекта Qadam
+
+Qadam — мультитенантная AI-платформа проектной и инновационной деятельности вуза
+(первый заказчик — КазУТБ им. К. Кулажанова). Полное ТЗ: `MASTER_PROMPT.md`.
+Ход работ по фазам: `docs/PROGRESS.md`. Архитектура: `docs/ARCHITECTURE.md`.
+Принятые решения: `docs/DECISIONS.md`. Отложенное: `docs/BACKLOG.md`.
+
+## Стек
+
+- **Backend**: Go 1.26, модульный монолит (`backend/internal/<module>`), chi v5,
+  OpenAPI-first (`backend/api/openapi.yaml`, OpenAPI 3.1 → oapi-codegen strict server),
+  PostgreSQL 17 + pgvector + pg_trgm, pgx v5 + sqlc (пакет на модуль), goose,
+  River (очередь на Postgres), Valkey, MinIO (S3), Gotenberg, ClamAV.
+- **Frontend**: React 19 + TypeScript 5.9 strict, Vite 8, TanStack Router (file-based,
+  `src/app/routes`) и Query, Tailwind v4 + собственная дизайн-система на Radix,
+  i18next (kk / ru / en), openapi-fetch с типами из `openapi.yaml`.
+- **Infra**: Docker Compose (`deploy/docker-compose.yml`), Nginx, GitHub Actions.
+
+## Команды
+
+```bash
+cp .env.example .env
+make dev            # весь стек в Docker → http://localhost:3000
+make infra          # только инфраструктура, затем make migrate / run-api / run-worker / run-web
+make gen            # oapi-codegen + sqlc (Docker) + openapi-typescript
+make lint           # golangci-lint, tsc, eslint, prettier, i18n:check
+make test           # go test (+ интеграционные на testcontainers) и vitest
+make e2e            # Playwright против запущенного стека
+```
+
+На Windows без `make`: команды из Makefile запускаются напрямую; race detector
+требует cgo, поэтому локально `go test ./...` (в CI — `-race`).
+
+## Порядок работы над фичей
+
+1. Сначала спецификация: `backend/api/openapi.yaml` и миграция `backend/db/migrations/NNNNN_*.sql`.
+2. `make gen` — сгенерированный код (`internal/apigen`, `internal/*/…db`, `frontend/src/shared/api/schema.gen.ts`) руками не правится.
+3. Реализация: сервис модуля → HTTP-хендлер (реализует методы `apigen.StrictServerInterface`) → регистрация в `internal/app/api.go`.
+4. Тесты вместе с кодом. Баг исправляется вместе с тестом, который его ловит.
+5. UI: экраны описываются в `docs/design/screens.md` до вёрстки; после вёрстки — скриншоты Playwright (светлая/тёмная, desktop/mobile) и визуальная проверка.
+
+## Конвенции API
+
+- Все пути под `/api/v1`. Ошибки — RFC 9457 (`application/problem+json`) со стабильным
+  `code` вида `module.reason` (`project.not_found`); фронтенд переводит `errors.<code>`.
+- Сервисы возвращают `*apperr.Error` (`internal/platform/apperr`); 400 — некорректный запрос,
+  422 — ошибки полей (`apperr.Validation`), 409/412 — конфликты и `If-Match`.
+- Курсорная пагинация: `?cursor=&limit=` → `{ items, next_cursor }`.
+- Создающие запросы принимают `Idempotency-Key`; изменяемые ресурсы отдают `ETag`, обновления требуют `If-Match`.
+- operationId — camelCase; тег OpenAPI = модуль.
+
+## База данных и изоляция тенантов
+
+- Первичные ключи — UUIDv7 (`uuid.NewV7()` в Go, `uuid_generate_v7()` в SQL).
+- Каждая бизнес-таблица: `tenant_id`, `created_at`, `updated_at` (триггер `set_updated_at`), при необходимости `deleted_at`.
+- Каждая таблица с `tenant_id` получает RLS-политику
+  `USING (tenant_id = app_current_tenant() OR app_is_system())` и тот же `WITH CHECK`.
+- Доступ к данным только внутри `db.Tx(ctx, …)` / `db.ReadTx`; запросы через `db.Conn(ctx)`.
+  Контекст несёт область: `db.WithTenant` (обычный запрос) или `db.WithSystem` (кросс-тенантные операции — редко и осознанно).
+- API и worker подключаются ролью `qadam_app` (без владения таблицами и BYPASSRLS); миграции — владельцем.
+- Модуль читает только свои таблицы (свои sqlc-запросы в `db/queries/<module>`); к чужим данным — через сервис другого модуля.
+
+## Frontend
+
+- Ни одной строки текста в JSX: только `t('…')` (ESLint `i18next/no-literal-string`). Ключи проверяются типами по `locales/ru`, полнота — `npm run i18n:check`. Казахский перевод — полноценный.
+- API-типы только сгенерированные (`schema.gen.ts`); вызовы через `api` + `unwrap` из `shared/api/client.ts`.
+- Серверное состояние — TanStack Query, локальное UI — Zustand (минимально).
+- Цвета, отступы, радиусы, тени — только токены дизайн-системы, никаких «магических» значений.
+
+## Качество и стиль
+
+- Conventional Commits, маленькие осмысленные коммиты. Ветка работ — `feat/qadam-platform`.
+- Нет `TODO` без задачи в `docs/BACKLOG.md`, нет закомментированного кода, нет секретов в репозитории (`.env.example` актуален).
+- Неочевидный выбор — вариант, который проще поддерживать on-prem в вузе, с записью в `docs/DECISIONS.md`.
+- Комментарии в коде — на английском; документация и тексты интерфейса — kk / ru / en.
