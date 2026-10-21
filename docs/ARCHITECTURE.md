@@ -35,14 +35,20 @@
   (Valkey), `httpx` (RFC 9457, middleware, Idempotency-Key), `health`, `metrics`
   (Prometheus), `telemetry` (OpenTelemetry), `migrate` (goose + River), `apperr` (доменные ошибки
   со стабильными кодами), `testpg` (Postgres в testcontainers для интеграционных тестов).
-- Доменные модули (`system`, далее `auth`, `tenant`, `user`, `project`, `incubator`, `evaluation`,
-  `showcase`, `competition`, `mentorship`, `analytics`, `certificate`, `notification`, `telegram`,
-  `ai`, `audit`, `files`, `webhooks`) устроены одинаково:
-  - `service.go` — бизнес-правила и проверки прав; зависит от интерфейсов;
-  - `store.go` — доступ к своим таблицам через собственный sqlc-пакет `<module>db`;
-  - `handler.go` — реализация операций своего тега OpenAPI (`apigen.StrictServerInterface`);
-  - фоновые задачи — River-воркеры модуля.
-- `app/` собирает модули: `api.go` — роутер и композиция хендлеров, `worker.go` — регистрация воркеров.
+  Платформенные пакеты фазы 2: `authz` (принципал и проверка ролей), `tenancy` (вуз запроса),
+  `secrets` (ключи HKDF из мастер-секрета, AES-GCM), `ratelimit` (GCRA на Valkey), `jobs`
+  (постановка задач River в транзакции), `pagination` (курсоры), `validate` (проверка полей).
+- Доменные модули устроены одинаково: пакет `internal/<module>` содержит `Service` (бизнес-правила
+  и проверки прав) и `Handler` (операции своего тега OpenAPI), доступ к своим таблицам — через
+  sqlc-пакет `internal/<module>/<module>db`, фоновые задачи — River-воркеры модуля.
+  Реализованы: `system`, `tenant` (определение вуза по адресу, настройки), `auth` (пароли, коды,
+  SSO, сессии, CSRF, отзыв), `user` (участник, профиль, онбординг, каталог участников), `org`
+  (факультеты, кафедры, группы), `files` (S3, ClamAV, аватары), `team` (доска «Ищу в команду»),
+  `imports` (CSV/XLSX), `audit`, `mail` (письма на трёх языках через очередь).
+  Далее: `ai`, `project`, `incubator`, `evaluation`, `showcase`, `competition`, `mentorship`,
+  `analytics`, `certificate`, `notification`, `telegram`, `webhooks`.
+- `app/` собирает модули: `api.go` — роутер и композиция хендлеров, `worker.go` — регистрация
+  воркеров и очередей (`default`, `mail`). `seed/` — демо-данные и тестовые фикстуры.
 
 Модули общаются через интерфейсы сервисов и доменные события, а не через чужие таблицы.
 
@@ -51,10 +57,25 @@
 1. `RequestID` (X-Request-ID, в логах), `ClientIP` (X-Forwarded-For только от доверенных прокси),
    `Recoverer` (panic → 500 problem), OpenTelemetry-спан с именем маршрута, метрика длительности
    по шаблону маршрута, access-лог, security-заголовки.
-2. Для `/api/v1`: таймаут контекста (кроме SSE), лимит тела, Idempotency-Key для POST.
+2. Для `/api/v1`: таймаут контекста (кроме SSE), лимит тела (больше для multipart-загрузок),
+   определение вуза по `Host` (точный домен → `<slug>.<base>` → вуз по умолчанию; область RLS
+   ставится в контекст), CSRF (`Sec-Fetch-Site`, `Origin`, double submit), аутентификация по
+   cookie `qadam_at` (JWT + проверка отзыва и версии ролей в Valkey), Idempotency-Key для POST
+   (ключи привязаны к участнику или IP).
 3. Сгенерированный роутер разбирает параметры, strict-хендлер декодирует тело в типы из спеки.
 4. Хендлер вызывает сервис; сервис открывает `db.Tx` с областью тенанта; ошибки — `*apperr.Error`.
 5. Ответ — типизированная структура из спеки или problem+json с локализуемым `code`.
+
+### Аутентификация и сессии
+
+- Вход: пароль (argon2id), код из письма (6 цифр, 10 минут, 5 попыток), SSO вуза по OIDC
+  (Authorization Code + PKCE, nonce, состояние в зашифрованной cookie). Регистрация — с согласием
+  на обработку данных конкретным вузом.
+- Сессия — строка `sessions`; access-токен (JWT, 15 мин) и ротируемый refresh-токен (30 дней) —
+  в httpOnly cookie. Повторное предъявление старого refresh-токена отзывает сессию. Отзыв и смена
+  ролей действуют немедленно (deny-list и версия ролей в Valkey). Подробно — D-022.
+- Письма (подтверждение почты, коды, сброс пароля, приглашения, отклики) ставятся задачей River в
+  транзакции бизнес-изменения; адрес и данные письма в таблице задач зашифрованы.
 
 ### Данные и изоляция тенантов
 
