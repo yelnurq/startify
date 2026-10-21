@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Қошқар мүйіз (ram's horns): two horns curling outwards above a diamond.
+       Upright and inverted copies form a diamond lattice. -->
+  <defs>
+    <g id="horns">
+      <path d="M24 34c-1.6-6.8-6.6-11.2-12.4-10.4c-5.4.8-7.8 6.8-4.6 10.8c2.4 3 7 2.6 8-.6c.7-2.3-1-4.4-3.2-4.1"/>
+      <path d="M24 34c1.6-6.8 6.6-11.2 12.4-10.4c5.4.8 7.8 6.8 4.6 10.8c-2.4 3-7 2.6-8-.6c-.7-2.3 1-4.4 3.2-4.1"/>
+      <path d="M24 34v4.5"/>
+      <path d="M21 41.5l3 3 3-3-3-3Z"/>
+    </g>
+  </defs>
+  <use href="#horns" transform="translate(0 -9)"/>
+  <use href="#horns" transform="translate(72 72) rotate(180) translate(-24 -33)"/>
+</svg>

@@ -60,6 +60,8 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run i18n:check
+      - name: Fonts cover the Kazakh alphabet
+        run: npm run fonts:check
       - run: npm test
       - run: npm run build
 

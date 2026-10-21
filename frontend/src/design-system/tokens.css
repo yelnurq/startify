@@ -1,0 +1,439 @@
+/*
+ * Qadam design tokens.
+ *
+ * Static scales live in @theme: they become utilities (bg-primary-500) and CSS
+ * variables that tenant branding can override at runtime. Semantic tokens live
+ * in @theme inline and point at --qd-* variables that the light and dark
+ * themes redefine, so a single class (bg-surface, text-fg-muted) works in both.
+ *
+ * Scales are generated in OKLCH by src/design-system/color.ts
+ * (node scripts/palette.ts prints them with their WCAG contrast).
+ */
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme static {
+  --font-sans:
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Geologica Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.08;
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1.04;
+
+  /* Sky blue of the flag: #00A3C4 ≈ 500. Text and white-label fills use 700 (5.3:1). */
+  --color-primary-50: #ebfbff;
+  --color-primary-100: #d5f6fe;
+  --color-primary-200: #b1ebfa;
+  --color-primary-300: #82daf1;
+  --color-primary-400: #4cc3e1;
+  --color-primary-500: #14a8c9;
+  --color-primary-600: #008ead;
+  --color-primary-700: #007591;
+  --color-primary-800: #005e76;
+  --color-primary-900: #004b60;
+  --color-primary-950: #003140;
+
+  /* Gold of the flag: fills, awards and highlights only, never text on white. */
+  --color-gold-50: #fbf9e5;
+  --color-gold-100: #f6f1ca;
+  --color-gold-200: #f1e19e;
+  --color-gold-300: #e8c962;
+  --color-gold-400: #f5b800;
+  --color-gold-500: #bf8f00;
+  --color-gold-600: #a57600;
+  --color-gold-700: #8d5f00;
+  --color-gold-800: #754b00;
+  --color-gold-900: #603900;
+  --color-gold-950: #402400;
+
+  --color-success-50: #edfded;
+  --color-success-100: #daf9db;
+  --color-success-200: #baf1be;
+  --color-success-300: #8fe29a;
+  --color-success-400: #5fcd76;
+  --color-success-500: #32b359;
+  --color-success-600: #009946;
+  --color-success-700: #007f3c;
+  --color-success-800: #006631;
+  --color-success-900: #005228;
+  --color-success-950: #003519;
+
+  --color-warning-50: #fff7e7;
+  --color-warning-100: #ffedcc;
+  --color-warning-200: #ffda9f;
+  --color-warning-300: #fac067;
+  --color-warning-400: #eca020;
+  --color-warning-500: #d08500;
+  --color-warning-600: #b36d00;
+  --color-warning-700: #985800;
+  --color-warning-800: #7d4400;
+  --color-warning-900: #673400;
+  --color-warning-950: #452000;
+
+  --color-danger-50: #fff5f4;
+  --color-danger-100: #ffe9e8;
+  --color-danger-200: #ffd4d1;
+  --color-danger-300: #ffb5b1;
+  --color-danger-400: #ff8b87;
+  --color-danger-500: #f85a5c;
+  --color-danger-600: #db3e45;
+  --color-danger-700: #bb2b34;
+  --color-danger-800: #991e27;
+  --color-danger-900: #7c161e;
+  --color-danger-950: #55070f;
+
+  --color-info-50: #f3f8ff;
+  --color-info-100: #e5f0ff;
+  --color-info-200: #cce2ff;
+  --color-info-300: #abceff;
+  --color-info-400: #81b3ff;
+  --color-info-500: #5595ff;
+  --color-info-600: #3979ee;
+  --color-info-700: #2e62cc;
+  --color-info-800: #264da9;
+  --color-info-900: #203d88;
+  --color-info-950: #12255f;
+
+  /* Cool neutrals around the brief's surface and text colours. */
+  --color-neutral-0: #ffffff;
+  --color-neutral-25: #fafbfc;
+  --color-neutral-50: #f4f6f9;
+  --color-neutral-100: #eef1f5;
+  --color-neutral-200: #e6e9ef;
+  --color-neutral-300: #d3d8e1;
+  --color-neutral-400: #a9b2c1;
+  --color-neutral-500: #8a94a6;
+  --color-neutral-600: #667085;
+  --color-neutral-700: #4a5568;
+  --color-neutral-800: #2b3445;
+  --color-neutral-900: #161d2b;
+  --color-neutral-950: #0b1220;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 28px;
+
+  --container-page: 80rem;
+  --container-wide: 90rem;
+  --container-prose: 42rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Slight overshoot for toggles and switches. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-in: fade-in 200ms var(--ease-out) both;
+  --animate-fade-out: fade-out 150ms ease-in both;
+  --animate-scale-in: scale-in 200ms var(--ease-out) both;
+  --animate-scale-out: scale-out 150ms ease-in both;
+  --animate-slide-in-right: slide-in-right 250ms var(--ease-out) both;
+  --animate-slide-out-right: slide-out-right 200ms ease-in both;
+  --animate-slide-in-left: slide-in-left 250ms var(--ease-out) both;
+  --animate-slide-out-left: slide-out-left 200ms ease-in both;
+  --animate-slide-up: slide-up 250ms var(--ease-out) both;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-pulse-ring: pulse-ring 2s var(--ease-out) infinite;
+  --animate-accordion-down: accordion-down 220ms var(--ease-out) both;
+  --animate-accordion-up: accordion-up 180ms var(--ease-out) both;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+  }
+  @keyframes scale-out {
+    to {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes slide-out-right {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes slide-out-left {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-success-500) 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 6px transparent;
+    }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--qd-bg);
+  --color-surface: var(--qd-surface);
+  --color-surface-raised: var(--qd-surface-raised);
+  --color-surface-sunken: var(--qd-surface-sunken);
+  --color-border: var(--qd-border);
+  --color-border-strong: var(--qd-border-strong);
+  --color-overlay: var(--qd-overlay);
+
+  --color-fg: var(--qd-fg);
+  --color-fg-muted: var(--qd-fg-muted);
+  --color-fg-subtle: var(--qd-fg-subtle);
+  --color-fg-faint: var(--qd-fg-faint);
+  --color-fg-inverse: var(--qd-fg-inverse);
+
+  --color-brand: var(--qd-brand);
+  --color-ring: var(--qd-ring);
+
+  --color-primary: var(--qd-primary);
+  --color-primary-hover: var(--qd-primary-hover);
+  --color-primary-fg: var(--qd-primary-fg);
+  --color-primary-soft: var(--qd-primary-soft);
+  --color-primary-soft-hover: var(--qd-primary-soft-hover);
+  --color-primary-soft-fg: var(--qd-primary-soft-fg);
+  --color-primary-text: var(--qd-primary-text);
+  --color-primary-border: var(--qd-primary-border);
+
+  --color-gold: var(--qd-gold);
+  --color-gold-fg: var(--qd-gold-fg);
+  --color-gold-soft: var(--qd-gold-soft);
+  --color-gold-soft-fg: var(--qd-gold-soft-fg);
+  --color-gold-border: var(--qd-gold-border);
+
+  --color-success: var(--qd-success);
+  --color-success-fg: var(--qd-success-fg);
+  --color-success-soft: var(--qd-success-soft);
+  --color-success-soft-fg: var(--qd-success-soft-fg);
+  --color-success-border: var(--qd-success-border);
+
+  --color-warning: var(--qd-warning);
+  --color-warning-fg: var(--qd-warning-fg);
+  --color-warning-soft: var(--qd-warning-soft);
+  --color-warning-soft-fg: var(--qd-warning-soft-fg);
+  --color-warning-border: var(--qd-warning-border);
+
+  --color-danger: var(--qd-danger);
+  --color-danger-hover: var(--qd-danger-hover);
+  --color-danger-fg: var(--qd-danger-fg);
+  --color-danger-soft: var(--qd-danger-soft);
+  --color-danger-soft-fg: var(--qd-danger-soft-fg);
+  --color-danger-border: var(--qd-danger-border);
+
+  --color-info: var(--qd-info);
+  --color-info-fg: var(--qd-info-fg);
+  --color-info-soft: var(--qd-info-soft);
+  --color-info-soft-fg: var(--qd-info-soft-fg);
+  --color-info-border: var(--qd-info-border);
+
+  /* Three elevation levels; in the dark theme they become borders and glow. */
+  --shadow-sm: var(--qd-shadow-sm);
+  --shadow-md: var(--qd-shadow-md);
+  --shadow-lg: var(--qd-shadow-lg);
+  /* Filled buttons: soft drop plus a top highlight. */
+  --shadow-button: var(--qd-shadow-button);
+}
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --qd-bg: #fafbfc;
+  --qd-surface: #ffffff;
+  --qd-surface-raised: #f4f6f9;
+  --qd-surface-sunken: #eef1f5;
+  --qd-border: #e6e9ef;
+  --qd-border-strong: #d3d8e1;
+  --qd-overlay: rgb(11 18 32 / 0.4);
+
+  --qd-fg: #0b1220;
+  --qd-fg-muted: #4a5568;
+  /* #8A94A6 from the brief has 2.95:1 on the background: icons and decoration
+     only. Small text uses #667085 (4.8:1). */
+  --qd-fg-subtle: #667085;
+  --qd-fg-faint: #8a94a6;
+  --qd-fg-inverse: #ffffff;
+
+  --qd-brand: var(--color-primary-500);
+  --qd-ring: var(--color-primary-500);
+
+  --qd-primary: var(--color-primary-700);
+  --qd-primary-hover: var(--color-primary-800);
+  --qd-primary-fg: #ffffff;
+  --qd-primary-soft: var(--color-primary-50);
+  --qd-primary-soft-hover: var(--color-primary-100);
+  --qd-primary-soft-fg: var(--color-primary-800);
+  --qd-primary-text: var(--color-primary-700);
+  --qd-primary-border: var(--color-primary-200);
+
+  --qd-gold: var(--color-gold-400);
+  --qd-gold-fg: #4d3600;
+  --qd-gold-soft: var(--color-gold-50);
+  --qd-gold-soft-fg: var(--color-gold-800);
+  --qd-gold-border: var(--color-gold-200);
+
+  --qd-success: var(--color-success-700);
+  --qd-success-fg: #ffffff;
+  --qd-success-soft: var(--color-success-50);
+  --qd-success-soft-fg: var(--color-success-800);
+  --qd-success-border: var(--color-success-200);
+
+  --qd-warning: var(--color-warning-400);
+  --qd-warning-fg: #3d1f00;
+  --qd-warning-soft: var(--color-warning-50);
+  --qd-warning-soft-fg: var(--color-warning-800);
+  --qd-warning-border: var(--color-warning-200);
+
+  --qd-danger: var(--color-danger-700);
+  --qd-danger-hover: var(--color-danger-800);
+  --qd-danger-fg: #ffffff;
+  --qd-danger-soft: var(--color-danger-50);
+  --qd-danger-soft-fg: var(--color-danger-800);
+  --qd-danger-border: var(--color-danger-200);
+
+  --qd-info: var(--color-info-700);
+  --qd-info-fg: #ffffff;
+  --qd-info-soft: var(--color-info-50);
+  --qd-info-soft-fg: var(--color-info-800);
+  --qd-info-border: var(--color-info-200);
+
+  --qd-shadow-sm: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.05);
+  --qd-shadow-md:
+    0 1px 2px -1px rgb(16 24 40 / 0.05), 0 6px 16px -4px rgb(16 24 40 / 0.08),
+    0 12px 28px -10px rgb(0 117 145 / 0.1);
+  --qd-shadow-lg:
+    0 2px 4px -2px rgb(16 24 40 / 0.05), 0 16px 32px -8px rgb(16 24 40 / 0.12),
+    0 32px 72px -16px rgb(0 117 145 / 0.18);
+  --qd-shadow-button: 0 1px 2px 0 rgb(16 24 40 / 0.1), inset 0 1px 0 0 rgb(255 255 255 / 0.16);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --qd-bg: #0a0d14;
+  --qd-surface: #111621;
+  --qd-surface-raised: #161c28;
+  --qd-surface-sunken: #0d1119;
+  --qd-border: #1e2533;
+  --qd-border-strong: #2a3243;
+  --qd-overlay: rgb(3 5 10 / 0.66);
+
+  --qd-fg: #e8ecf3;
+  --qd-fg-muted: #a3adbf;
+  --qd-fg-subtle: #7c879a;
+  --qd-fg-faint: #5a6478;
+  --qd-fg-inverse: #0b1220;
+
+  --qd-brand: var(--color-primary-400);
+  --qd-ring: var(--color-primary-400);
+
+  --qd-primary: var(--color-primary-400);
+  --qd-primary-hover: var(--color-primary-300);
+  --qd-primary-fg: #04141a;
+  --qd-primary-soft: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  --qd-primary-soft-hover: color-mix(in oklch, var(--color-primary-500) 22%, transparent);
+  --qd-primary-soft-fg: var(--color-primary-300);
+  --qd-primary-text: var(--color-primary-300);
+  --qd-primary-border: color-mix(in oklch, var(--color-primary-400) 34%, transparent);
+
+  --qd-gold: var(--color-gold-400);
+  --qd-gold-fg: #2e2000;
+  --qd-gold-soft: color-mix(in oklch, var(--color-gold-400) 13%, transparent);
+  --qd-gold-soft-fg: var(--color-gold-300);
+  --qd-gold-border: color-mix(in oklch, var(--color-gold-400) 32%, transparent);
+
+  --qd-success: var(--color-success-400);
+  --qd-success-fg: #03200e;
+  --qd-success-soft: color-mix(in oklch, var(--color-success-500) 14%, transparent);
+  --qd-success-soft-fg: var(--color-success-300);
+  --qd-success-border: color-mix(in oklch, var(--color-success-400) 30%, transparent);
+
+  --qd-warning: var(--color-warning-300);
+  --qd-warning-fg: #2e1600;
+  --qd-warning-soft: color-mix(in oklch, var(--color-warning-400) 14%, transparent);
+  --qd-warning-soft-fg: var(--color-warning-300);
+  --qd-warning-border: color-mix(in oklch, var(--color-warning-400) 30%, transparent);
+
+  --qd-danger: var(--color-danger-400);
+  --qd-danger-hover: var(--color-danger-300);
+  --qd-danger-fg: #2a0508;
+  --qd-danger-soft: color-mix(in oklch, var(--color-danger-500) 14%, transparent);
+  --qd-danger-soft-fg: var(--color-danger-300);
+  --qd-danger-border: color-mix(in oklch, var(--color-danger-400) 30%, transparent);
+
+  --qd-info: var(--color-info-400);
+  --qd-info-fg: #061433;
+  --qd-info-soft: color-mix(in oklch, var(--color-info-500) 14%, transparent);
+  --qd-info-soft-fg: var(--color-info-300);
+  --qd-info-border: color-mix(in oklch, var(--color-info-400) 30%, transparent);
+
+  --qd-shadow-sm: 0 0 0 1px rgb(255 255 255 / 0.03);
+  --qd-shadow-md: 0 0 0 1px rgb(255 255 255 / 0.05), 0 10px 28px -10px rgb(0 0 0 / 0.55);
+  --qd-shadow-lg:
+    0 0 0 1px rgb(255 255 255 / 0.07), 0 28px 72px -18px rgb(0 0 0 / 0.7),
+    0 0 64px -28px color-mix(in oklch, var(--color-primary-400) 45%, transparent);
+  --qd-shadow-button: inset 0 1px 0 0 rgb(255 255 255 / 0.28);
+}

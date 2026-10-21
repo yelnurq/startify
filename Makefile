@@ -86,7 +86,7 @@ lint-backend:
 	cd backend && $(GO_TOOL) golangci-lint run ./...
 
 lint-frontend:
-	cd frontend && npx tsc -b && npm run lint && npm run format:check && npm run i18n:check
+	cd frontend && npx tsc -b && npm run lint && npm run format:check && npm run i18n:check && npm run fonts:check
 
 test: test-backend test-frontend ## Run unit and integration tests (integration tests need Docker)
 

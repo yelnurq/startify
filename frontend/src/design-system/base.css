@@ -1,0 +1,143 @@
+@layer base {
+  html {
+    background-color: var(--qd-bg);
+    color: var(--qd-fg);
+    font-family: var(--font-sans);
+    font-feature-settings:
+      'cv11' 1,
+      'ss03' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.018em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-primary-400) 32%, transparent);
+  }
+
+  /* One focus style for every interactive element; only for keyboard focus. */
+  :focus-visible {
+    outline: 2px solid var(--qd-ring);
+    outline-offset: 2px;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Set for one frame while the theme switches (see theme.ts). */
+  .theme-switching,
+  .theme-switching * {
+    transition: none !important;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--qd-border-strong) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Display typography for hero and page titles (Geologica). */
+@utility font-display {
+  font-family: var(--font-display);
+  font-feature-settings: normal;
+  letter-spacing: -0.028em;
+}
+
+/* Frosted surface for sticky bars and overlays over content. */
+@utility surface-glass {
+  background-color: color-mix(in oklch, var(--qd-surface) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+
+/* Barely visible national ornament (қошқар мүйіз), coloured by the brand token. */
+@utility ornament {
+  background-color: var(--qd-brand);
+  mask-image: url('./assets/ornament.svg');
+  mask-size: 96px 96px;
+  mask-repeat: repeat;
+}
+
+/* The ornament fading out from the top edge: for hero sections. */
+@utility ornament-fade {
+  background-color: var(--qd-brand);
+  mask-image:
+    url('./assets/ornament.svg'),
+    radial-gradient(ellipse 75% 85% at 50% 0%, #000 25%, transparent 75%);
+  mask-size:
+    96px 96px,
+    100% 100%;
+  mask-repeat: repeat, no-repeat;
+  mask-composite: intersect;
+}
+
+/* Animated placeholder gradient used by skeletons. */
+@utility shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--qd-surface-sunken) 0%,
+    var(--qd-surface-raised) 40%,
+    var(--qd-surface-sunken) 80%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Palette of the illustration set; every illustration adapts to the theme. */
+@layer components {
+  .illustration {
+    --il-ink: var(--color-neutral-700);
+    --il-line: var(--color-neutral-300);
+    --il-paper: #ffffff;
+    --il-tint: var(--color-primary-100);
+    --il-tint-soft: var(--color-primary-50);
+    --il-brand: var(--color-primary-500);
+    --il-brand-deep: var(--color-primary-700);
+    --il-gold: var(--color-gold-400);
+    --il-gold-soft: var(--color-gold-100);
+    --il-soft: var(--color-neutral-100);
+    --il-success: var(--color-success-500);
+  }
+
+  [data-theme='dark'] .illustration {
+    --il-ink: var(--color-neutral-300);
+    --il-line: var(--color-neutral-700);
+    --il-paper: #161c28;
+    --il-tint: color-mix(in oklch, var(--color-primary-500) 20%, #111621);
+    --il-tint-soft: color-mix(in oklch, var(--color-primary-500) 10%, #111621);
+    --il-brand: var(--color-primary-400);
+    --il-brand-deep: var(--color-primary-300);
+    --il-gold-soft: color-mix(in oklch, var(--color-gold-400) 22%, #111621);
+    --il-soft: #1e2533;
+    --il-success: var(--color-success-400);
+  }
+}
