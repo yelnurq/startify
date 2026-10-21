@@ -74,7 +74,8 @@ jobs:
       - name: Start the stack
         run: |
           cp .env.example .env
-          docker compose --env-file .env -f deploy/docker-compose.yml up -d --build --wait api worker web
+          docker compose --env-file .env -f deploy/docker-compose.yml up -d --build --wait api worker web mailpit
+          docker compose --env-file .env -f deploy/docker-compose.yml run --rm --no-deps api /app/seed
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -87,6 +88,7 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:3000
+          MAILPIT_URL: http://localhost:8025
         run: npx playwright test
       - name: Service logs
         if: failure()

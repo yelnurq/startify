@@ -23,7 +23,7 @@ help: ## Show this help
 	@echo "No .env file: run 'cp .env.example .env' first." >&2; exit 1
 
 # ── Stack ──────────────────────────────────────────────────────────────────
-.PHONY: dev down logs ps infra
+.PHONY: dev down logs ps infra seed
 dev: .env ## Build and start the whole stack in Docker (web on http://localhost:$WEB_PORT)
 	$(COMPOSE) up -d --build
 	$(COMPOSE) up -d --wait api worker web
@@ -44,6 +44,9 @@ ps: ## Show the state of every service
 
 infra: .env ## Start only infrastructure, for running api/worker/web natively
 	$(COMPOSE) up -d --wait postgres valkey minio gotenberg mailpit
+
+seed: .env ## Load demo data into the running stack (KazUTB, demo accounts)
+	$(COMPOSE) run --rm --no-deps api /app/seed
 
 # ── Native development (after `make infra`) ────────────────────────────────
 .PHONY: migrate migrate-down migrate-status run-api run-worker run-web

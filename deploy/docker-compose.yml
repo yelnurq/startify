@@ -15,6 +15,20 @@ x-backend-env: &backend-env
   QADAM_LOG_FORMAT: json
   # Requests reach the API through the web container on the compose network.
   QADAM_HTTP_TRUSTED_PROXIES: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+  QADAM_AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?set AUTH_SECRET_KEY in .env}
+  # kazutb.localhost serves KazUTB; the bare host serves the default university.
+  QADAM_TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-localhost}
+  QADAM_TENANT_DEFAULT: ${TENANT_DEFAULT:-kazutb}
+  QADAM_SMTP_HOST: ${SMTP_HOST:-mailpit}
+  QADAM_SMTP_PORT: ${SMTP_PORT:-1025}
+  QADAM_SMTP_TLS: ${SMTP_TLS:-none}
+  QADAM_SMTP_USERNAME: ${SMTP_USERNAME:-}
+  QADAM_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  QADAM_S3_ENDPOINT: ${S3_ENDPOINT:-minio:9000}
+  QADAM_S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  QADAM_S3_SECRET_KEY: ${S3_SECRET_KEY}
+  QADAM_FILES_SCAN: ${FILES_SCAN:-optional}
+  QADAM_FILES_CLAMAV_ADDR: clamav:3310
 
 services:
   postgres:
@@ -119,6 +133,8 @@ services:
         condition: service_completed_successfully
       valkey:
         condition: service_healthy
+      minio:
+        condition: service_started
     ports:
       - "${API_PORT:-8080}:8080"
     healthcheck:
@@ -135,6 +151,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      minio:
+        condition: service_started
     healthcheck:
       test: ["CMD", "/app/worker", "healthcheck"]
       interval: 10s
