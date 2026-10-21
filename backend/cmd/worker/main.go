@@ -67,11 +67,15 @@ func run() error {
 	}
 	defer database.Close()
 
-	worker := &app.Worker{Config: cfg, DB: database}
+	worker := &app.Worker{Config: cfg, DB: database, Log: log}
+	workers, err := worker.Workers(ctx)
+	if err != nil {
+		return err
+	}
 	client, err := river.NewClient(riverpgxv5.New(database.Pool()), &river.Config{
 		Logger:       log,
-		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: cfg.Worker.Concurrency}},
-		Workers:      worker.Workers(),
+		Queues:       worker.Queues(),
+		Workers:      workers,
 		PeriodicJobs: worker.PeriodicJobs(),
 	})
 	if err != nil {

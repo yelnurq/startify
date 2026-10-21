@@ -34,14 +34,117 @@ overrides:
         go_type: encoding/json.RawMessage
       - db_type: citext
         go_type: string
+      - db_type: citext
+        nullable: true
+        go_type:
+          type: string
+          pointer: true
+      - db_type: inet
+        go_type:
+          import: net/netip
+          type: Addr
+      - db_type: inet
+        nullable: true
+        go_type:
+          import: net/netip
+          type: Addr
+          pointer: true
 sql:
   - engine: postgresql
     schema: db/migrations
     queries: db/queries/platform
     gen:
-      go: &go
+      go:
         package: platformdb
         out: internal/platform/platformdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/tenant
+    gen:
+      go:
+        package: tenantdb
+        out: internal/tenant/tenantdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/auth
+    gen:
+      go:
+        package: authdb
+        out: internal/auth/authdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/user
+    gen:
+      go:
+        package: userdb
+        out: internal/user/userdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/org
+    gen:
+      go:
+        package: orgdb
+        out: internal/org/orgdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/files
+    gen:
+      go:
+        package: filesdb
+        out: internal/files/filesdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/audit
+    gen:
+      go:
+        package: auditdb
+        out: internal/audit/auditdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/imports
+    gen:
+      go:
+        package: importsdb
+        out: internal/imports/importsdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/team
+    gen:
+      go:
+        package: teamdb
+        out: internal/team/teamdb
         sql_package: pgx/v5
         emit_empty_slices: true
         emit_pointers_for_null_types: true

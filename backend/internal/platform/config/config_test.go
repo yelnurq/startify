@@ -9,6 +9,10 @@ import (
 func validEnviron() []string {
 	return []string{
 		"QADAM_DATABASE_URL=postgres://qadam_app:secret@localhost:5432/qadam",
+		"QADAM_AUTH_SECRET_KEY=test-secret-key-with-enough-length-0123456789",
+		"QADAM_S3_ENDPOINT=localhost:9000",
+		"QADAM_S3_ACCESS_KEY=qadam",
+		"QADAM_S3_SECRET_KEY=qadam-secret",
 		"PATH=/usr/bin",
 	}
 }
@@ -87,6 +91,31 @@ func TestProductionRequiresHTTPS(t *testing.T) {
 	_, err := FromEnviron(append(validEnviron(), "QADAM_ENV=production", "QADAM_APP_PUBLIC_URL=http://qadam.kz"))
 	if err == nil || !strings.Contains(err.Error(), "https") {
 		t.Fatalf("expected https error, got %v", err)
+	}
+}
+
+func TestProductionHardening(t *testing.T) {
+	env := append(validEnviron(),
+		"QADAM_ENV=production",
+		"QADAM_APP_PUBLIC_URL=https://qadam.kz",
+		"QADAM_AUTH_SECRET_KEY=dev-only-secret-change-me-please-0123456789",
+		"QADAM_FILES_SCAN=optional",
+	)
+	_, err := FromEnviron(env)
+	if err == nil {
+		t.Fatal("expected production hardening errors")
+	}
+	for _, want := range []string{"QADAM_AUTH_SECRET_KEY looks like a development value", "QADAM_SMTP_HOST", "QADAM_FILES_SCAN must be required"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error should mention %q, got: %v", want, err)
+		}
+	}
+}
+
+func TestSecretKeyLength(t *testing.T) {
+	_, err := FromEnviron(append(validEnviron(), "QADAM_AUTH_SECRET_KEY=short"))
+	if err == nil || !strings.Contains(err.Error(), "at least 32") {
+		t.Fatalf("expected secret length error, got %v", err)
 	}
 }
 

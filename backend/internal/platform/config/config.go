@@ -40,6 +40,60 @@ type Config struct {
 	Log      Log      `koanf:"log"`
 	OTel     OTel     `koanf:"otel"`
 	Worker   Worker   `koanf:"worker"`
+	Tenant   Tenant   `koanf:"tenant"`
+	Auth     Auth     `koanf:"auth"`
+	SMTP     SMTP     `koanf:"smtp"`
+	S3       S3       `koanf:"s3"`
+	Files    Files    `koanf:"files"`
+}
+
+// Tenant configures how host names map to universities.
+type Tenant struct {
+	// BaseDomain: "kazutb.<base>" resolves to the tenant with slug "kazutb".
+	BaseDomain string `koanf:"base_domain"`
+	// Default is the tenant served on the bare base domain and unknown hosts
+	// (development and single-university installations). Empty disables it.
+	Default string `koanf:"default"`
+}
+
+// Auth configures sessions.
+type Auth struct {
+	// SecretKey is the master secret; the keys for access tokens, one-time
+	// codes and encryption of stored secrets are derived from it (HKDF).
+	SecretKey  string        `koanf:"secret_key"`
+	AccessTTL  time.Duration `koanf:"access_ttl"`
+	RefreshTTL time.Duration `koanf:"refresh_ttl"`
+}
+
+// SMTP configures outgoing e-mail. An empty host disables delivery: letters are logged.
+type SMTP struct {
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Username string `koanf:"username"`
+	Password string `koanf:"password"`
+	From     string `koanf:"from"`
+	FromName string `koanf:"from_name"`
+	// TLS is none, starttls or tls.
+	TLS string `koanf:"tls"`
+}
+
+// S3 configures the object storage for uploaded and generated files.
+type S3 struct {
+	Endpoint  string `koanf:"endpoint"`
+	AccessKey string `koanf:"access_key"`
+	SecretKey string `koanf:"secret_key"`
+	Bucket    string `koanf:"bucket"`
+	Region    string `koanf:"region"`
+	UseSSL    bool   `koanf:"use_ssl"`
+}
+
+// Files configures upload checks.
+type Files struct {
+	// Scan is required (reject uploads when ClamAV is unavailable), optional
+	// (scan when reachable) or off.
+	Scan       string `koanf:"scan"`
+	ClamAVAddr string `koanf:"clamav_addr"`
+	MaxBytes   int64  `koanf:"max_bytes"`
 }
 
 // App holds product-level settings.
@@ -128,6 +182,18 @@ func defaults() map[string]any {
 		"otel.sample_ratio":        1.0,
 		"worker.addr":              ":8081",
 		"worker.concurrency":       20,
+		"tenant.base_domain":       "localhost",
+		"tenant.default":           "",
+		"auth.access_ttl":          "15m",
+		"auth.refresh_ttl":         "720h",
+		"smtp.port":                1025,
+		"smtp.from":                "no-reply@qadam.kz",
+		"smtp.from_name":           "Qadam",
+		"smtp.tls":                 "none",
+		"s3.bucket":                "qadam",
+		"s3.region":                "us-east-1",
+		"files.scan":               "optional",
+		"files.max_bytes":          25 << 20,
 	}
 }
 
@@ -275,6 +341,49 @@ func (c *Config) Validate() error {
 	}
 	if c.Worker.Concurrency < 1 || c.Worker.Concurrency > 500 {
 		fail("QADAM_WORKER_CONCURRENCY must be within [1, 500]")
+	}
+
+	if strings.TrimSpace(c.Tenant.BaseDomain) == "" {
+		fail("QADAM_TENANT_BASE_DOMAIN is required")
+	}
+
+	if len(c.Auth.SecretKey) < 32 {
+		fail("QADAM_AUTH_SECRET_KEY must be at least 32 characters (openssl rand -base64 48)")
+	} else if c.Env == EnvProduction && strings.Contains(strings.ToLower(c.Auth.SecretKey), "dev") {
+		fail("QADAM_AUTH_SECRET_KEY looks like a development value; generate a new one for production")
+	}
+	if c.Auth.AccessTTL < time.Minute || c.Auth.AccessTTL > time.Hour {
+		fail("QADAM_AUTH_ACCESS_TTL must be within [1m, 1h]")
+	}
+	if c.Auth.RefreshTTL < time.Hour || c.Auth.RefreshTTL > 90*24*time.Hour {
+		fail("QADAM_AUTH_REFRESH_TTL must be within [1h, 2160h]")
+	}
+
+	if !slices.Contains([]string{"none", "starttls", "tls"}, c.SMTP.TLS) {
+		fail("QADAM_SMTP_TLS must be none, starttls or tls, got %q", c.SMTP.TLS)
+	}
+	if c.Env == EnvProduction && c.SMTP.Host == "" {
+		fail("QADAM_SMTP_HOST is required in production")
+	}
+
+	if c.Env != EnvTest && (c.S3.Endpoint == "" || c.S3.AccessKey == "" || c.S3.SecretKey == "") {
+		fail("QADAM_S3_ENDPOINT, QADAM_S3_ACCESS_KEY and QADAM_S3_SECRET_KEY are required")
+	}
+	if c.S3.Bucket == "" {
+		fail("QADAM_S3_BUCKET is required")
+	}
+
+	if !slices.Contains([]string{"required", "optional", "off"}, c.Files.Scan) {
+		fail("QADAM_FILES_SCAN must be required, optional or off, got %q", c.Files.Scan)
+	}
+	if c.Files.Scan == "required" && c.Files.ClamAVAddr == "" {
+		fail("QADAM_FILES_CLAMAV_ADDR is required when QADAM_FILES_SCAN=required")
+	}
+	if c.Env == EnvProduction && c.Files.Scan != "required" {
+		fail("QADAM_FILES_SCAN must be required in production")
+	}
+	if c.Files.MaxBytes < 1<<20 || c.Files.MaxBytes > 200<<20 {
+		fail("QADAM_FILES_MAX_BYTES must be within [1 MiB, 200 MiB]")
 	}
 
 	if len(errs) > 0 {

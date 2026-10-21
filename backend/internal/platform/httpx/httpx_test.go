@@ -3,6 +3,7 @@ package httpx
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -73,7 +74,7 @@ func TestWriteErrorValidationAndRetryAfter(t *testing.T) {
 }
 
 func TestMaxBodyProducesTooLarge(t *testing.T) {
-	h := MaxBody(1024)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := MaxBody(1024, 8192)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := make([]byte, 4096)
 		_, err := r.Body.Read(buf)
 		for err == nil {
@@ -86,6 +87,19 @@ func TestMaxBodyProducesTooLarge(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if p := decodeProblem(t, rec); p.Status != http.StatusRequestEntityTooLarge || p.Code != "request.too_large" {
 		t.Fatalf("unexpected problem: %+v", p)
+	}
+}
+
+func TestMaxBodyAllowsLargerUploads(t *testing.T) {
+	var read int64
+	h := MaxBody(1024, 8192)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		read, _ = io.Copy(io.Discard, r.Body)
+	}))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("x", 4096)))
+	req.Header.Set("Content-Type", "multipart/form-data; boundary=x")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+	if read != 4096 {
+		t.Fatalf("multipart body cut at %d bytes", read)
 	}
 }
 

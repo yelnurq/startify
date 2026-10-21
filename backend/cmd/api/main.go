@@ -70,9 +70,13 @@ func run() error {
 	defer func() { _ = valkey.Close() }()
 
 	api := &app.API{Config: cfg, Log: log, DB: database, Cache: valkey, Metrics: metrics.New()}
+	handler, _, err := api.Handler(ctx)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:              cfg.HTTP.Addr,
-		Handler:           api.Handler(),
+		Handler:           handler,
 		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		IdleTimeout:       cfg.HTTP.IdleTimeout,

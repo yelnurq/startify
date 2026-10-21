@@ -1,28 +1,51 @@
 openapi: 3.1.0
 info:
   title: Qadam API
-  version: 0.1.0
+  version: 0.2.0
   summary: AI-платформа инновационной и проектной деятельности университета.
   description: |
     Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
     Demo Day и выходу на рынок, а руководству вуза даёт измеримые результаты.
 
     ## Conventions
-    - Every path is served under `/api/v1`.
+    - Every path is served under `/api/v1`. The tenant (university) is resolved from the
+      host name: `kazutb.qadam.kz` or a custom domain of the university.
+    - Authentication uses an httpOnly session cookie (`qadam_at`) refreshed with
+      `POST /auth/refresh`. State-changing requests must echo the `qadam_csrf` cookie in the
+      `X-CSRF-Token` header.
     - Errors use RFC 9457 Problem Details (`application/problem+json`) with a stable,
       localisable `code` (for example `auth.invalid_credentials`).
     - Collections use cursor pagination: pass `cursor` from `next_cursor` of the previous page.
     - Creating requests accept an `Idempotency-Key` header; a repeated key replays the
       original response (`Idempotent-Replayed: true`).
-    - Optimistic locking: resources return an `ETag`; updates must send `If-Match`.
+    - Optimistic locking: shared editable resources return an `ETag`; an update sent with
+      `If-Match` fails with 412 `precondition.failed` when the resource changed meanwhile.
   contact:
     name: Qadam
     url: https://qadam.kz
 servers:
   - url: /api/v1
+security:
+  - cookieAuth: []
 tags:
   - name: system
     description: Platform metadata and service information.
+  - name: tenant
+    description: The university the request is addressed to.
+  - name: auth
+    description: Registration, sign-in (password, e-mail code, SSO), sessions.
+  - name: me
+    description: The signed-in user, onboarding and profile.
+  - name: profiles
+    description: Public profiles.
+  - name: files
+    description: Uploaded files.
+  - name: structure
+    description: Faculties, departments and study groups of the university.
+  - name: team
+    description: The "looking for teammates" board.
+  - name: admin
+    description: University administration (tenant administrators).
 paths:
   /meta:
     get:
@@ -40,8 +63,912 @@ paths:
                 $ref: "#/components/schemas/Meta"
         default:
           $ref: "#/components/responses/Problem"
+
+  /tenant:
+    get:
+      operationId: getCurrentTenant
+      tags: [tenant]
+      summary: The university of this host
+      description: Public branding, sign-up rules and SSO providers, needed before sign-in.
+      security: []
+      responses:
+        "200":
+          description: The tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/session:
+    get:
+      operationId: getSession
+      tags: [auth]
+      summary: Current session
+      description: The signed-in user and their membership in this university, or 401 `auth.unauthenticated`.
+      responses:
+        "200":
+          description: Active session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register with e-mail and password
+      description: |
+        Creates the account and a student membership, signs in and e-mails a verification link.
+        Errors: `auth.email_taken` (409), `auth.signup_disabled` and `auth.email_domain_not_allowed` (403),
+        `auth.consent_required`, `auth.password_weak` (422).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registered and signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with e-mail and password
+      description: "Errors: `auth.invalid_credentials` (401), `auth.too_many_attempts` (429)."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/otp/request:
+    post:
+      operationId: requestLoginCode
+      tags: [auth]
+      summary: E-mail a one-time sign-in code
+      description: Always answers 202 so that the response does not reveal whether the address is registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "202":
+          description: If the address is registered, a code is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/otp/verify:
+    post:
+      operationId: verifyLoginCode
+      tags: [auth]
+      summary: Sign in with the e-mailed code
+      description: "Errors: `auth.code_invalid` (401), `auth.too_many_attempts` (429)."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCodeRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/refresh:
+    post:
+      operationId: refreshSession
+      tags: [auth]
+      summary: Rotate the session tokens
+      description: |
+        Uses the refresh cookie. Every refresh rotates the refresh token; presenting an already
+        rotated token revokes the whole session (`auth.session_revoked`).
+      security: []
+      responses:
+        "204":
+          description: New session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out of this session
+      security: []
+      responses:
+        "204":
+          description: Signed out; session cookies are cleared.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/sessions:
+    get:
+      operationId: listSessions
+      tags: [auth]
+      summary: Active sessions of the user
+      responses:
+        "200":
+          description: Sessions, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SessionInfo"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: revokeAllSessions
+      tags: [auth]
+      summary: Sign out everywhere
+      description: Revokes every session of the user, including this one.
+      responses:
+        "204":
+          description: All sessions revoked; cookies are cleared.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      tags: [auth]
+      summary: Revoke one session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session revoked.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/email/verify:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Confirm the e-mail address with the token from the letter
+      description: "Errors: `auth.token_invalid` (400)."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "204":
+          description: Address confirmed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/email/resend:
+    post:
+      operationId: resendVerificationEmail
+      tags: [auth]
+      summary: Send the verification letter again
+      responses:
+        "202":
+          description: A new letter is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: E-mail a password reset link
+      description: Always answers 202 so that the response does not reveal whether the address is registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "202":
+          description: If the address is registered, a link is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Set a new password with the token from the letter
+      description: Revokes every session of the user. Errors `auth.token_invalid`, `auth.password_weak`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "204":
+          description: Password changed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password:
+    put:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change the password
+      description: Other sessions are revoked. Errors `auth.password_incorrect`, `auth.password_weak`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeRequest"
+      responses:
+        "204":
+          description: Password changed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/oidc/{providerId}/start:
+    get:
+      operationId: startOidc
+      tags: [auth]
+      summary: Start single sign-on with the university identity provider
+      security: []
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: redirect
+          in: query
+          required: false
+          description: Path inside the application to return to after sign-in.
+          schema:
+            type: string
+            maxLength: 512
+      responses:
+        "302":
+          description: Redirect to the identity provider.
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/oidc/{providerId}/callback:
+    get:
+      operationId: completeOidc
+      tags: [auth]
+      summary: Return from the identity provider
+      security: []
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: error
+          in: query
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect into the application, signed in (or to the sign-in page with an error).
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: The signed-in user with membership and profile
+      responses:
+        "200":
+          description: The user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateMe
+      tags: [me]
+      summary: Update name and interface language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeUpdate"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/onboarding:
+    put:
+      operationId: completeOnboarding
+      tags: [me]
+      summary: Finish onboarding
+      description: Stores language, place of study, interests and skills; marks the membership as onboarded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingRequest"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/profile:
+    put:
+      operationId: updateProfile
+      tags: [me]
+      summary: Update the profile
+      description: "Errors: `profile.slug_taken` (409)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/avatar:
+    put:
+      operationId: uploadAvatar
+      tags: [me]
+      summary: Upload a profile photo
+      description: |
+        JPEG, PNG or WebP up to 5 MB. The image is checked for malware, re-encoded (metadata
+        such as GPS position is removed) and scaled to 512 px. Errors: `files.too_large` (413),
+        `files.unsupported_type`, `files.infected` (422), `files.scanner_unavailable` (503).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteAvatar
+      tags: [me]
+      summary: Remove the profile photo
+      responses:
+        "204":
+          description: Photo removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /profiles/{slug}:
+    get:
+      operationId: getPublicProfile
+      tags: [profiles]
+      summary: Public profile
+      description: Available when the owner made the profile public; otherwise 404 `profile.not_found`.
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProfile"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /files/{fileId}/content:
+    get:
+      operationId: getFileContent
+      tags: [files]
+      summary: Download a file
+      description: Public files (avatars, covers) are available to everyone, others only to permitted users.
+      security: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The file content.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /faculties:
+    get:
+      operationId: listFaculties
+      tags: [structure]
+      summary: Faculties with their departments
+      security: []
+      responses:
+        "200":
+          description: Faculties sorted by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Faculty"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /study-groups:
+    get:
+      operationId: listStudyGroups
+      tags: [structure]
+      summary: Study groups
+      parameters:
+        - name: faculty_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: department_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          description: Prefix of the group code, e.g. `ВТиПО-23`.
+          schema:
+            type: string
+            maxLength: 40
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Matching groups.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StudyGroup"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests:
+    get:
+      operationId: listTeamRequests
+      tags: [team]
+      summary: Open requests for teammates
+      parameters:
+        - name: q
+          in: query
+          description: Full-text search in title, description and skills.
+          schema:
+            type: string
+            maxLength: 120
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/TeamRole"
+        - name: skill
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: mine
+          in: query
+          description: Only requests of the signed-in user, including closed ones.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequestPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createTeamRequest
+      tags: [team]
+      summary: Publish a request for teammates
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamRequestCreate"
+      responses:
+        "201":
+          description: The request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests/{requestId}:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    get:
+      operationId: getTeamRequest
+      tags: [team]
+      summary: One request
+      responses:
+        "200":
+          description: The request.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateTeamRequest
+      tags: [team]
+      summary: Edit or close a request
+      description: Only the author (or a moderator) may change a request.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamRequestUpdate"
+      responses:
+        "200":
+          description: The updated request.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests/{requestId}/responses:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    get:
+      operationId: listTeamResponses
+      tags: [team]
+      summary: Replies to a request
+      description: The author (and moderators) see every reply with the responder's e-mail; others see only their own.
+      responses:
+        "200":
+          description: Replies, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TeamResponse"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: respondToTeamRequest
+      tags: [team]
+      summary: Reply to a request
+      description: "Errors: `team.own_request`, `team.already_responded` (409), `team.closed`."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamResponseCreate"
+      responses:
+        "201":
+          description: The reply.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/members:
+    get:
+      operationId: listMembers
+      tags: [admin]
+      summary: Members of the university
+      description: Requires the `tenant_admin` or `innovation_manager` role.
+      parameters:
+        - name: q
+          in: query
+          description: Search by name or e-mail.
+          schema:
+            type: string
+            maxLength: 120
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: faculty_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of members sorted by name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/members/{userId}:
+    patch:
+      operationId: updateMember
+      tags: [admin]
+      summary: Change roles or status of a member
+      description: Requires `tenant_admin`. An administrator cannot remove their own administrator role.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: The updated member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports:
+    post:
+      operationId: createImport
+      tags: [admin]
+      summary: Upload a CSV or XLSX file for import
+      description: |
+        Parses and validates the file and returns a preview; nothing is written until the
+        import is committed. Requires `tenant_admin`. Errors: `import.invalid_file`,
+        `import.unknown_columns`, `files.too_large`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind:
+                  $ref: "#/components/schemas/ImportKind"
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: The import preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports/{importId}:
+    get:
+      operationId: getImport
+      tags: [admin]
+      summary: An import and its preview
+      parameters:
+        - $ref: "#/components/parameters/ImportId"
+      responses:
+        "200":
+          description: The import.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports/{importId}/commit:
+    post:
+      operationId: commitImport
+      tags: [admin]
+      summary: Apply a previewed import
+      description: |
+        Valid rows are written; invalid rows are skipped. New students receive an invitation
+        letter. Errors: `import.already_committed` (409).
+      parameters:
+        - $ref: "#/components/parameters/ImportId"
+      responses:
+        "200":
+          description: The outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: qadam_at
+      description: |
+        Short-lived access token set by sign-in. State-changing requests also need the
+        `X-CSRF-Token` header equal to the `qadam_csrf` cookie.
+  headers:
+    ETag:
+      description: Version of the resource; send it back in `If-Match` to update safely.
+      schema:
+        type: string
+    SessionCookies:
+      description: "`qadam_at` (access), `qadam_rt` (refresh) and `qadam_csrf` (CSRF token)."
+      schema:
+        type: string
   parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: ETag of the version being edited; the update fails with 412 if it is stale.
+      schema:
+        type: string
+        maxLength: 128
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -51,6 +978,37 @@ components:
         type: string
         minLength: 8
         maxLength: 255
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor from `next_cursor` of the previous page.
+      schema:
+        type: string
+        maxLength: 512
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Problem:
       description: Error described in RFC 9457 Problem Details format.
@@ -63,6 +1021,18 @@ components:
       type: string
       description: Interface and content language.
       enum: [kk, ru, en]
+    LocalizedText:
+      type: object
+      description: The same text in Kazakh, Russian and English; at least one is present.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        kk:
+          type: string
+        ru:
+          type: string
+        en:
+          type: string
     Meta:
       type: object
       additionalProperties: false
@@ -89,6 +1059,851 @@ components:
         server_time:
           type: string
           format: date-time
+
+    Role:
+      type: string
+      description: |
+        Role of a member in the university: `student`; `supervisor` (scientific supervisor);
+        `mentor`; `jury` (competition expert); `innovation_manager` (commercialisation / AI centre);
+        `tenant_admin`; `leadership` (rector, vice-rectors, deans; read-only dashboards);
+        `partner` (investor, industry partner, accelerator).
+      enum: [student, supervisor, mentor, jury, innovation_manager, tenant_admin, leadership, partner]
+    StudyLevel:
+      type: string
+      enum: [bachelor, master, doctorate]
+    MembershipStatus:
+      type: string
+      enum: [active, invited, suspended]
+
+    SsoProvider:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    Tenant:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - slug
+        - name
+        - short_name
+        - default_locale
+        - primary_color
+        - logo_url
+        - self_signup
+        - email_domains
+        - sso_providers
+        - consent
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          examples: [kazutb]
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+        default_locale:
+          $ref: "#/components/schemas/Locale"
+        primary_color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        logo_url:
+          type: [string, "null"]
+        self_signup:
+          type: boolean
+          description: Whether students may register on their own.
+        email_domains:
+          type: array
+          description: Allowed e-mail domains for self sign-up; empty means any.
+          items:
+            type: string
+        sso_providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SsoProvider"
+        consent:
+          $ref: "#/components/schemas/ConsentPolicy"
+    ConsentPolicy:
+      type: object
+      description: Personal data processing consent shown at sign-up (Law of the RK "On personal data").
+      additionalProperties: false
+      required: [version, text]
+      properties:
+        version:
+          type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+    TenantBrief:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, short_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, email, email_verified, full_name, locale, avatar_url, is_super_admin, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        email_verified:
+          type: boolean
+        full_name:
+          type: string
+        locale:
+          $ref: "#/components/schemas/Locale"
+        avatar_url:
+          type: [string, "null"]
+        is_super_admin:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    FacultyRef:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    StudyGroupRef:
+      type: object
+      additionalProperties: false
+      required: [id, code]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+    Membership:
+      type: object
+      additionalProperties: false
+      required: [tenant_id, roles, status, faculty, department, group, study_level, course, onboarded]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/MembershipStatus"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        department:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        group:
+          anyOf:
+            - $ref: "#/components/schemas/StudyGroupRef"
+            - type: "null"
+        study_level:
+          anyOf:
+            - $ref: "#/components/schemas/StudyLevel"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+        onboarded:
+          type: boolean
+    Session:
+      type: object
+      additionalProperties: false
+      required: [user, membership, tenant]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        membership:
+          $ref: "#/components/schemas/Membership"
+        tenant:
+          $ref: "#/components/schemas/TenantBrief"
+    SessionInfo:
+      type: object
+      additionalProperties: false
+      required: [id, user_agent, ip, created_at, last_used_at, current]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_agent:
+          type: [string, "null"]
+        ip:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        current:
+          type: boolean
+
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, full_name, locale, consent_version]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 10
+          maxLength: 128
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        locale:
+          $ref: "#/components/schemas/Locale"
+        consent_version:
+          type: string
+          description: Version of the personal data consent the user accepted (from `Tenant.consent`).
+          maxLength: 32
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          maxLength: 128
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    LoginCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    TokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          maxLength: 128
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          maxLength: 128
+        password:
+          type: string
+          minLength: 10
+          maxLength: 128
+    PasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          maxLength: 128
+        new_password:
+          type: string
+          minLength: 10
+          maxLength: 128
+
+    ProfileLinks:
+      type: object
+      additionalProperties: false
+      properties:
+        website:
+          type: [string, "null"]
+          maxLength: 300
+        github:
+          type: [string, "null"]
+          maxLength: 300
+        linkedin:
+          type: [string, "null"]
+          maxLength: 300
+        telegram:
+          type: [string, "null"]
+          maxLength: 64
+    Profile:
+      type: object
+      additionalProperties: false
+      required: [headline, bio, skills, interests, links, public_slug, is_public, looking_for_team]
+      properties:
+        headline:
+          type: [string, "null"]
+          maxLength: 140
+        bio:
+          type: [string, "null"]
+          maxLength: 2000
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        public_slug:
+          type: string
+        is_public:
+          type: boolean
+        looking_for_team:
+          type: boolean
+    Me:
+      type: object
+      additionalProperties: false
+      required: [user, membership, profile]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        membership:
+          $ref: "#/components/schemas/Membership"
+        profile:
+          $ref: "#/components/schemas/Profile"
+    MeUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        locale:
+          $ref: "#/components/schemas/Locale"
+    OnboardingRequest:
+      type: object
+      additionalProperties: false
+      required: [locale, interests, skills, has_idea]
+      properties:
+        locale:
+          $ref: "#/components/schemas/Locale"
+        faculty_id:
+          type: [string, "null"]
+          format: uuid
+        department_id:
+          type: [string, "null"]
+          format: uuid
+        group_id:
+          type: [string, "null"]
+          format: uuid
+        study_level:
+          anyOf:
+            - $ref: "#/components/schemas/StudyLevel"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+        interests:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        skills:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        has_idea:
+          type: boolean
+        idea:
+          type: [string, "null"]
+          maxLength: 500
+          description: One sentence about the idea, if the student already has one.
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      required: [headline, bio, skills, interests, links, public_slug, is_public, looking_for_team]
+      properties:
+        headline:
+          type: [string, "null"]
+          maxLength: 140
+        bio:
+          type: [string, "null"]
+          maxLength: 2000
+        skills:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        interests:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        public_slug:
+          type: string
+          pattern: "^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$"
+        is_public:
+          type: boolean
+        looking_for_team:
+          type: boolean
+    PublicProfile:
+      type: object
+      additionalProperties: false
+      required:
+        - full_name
+        - avatar_url
+        - headline
+        - bio
+        - skills
+        - interests
+        - links
+        - faculty
+        - tenant
+        - looking_for_team
+      properties:
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        headline:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        tenant:
+          $ref: "#/components/schemas/TenantBrief"
+        looking_for_team:
+          type: boolean
+
+    Department:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    Faculty:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, departments]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        departments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Department"
+    StudyGroup:
+      type: object
+      additionalProperties: false
+      required: [id, code, faculty_id, department_id, study_level, admission_year]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        faculty_id:
+          type: string
+          format: uuid
+        department_id:
+          type: [string, "null"]
+          format: uuid
+        study_level:
+          $ref: "#/components/schemas/StudyLevel"
+        admission_year:
+          type: [integer, "null"]
+
+    MemberBrief:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, avatar_url, faculty]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+    TeamRole:
+      type: string
+      enum: [developer, designer, data_scientist, marketer, business, hardware, domain_expert, other]
+    TeamRequestStatus:
+      type: string
+      enum: [open, closed]
+    TeamRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - author
+        - title
+        - description
+        - roles_needed
+        - skills
+        - status
+        - responses_count
+        - is_mine
+        - has_responded
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: "#/components/schemas/MemberBrief"
+        title:
+          type: string
+        description:
+          type: string
+        roles_needed:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/TeamRequestStatus"
+        responses_count:
+          type: integer
+        is_mine:
+          type: boolean
+        has_responded:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TeamRequestPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamRequest"
+        next_cursor:
+          type: [string, "null"]
+    TeamRequestCreate:
+      type: object
+      additionalProperties: false
+      required: [title, description, roles_needed, skills]
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        roles_needed:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          maxItems: 15
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+    TeamRequestUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        roles_needed:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          maxItems: 15
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        status:
+          $ref: "#/components/schemas/TeamRequestStatus"
+    TeamResponse:
+      type: object
+      additionalProperties: false
+      required: [id, author, message, email, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: "#/components/schemas/MemberBrief"
+        message:
+          type: string
+        email:
+          type: [string, "null"]
+          description: Contact e-mail of the respondent, visible to the request author only.
+        created_at:
+          type: string
+          format: date-time
+    TeamResponseCreate:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 10
+          maxLength: 1000
+
+    Member:
+      type: object
+      additionalProperties: false
+      required:
+        - user
+        - email
+        - roles
+        - status
+        - group
+        - course
+        - joined_at
+        - last_active_at
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/MembershipStatus"
+        group:
+          anyOf:
+            - $ref: "#/components/schemas/StudyGroupRef"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+        joined_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: [string, "null"]
+          format: date-time
+    MemberPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        next_cursor:
+          type: [string, "null"]
+    MemberUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        roles:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          type: string
+          enum: [active, suspended]
+
+    ImportKind:
+      type: string
+      description: |
+        `structure` — faculties, departments and study groups;
+        `students` — students with their faculty, group and course.
+      enum: [structure, students]
+    ImportStatus:
+      type: string
+      enum: [preview, committed]
+    ImportRowAction:
+      type: string
+      enum: [create, update, skip]
+    ImportRow:
+      type: object
+      additionalProperties: false
+      required: [line, values, action, errors]
+      properties:
+        line:
+          type: integer
+          description: Line number in the file (1 is the header).
+        values:
+          type: object
+          additionalProperties:
+            type: string
+        action:
+          $ref: "#/components/schemas/ImportRowAction"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+    ImportSummary:
+      type: object
+      additionalProperties: false
+      required: [total, valid, invalid, to_create, to_update]
+      properties:
+        total:
+          type: integer
+        valid:
+          type: integer
+        invalid:
+          type: integer
+        to_create:
+          type: integer
+        to_update:
+          type: integer
+    ImportJob:
+      type: object
+      additionalProperties: false
+      required: [id, kind, status, file_name, columns, summary, rows, created_at, committed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/ImportKind"
+        status:
+          $ref: "#/components/schemas/ImportStatus"
+        file_name:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        summary:
+          $ref: "#/components/schemas/ImportSummary"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRow"
+        created_at:
+          type: string
+          format: date-time
+        committed_at:
+          type: [string, "null"]
+          format: date-time
+    ImportResult:
+      type: object
+      additionalProperties: false
+      required: [created, updated, skipped, invited]
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+        skipped:
+          type: integer
+        invited:
+          type: integer
+
     FieldError:
       type: object
       additionalProperties: false

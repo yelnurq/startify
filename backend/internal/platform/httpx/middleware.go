@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"mime"
 	"net"
 	"net/http"
 	"net/netip"
@@ -27,7 +28,11 @@ type ctxKey int
 const (
 	requestIDKey ctxKey = iota
 	clientIPKey
+	userAgentKey
+	requestKey
 )
+
+const maxUserAgent = 512
 
 var requestIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{8,64}$`)
 
@@ -57,7 +62,13 @@ func ClientIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ip := resolveClientIP(r, trusted)
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), clientIPKey, ip)))
+			ua := r.UserAgent()
+			if len(ua) > maxUserAgent {
+				ua = ua[:maxUserAgent]
+			}
+			ctx := context.WithValue(r.Context(), clientIPKey, ip)
+			ctx = context.WithValue(ctx, userAgentKey, ua)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
@@ -99,6 +110,12 @@ func parseAddr(s string) netip.Addr {
 func ClientIPFrom(ctx context.Context) netip.Addr {
 	ip, _ := ctx.Value(clientIPKey).(netip.Addr)
 	return ip
+}
+
+// UserAgentFrom returns the (truncated) User-Agent stored by ClientIP.
+func UserAgentFrom(ctx context.Context) string {
+	ua, _ := ctx.Value(userAgentKey).(string)
+	return ua
 }
 
 // Recoverer converts panics into 500 problem responses and logs the stack.
@@ -177,14 +194,33 @@ func SecurityHeaders(hsts bool) func(http.Handler) http.Handler {
 	}
 }
 
-// MaxBody limits the request body size.
-func MaxBody(limit int64) func(http.Handler) http.Handler {
+// MaxBody limits the request body size; multipart uploads may be as large as
+// uploadLimit (handlers enforce the limit of each kind of file).
+func MaxBody(limit, uploadLimit int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.Body = http.MaxBytesReader(w, r.Body, limit)
+			n := limit
+			if mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err == nil && mt == "multipart/form-data" {
+				n = uploadLimit
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, n)
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// KeepRequest makes the request available to handlers that see only a
+// context (the generated strict server): cookies and conditional headers.
+func KeepRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestKey, r)))
+	})
+}
+
+// RequestFrom returns the request stored by KeepRequest.
+func RequestFrom(ctx context.Context) (*http.Request, bool) {
+	r, ok := ctx.Value(requestKey).(*http.Request)
+	return r, ok
 }
 
 // Timeout bounds the request context. Server-sent event streams are exempt:
