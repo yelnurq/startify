@@ -30,6 +30,7 @@ make dev
 | Что | Адрес |
 |---|---|
 | Веб-приложение | http://localhost:3000 |
+| Дизайн-система | http://localhost:3000/design |
 | API (метаданные) | http://localhost:8080/api/v1/meta |
 | Перехват e-mail (Mailpit) | http://localhost:8025 |
 | Консоль MinIO | http://localhost:9901 |

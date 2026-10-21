@@ -68,7 +68,16 @@
 ## Фронтенд
 
 - `src/app` — роутер (file-based маршруты в `src/app/routes`), провайдеры, layout-ы.
-- `src/design-system` — токены, темы, компоненты, иллюстрации (фаза 1).
+- `src/design-system` — дизайн-система (витрина: `/design`):
+  - `tokens.css` — шкалы цветов в OKLCH (`@theme static`), семантические токены светлой и тёмной
+    темы (`@theme inline` → `--qd-*`), радиусы, три уровня теней, движение; `base.css` — базовые
+    стили, фокус, reduced motion, утилиты `font-display`, `surface-glass`, `ornament`, `shimmer`;
+  - `components/` — около 40 компонентов на Radix (кнопки, поля с `Field`, выбор, оверлеи, тосты,
+    навигация, `Stepper`, KPI, `ScoreGauge`, командная палитра ⌘K, переключатели темы и языка);
+  - `illustrations/` — 10 иллюстраций пустых состояний в едином стиле; `color.ts` — генерация
+    шкал и контраст WCAG (для палитр тенантов); `theme.ts` — тема (light/dark/system).
+- `src/app/layouts` — `PublicLayout`, `AuthLayout`, `AppShell` (сайдбар, ⌘K), `WorkspaceLayout`
+  (три колонки инкубатора).
 - `src/features/<feature>` — экраны и хуки фич (`api.ts` с queryOptions).
 - `src/shared` — API-клиент (`schema.gen.ts` из `openapi.yaml`, `unwrap`, `ApiError`), i18n, утилиты.
 - `src/locales/{kk,ru,en}` — переводы по пространствам имён; язык грузится лениво.
