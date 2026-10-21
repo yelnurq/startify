@@ -10,33 +10,80 @@
 
 import { Route as rootRouteImport } from './app/routes/__root'
 import { Route as IndexRouteImport } from './app/routes/index'
+import { Route as DesignIndexRouteImport } from './app/routes/design/index'
+import { Route as DesignAuthRouteImport } from './app/routes/design/auth'
+import { Route as DesignShellRouteImport } from './app/routes/design/shell'
+import { Route as DesignWorkspaceRouteImport } from './app/routes/design/workspace'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DesignIndexRoute = DesignIndexRouteImport.update({
+  id: '/design/',
+  path: '/design/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignAuthRoute = DesignAuthRouteImport.update({
+  id: '/design/auth',
+  path: '/design/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignShellRoute = DesignShellRouteImport.update({
+  id: '/design/shell',
+  path: '/design/shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignWorkspaceRoute = DesignWorkspaceRouteImport.update({
+  id: '/design/workspace',
+  path: '/design/workspace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/design/auth': typeof DesignAuthRoute
+  '/design/shell': typeof DesignShellRoute
+  '/design/workspace': typeof DesignWorkspaceRoute
+  '/design/': typeof DesignIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/design/auth': typeof DesignAuthRoute
+  '/design/shell': typeof DesignShellRoute
+  '/design/workspace': typeof DesignWorkspaceRoute
+  '/design': typeof DesignIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/design/auth': typeof DesignAuthRoute
+  '/design/shell': typeof DesignShellRoute
+  '/design/workspace': typeof DesignWorkspaceRoute
+  '/design/': typeof DesignIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/design/auth' | '/design/shell' | '/design/workspace' | '/design/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/design/auth' | '/design/shell' | '/design/workspace' | '/design'
+  id:
+    | '__root__'
+    | '/'
+    | '/design/auth'
+    | '/design/shell'
+    | '/design/workspace'
+    | '/design/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DesignAuthRoute: typeof DesignAuthRoute
+  DesignShellRoute: typeof DesignShellRoute
+  DesignWorkspaceRoute: typeof DesignWorkspaceRoute
+  DesignIndexRoute: typeof DesignIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +95,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/design/': {
+      id: '/design/'
+      path: '/design'
+      fullPath: '/design/'
+      preLoaderRoute: typeof DesignIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design/auth': {
+      id: '/design/auth'
+      path: '/design/auth'
+      fullPath: '/design/auth'
+      preLoaderRoute: typeof DesignAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design/shell': {
+      id: '/design/shell'
+      path: '/design/shell'
+      fullPath: '/design/shell'
+      preLoaderRoute: typeof DesignShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design/workspace': {
+      id: '/design/workspace'
+      path: '/design/workspace'
+      fullPath: '/design/workspace'
+      preLoaderRoute: typeof DesignWorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DesignAuthRoute: DesignAuthRoute,
+  DesignShellRoute: DesignShellRoute,
+  DesignWorkspaceRoute: DesignWorkspaceRoute,
+  DesignIndexRoute: DesignIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,69 +1,100 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { ArrowRight, CircleCheck, Palette, ServerCrash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PublicLayout } from '@/app/layouts/public-layout';
+import { Badge, Button, Card, Logo, Skeleton } from '@/design-system';
 import { errorMessage } from '@/shared/api/errors';
-import { changeLocale, LOCALES } from '@/shared/i18n';
 import { useFormatters } from '@/shared/i18n/format';
 
 import { metaQuery } from './api';
 
-/** Start page of the foundation phase: shows that web, API and database are wired. */
+/** Home page until the landing ships: brand, platform status, design system. */
 export function StatusPage() {
   const { t } = useTranslation();
   const format = useFormatters();
   const meta = useQuery(metaQuery);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-8 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-semibold tracking-tight">{t('app.name')}</h1>
-        <p className="text-lg text-slate-600">{t('app.tagline')}</p>
-      </header>
-
-      <section aria-labelledby="status-title" className="rounded-xl border border-slate-200 p-6">
-        <h2 id="status-title" className="mb-4 text-sm font-medium text-slate-500">
-          {t('status.title')}
-        </h2>
-        {meta.isPending && <p>{t('status.checking')}</p>}
-        {meta.isError && (
-          <div role="alert" className="flex flex-col items-start gap-3">
-            <p className="font-medium text-red-700">{t('status.apiOffline')}</p>
-            <p className="text-slate-600">{errorMessage(t, meta.error)}</p>
-            <button
-              type="button"
-              onClick={() => void meta.refetch()}
-              className="rounded-lg border border-slate-300 px-3 py-1.5"
-            >
-              {t('status.retry')}
-            </button>
+    <PublicLayout
+      logo={
+        <Link to="/" className="rounded-lg">
+          <Logo />
+        </Link>
+      }
+    >
+      <div className="relative overflow-hidden">
+        <div aria-hidden className="absolute inset-0 ornament-fade opacity-[0.06]" />
+        <div
+          aria-hidden
+          className="absolute -top-56 left-1/2 h-[30rem] w-[60rem] -translate-x-1/2 rounded-full bg-primary-300/30 blur-3xl dark:bg-primary-600/15"
+        />
+        <div className="relative mx-auto flex min-h-[calc(100dvh-4rem)] max-w-page flex-col items-center justify-center gap-10 px-4 py-16 text-center sm:px-6">
+          <div className="flex flex-col items-center gap-5">
+            <h1 className="font-display text-5xl font-semibold text-fg sm:text-6xl">
+              {t('app.name')}
+            </h1>
+            <p className="max-w-2xl text-lg leading-relaxed text-fg-muted sm:text-xl">
+              {t('app.tagline')}
+            </p>
           </div>
-        )}
-        {meta.isSuccess && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-            <dt className="text-slate-500">{t('status.apiOnline')}</dt>
-            <dd data-testid="api-version">{meta.data.version}</dd>
-            <dt className="text-slate-500">{t('status.commit')}</dt>
-            <dd className="font-mono">{meta.data.commit}</dd>
-            <dt className="text-slate-500">{t('status.serverTime')}</dt>
-            <dd>{format.dateTime(meta.data.server_time)}</dd>
-          </dl>
-        )}
-      </section>
+          <Button asChild size="lg" rightIcon={<ArrowRight />}>
+            <Link to="/design">
+              <Palette aria-hidden />
+              {t('nav.designSystem')}
+            </Link>
+          </Button>
 
-      <nav aria-label={t('language.label')} className="flex gap-2">
-        {LOCALES.map((locale) => (
-          <button
-            key={locale}
-            type="button"
-            lang={locale}
-            aria-pressed={format.locale === locale}
-            onClick={() => void changeLocale(locale)}
-            className="rounded-full border border-slate-300 px-3 py-1 text-sm aria-pressed:bg-slate-900 aria-pressed:text-white"
-          >
-            {t(`language.${locale}`)}
-          </button>
-        ))}
-      </nav>
-    </main>
+          <Card className="w-full max-w-md gap-4 p-5 text-left" aria-labelledby="status-title">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="status-title" className="text-sm font-medium text-fg-muted">
+                {t('status.title')}
+              </h2>
+              {meta.isSuccess && (
+                <Badge tone="success" dot>
+                  {t('status.apiOnline')}
+                </Badge>
+              )}
+            </div>
+            {meta.isPending && (
+              <div className="flex flex-col gap-2" aria-busy>
+                <span className="sr-only">{t('status.checking')}</span>
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            )}
+            {meta.isError && (
+              <div role="alert" className="flex flex-col items-start gap-3">
+                <p className="flex items-center gap-2 font-medium text-danger">
+                  <ServerCrash className="size-4" aria-hidden />
+                  {t('status.apiOffline')}
+                </p>
+                <p className="text-sm text-fg-muted">{errorMessage(t, meta.error)}</p>
+                <Button variant="secondary" size="sm" onClick={() => void meta.refetch()}>
+                  {t('status.retry')}
+                </Button>
+              </div>
+            )}
+            {meta.isSuccess && (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+                <dt className="text-fg-subtle">{t('status.version')}</dt>
+                <dd
+                  data-testid="api-version"
+                  className="flex items-center gap-1.5 font-medium text-fg"
+                >
+                  <CircleCheck className="size-3.5 text-success" aria-hidden />
+                  {meta.data.version}
+                </dd>
+                <dt className="text-fg-subtle">{t('status.commit')}</dt>
+                <dd className="font-mono text-fg">{meta.data.commit}</dd>
+                <dt className="text-fg-subtle">{t('status.serverTime')}</dt>
+                <dd className="text-fg">{format.dateTime(meta.data.server_time)}</dd>
+              </dl>
+            )}
+          </Card>
+        </div>
+      </div>
+    </PublicLayout>
   );
 }
