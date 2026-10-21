@@ -1,0 +1,102 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - asasalint
+    - bidichk
+    - bodyclose
+    - containedctx
+    # contextcheck is off: it flags closures that derive their context from
+    # *http.Request, which is the correct pattern in handlers and middleware.
+    - copyloopvar
+    - durationcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - gosec
+    - intrange
+    - makezero
+    - misspell
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - nolintlint
+    - perfsprint
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocritic:
+      enabled-tags: [diagnostic, performance, style]
+      disabled-checks:
+        - hugeParam # handler request objects are passed by value by generated code
+        - unnamedResult
+        - whyNoLint
+    gosec:
+      excludes:
+        - G104 # duplicated by errcheck
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: receiver-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: unused-parameter
+        - name: redefines-builtin-id
+        - name: superfluous-else
+    perfsprint:
+      strconcat: false
+  exclusions:
+    generated: strict
+    presets:
+      - std-error-handling
+    paths:
+      - internal/apigen
+      - internal/.*/.*db$
+    rules:
+      - path: _test\.go
+        linters: [gosec, forcetypeassert, perfsprint, prealloc, unparam, noctx]
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/yelnurq/startify/backend
+  exclusions:
+    generated: strict

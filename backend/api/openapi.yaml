@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: Qadam API
+  version: 0.1.0
+  summary: AI-платформа инновационной и проектной деятельности университета.
+  description: |
+    Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
+    Demo Day и выходу на рынок, а руководству вуза даёт измеримые результаты.
+
+    ## Conventions
+    - Every path is served under `/api/v1`.
+    - Errors use RFC 9457 Problem Details (`application/problem+json`) with a stable,
+      localisable `code` (for example `auth.invalid_credentials`).
+    - Collections use cursor pagination: pass `cursor` from `next_cursor` of the previous page.
+    - Creating requests accept an `Idempotency-Key` header; a repeated key replays the
+      original response (`Idempotent-Replayed: true`).
+    - Optimistic locking: resources return an `ETag`; updates must send `If-Match`.
+  contact:
+    name: Qadam
+    url: https://qadam.kz
+servers:
+  - url: /api/v1
+tags:
+  - name: system
+    description: Platform metadata and service information.
+paths:
+  /meta:
+    get:
+      operationId: getMeta
+      tags: [system]
+      summary: Platform metadata
+      description: Public build and localisation metadata used by the web client on start-up.
+      security: []
+      responses:
+        "200":
+          description: Platform metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meta"
+        default:
+          $ref: "#/components/responses/Problem"
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Client-generated unique key that makes a creating request safe to retry.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 255
+  responses:
+    Problem:
+      description: Error described in RFC 9457 Problem Details format.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Locale:
+      type: string
+      description: Interface and content language.
+      enum: [kk, ru, en]
+    Meta:
+      type: object
+      additionalProperties: false
+      required: [product, version, commit, built_at, locales, default_locale, server_time]
+      properties:
+        product:
+          type: string
+          examples: [Qadam]
+        version:
+          type: string
+          examples: [0.1.0]
+        commit:
+          type: string
+          description: Short git commit of the running build, `dev` for local builds.
+        built_at:
+          type: string
+          description: Build timestamp (RFC 3339) or `unknown` for local builds.
+        locales:
+          type: array
+          items:
+            $ref: "#/components/schemas/Locale"
+        default_locale:
+          $ref: "#/components/schemas/Locale"
+        server_time:
+          type: string
+          format: date-time
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+          description: JSON pointer-like path of the invalid field, e.g. `steps.problem.statement`.
+        code:
+          type: string
+          description: Stable validation code, e.g. `required`, `too_short`.
+        message:
+          type: string
+          description: English, developer-facing explanation.
+        params:
+          type: object
+          additionalProperties: true
+          description: Values for interpolation into the localised message.
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details extended with a localisable `code`.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable machine-readable error code used for localisation.
+          examples: [auth.invalid_credentials]
+        request_id:
+          type: string
+        params:
+          type: object
+          additionalProperties: true
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
