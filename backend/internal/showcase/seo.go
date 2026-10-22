@@ -28,9 +28,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/tenant"
 )
 
-// The web client's index.html changes only with a release.
 const (
-	shellTTL      = time.Minute
 	shellMaxBytes = 1 << 20
 	siteName      = "Qadam"
 	catalogItems  = 24
@@ -58,14 +56,16 @@ const fallbackShell = `<!doctype html>
 `
 
 // shell keeps the web client's index.html that search engine pages are
-// built on.
+// built on. Every page asks the web server again with the copy's ETag (a
+// cheap 304 while nothing changed): a release replaces the hashed asset
+// files at once, and a stale copy would point at scripts that are gone.
 type shell struct {
 	url    string
 	client *http.Client
 
 	mu   sync.Mutex
 	html []byte
-	at   time.Time
+	etag string
 }
 
 func newShell(url string) *shell {
@@ -77,46 +77,53 @@ func (s *shell) get(ctx context.Context) []byte {
 		return []byte(fallbackShell)
 	}
 	s.mu.Lock()
-	cached, at := s.html, s.at
+	cached, etag := s.html, s.etag
 	s.mu.Unlock()
-	if cached != nil && time.Since(at) < shellTTL {
-		return cached
-	}
-	fresh, err := s.fetch(ctx)
-	if err != nil {
+	fresh, freshTag, err := s.fetch(ctx, etag)
+	switch {
+	case err != nil:
 		slog.WarnContext(ctx, "showcase: web client shell unavailable", slog.Any("error", err))
 		if cached != nil {
 			return cached
 		}
 		return []byte(fallbackShell)
+	case fresh == nil:
+		return cached
 	}
 	s.mu.Lock()
-	s.html, s.at = fresh, time.Now()
+	s.html, s.etag = fresh, freshTag
 	s.mu.Unlock()
 	return fresh
 }
 
-func (s *shell) fetch(ctx context.Context) ([]byte, error) {
+// fetch returns the page and its ETag, or nil when it is still etag.
+func (s *shell) fetch(ctx context.Context, etag string) ([]byte, string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.url, http.NoBody)
 	if err != nil {
-		return nil, err
+		return nil, "", err
+	}
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
 	}
 	res, err := s.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer func() { _ = res.Body.Close() }()
+	if res.StatusCode == http.StatusNotModified && etag != "" {
+		return nil, etag, nil
+	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %s", res.Status)
+		return nil, "", fmt.Errorf("status %s", res.Status)
 	}
 	body, err := io.ReadAll(io.LimitReader(res.Body, shellMaxBytes))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if !strings.Contains(string(body), "</head>") {
-		return nil, errors.New("not an html page")
+		return nil, "", errors.New("not an html page")
 	}
-	return body, nil
+	return body, res.Header.Get("ETag"), nil
 }
 
 // meta describes a page to search engines and social networks.
