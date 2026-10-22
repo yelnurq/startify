@@ -15,11 +15,14 @@ const YEAR = new Date().getFullYear();
 export const siteNavClass =
   'relative py-2 text-sm font-semibold text-ink transition-colors hover:text-primary-text after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary after:opacity-0 after:transition-opacity aria-[current=page]:after:opacity-100';
 
-/** The university's full name for the caption under the logo. */
-function useUniversityName() {
+/** The university's full name for the caption under the logo, and its seal. */
+function useUniversity() {
   const tenant = useQuery(tenantQuery);
   const text = useLocalized();
-  return tenant.data ? text(tenant.data.name) : undefined;
+  return {
+    name: tenant.data ? text(tenant.data.name) : undefined,
+    logoUrl: tenant.data?.logo_url,
+  };
 }
 
 interface SiteFrameProps {
@@ -33,12 +36,12 @@ export function SiteFrame({ nav, children }: SiteFrameProps) {
   const { t } = useTranslation('showcase');
   const session = useQuery(sessionQuery);
   const signedIn = Boolean(session.data);
-  const university = useUniversityName();
+  const university = useUniversity();
   return (
     <PublicLayout
       logo={
         <Link to="/" className="min-w-0 shrink-0">
-          <Logo caption={university} />
+          <Logo caption={university.name} logoUrl={university.logoUrl} />
         </Link>
       }
       nav={
@@ -121,12 +124,12 @@ function FooterColumn({ title, children }: { title: string; children: ReactNode 
 
 function SiteFooter() {
   const { t } = useTranslation(['showcase', 'common', 'landing']);
-  const university = useUniversityName();
+  const university = useUniversity();
   return (
     <footer className="border-t-2 border-primary-500 bg-linear-to-br from-ink-800 via-ink-900 to-deep-900 text-white/70">
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="flex flex-col gap-5">
-          <Logo inverted caption={university} />
+          <Logo inverted caption={university.name} logoUrl={university.logoUrl} />
           <p className="max-w-sm text-sm leading-relaxed text-white/75">
             {t('common:app.tagline')}
           </p>

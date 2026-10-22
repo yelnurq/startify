@@ -27,6 +27,8 @@ interface AppShellProps {
   nav: ReactNode;
   /** Product and tenant name next to the logo. */
   brand: ReactNode;
+  /** The mark next to the brand (the university's seal); the Qadam mark by default. */
+  mark?: ReactNode;
   /** Bottom of the sidebar: the signed-in user. */
   user?: ReactNode;
   /** Left side of the top bar: breadcrumbs or the page title. */
@@ -44,6 +46,7 @@ interface AppShellProps {
 export function AppShell({
   nav,
   brand,
+  mark,
   user,
   topbar,
   actions,
@@ -76,7 +79,7 @@ export function AppShell({
             isCollapsed && 'justify-center px-0',
           )}
         >
-          <LogoMark />
+          {mark ?? <LogoMark />}
           {!isCollapsed && <div className="min-w-0 flex-1">{brand}</div>}
         </div>
         <nav

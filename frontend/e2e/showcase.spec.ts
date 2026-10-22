@@ -224,9 +224,30 @@ test.describe('public showcase', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   });
 
-  test('the landing page shows live numbers and the best projects', async ({ page }) => {
+  test('the landing page shows the university, its route and its projects', async ({
+    page,
+    isMobile,
+  }) => {
     await page.goto('/');
-    const numbers = page.getByRole('region', { name: 'Qadam в цифрах' });
+    // The university's seal in the header and its photo in the hero.
+    await expect(page.getByRole('banner').locator('img[src^="/api/v1/files/"]')).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: /От идеи до рынка/ }).locator('img[src^="/api/v1/files/"]'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('list', { name: 'Маршрут проекта' }).getByRole('listitem'),
+    ).toHaveCount(6);
+    // The header link opens the audience it names (on phones the links are in the menu).
+    if (isMobile) await page.goto('/#partners');
+    else await page.getByRole('banner').getByRole('link', { name: 'Партнёрам' }).click();
+    await expect(page.getByRole('tab', { name: 'Партнёрам' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(
+      page.getByRole('heading', { name: 'Находите студенческие стартапы на ранней стадии' }),
+    ).toBeVisible();
+    const numbers = page.getByRole('region', { name: 'Инновации КазУТБ сегодня' });
     await expect(numbers.getByText('Проектов на витрине')).toBeVisible();
     await expect(numbers.locator('dd')).toHaveCount(4);
     await expect(numbers.locator('dd .sr-only').first()).toHaveText(/^\d[\d\s]*$/);
@@ -236,6 +257,15 @@ test.describe('public showcase', () => {
     await expect(page.getByRole('banner').getByRole('link', { name: 'Войти' })).toBeVisible();
     await page.getByRole('link', { name: 'Вся витрина' }).click();
     await expect(page).toHaveURL(/\/showcase$/);
+  });
+
+  test('the search on the landing page opens the catalogue with the query', async ({ page }) => {
+    await page.goto('/');
+    const search = page.getByRole('search', { name: 'Поиск по витрине проектов' });
+    await search.getByRole('searchbox').fill('агро');
+    await search.getByRole('button', { name: 'Найти проект' }).click();
+    await expect(page).toHaveURL(/\/showcase\?q=/);
+    await expect(page.locator('#root').getByRole('link', { name: 'AgroScan' })).toBeVisible();
   });
 });
 

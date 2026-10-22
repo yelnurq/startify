@@ -28,19 +28,49 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
+/** The university's seal when it has one, otherwise the Qadam mark. */
+export function BrandMark({
+  src,
+  className,
+  inverted = false,
+}: {
+  src?: string | null;
+  className?: string;
+  /** On a dark panel the seal sits on a white disc. */
+  inverted?: boolean;
+}) {
+  if (!src) return <LogoMark className={className} />;
+  return (
+    <img
+      src={src}
+      alt=""
+      width={64}
+      height={64}
+      className={cn(
+        'size-8 shrink-0 rounded-full object-contain',
+        inverted && 'bg-white p-0.5',
+        className,
+      )}
+    />
+  );
+}
+
 interface LogoProps {
   className?: string;
   /** Line of capitals under the wordmark, e.g. the university's full name. */
   caption?: string;
   /** White wordmark for dark panels. */
   inverted?: boolean;
+  /** The university's seal, shown instead of the Qadam mark. */
+  logoUrl?: string | null;
 }
 
-export function Logo({ className, caption, inverted = false }: LogoProps) {
+export function Logo({ className, caption, inverted = false, logoUrl }: LogoProps) {
   const { t } = useTranslation();
+  const markSize = logoUrl ? 'size-10 sm:size-12' : 'sm:size-10';
   return (
     <span className={cn('inline-flex items-center gap-3', className)}>
-      <LogoMark className={caption ? 'sm:size-10' : undefined} />
+      <BrandMark src={logoUrl} inverted={inverted} className={caption ? markSize : undefined} />
       <span className="flex min-w-0 flex-col">
         <span
           className={cn(

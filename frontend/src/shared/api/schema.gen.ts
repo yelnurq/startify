@@ -1935,7 +1935,10 @@ export interface components {
             short_name: components["schemas"]["LocalizedText"];
             default_locale: components["schemas"]["Locale"];
             primary_color: string;
+            /** @description The university's seal. */
             logo_url: string | null;
+            /** @description A photo of the university for the hero of its public pages. */
+            cover_url: string | null;
             /** @description Whether students may register on their own. */
             self_signup: boolean;
             /** @description Allowed e-mail domains for self sign-up; empty means any. */

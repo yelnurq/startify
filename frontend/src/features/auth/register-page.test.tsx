@@ -36,6 +36,7 @@ const tenant: Tenant = {
   default_locale: 'kk',
   primary_color: '#00A3C4',
   logo_url: null,
+  cover_url: null,
   self_signup: true,
   email_domains: ['kazutb.edu.kz'],
   sso_providers: [],

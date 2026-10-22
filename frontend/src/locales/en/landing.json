@@ -21,14 +21,7 @@
     "titleAccent": "one step",
     "searchLabel": "Search the project showcase",
     "searchPlaceholder": "What project are you looking for?",
-    "search": "Find a project",
-    "catalog": "All showcase projects",
-    "card": {
-      "kicker": "Innovation platform",
-      "f1": "An AI mentor at every step",
-      "f2": "Evaluation by the university rubric",
-      "f3": "Showcase and Demo Day for partners"
-    }
+    "search": "Find a project"
   },
   "how": {
     "eyebrow": "How it works",
@@ -111,25 +104,47 @@
       "p2": "Direct contact with the teams",
       "p3": "Join Demo Days and competitions as an expert",
       "cta": "Open the showcase"
-    }
+    },
+    "tabsLabel": "Who Qadam is for"
   },
   "cta": {
     "title": "Take your first qadam",
     "text": "Signing up takes a minute. After onboarding, the AI mentor helps you through the first step.",
     "primary": "Start a project",
-    "kicker": "Start today"
+    "kicker": "Start today",
+    "photoCaption": "The innovation platform of the university"
   },
   "counters": {
-    "label": "Qadam in numbers",
     "projects": "Projects in the incubator",
     "published": "Projects on the showcase",
     "students": "Students in teams",
-    "evaluations": "AI evaluations of projects"
+    "evaluations": "AI evaluations of projects",
+    "kicker": "The university in numbers",
+    "title": "Innovation at {{university}} today",
+    "text": "Live figures of the platform: how many projects are in progress, how many reached the showcase and how many students are in teams."
   },
   "featured": {
     "eyebrow": "Showcase",
     "title": "Top projects of the showcase",
     "text": "Student teams that went through the incubator and look for partners, pilots and investment.",
-    "all": "The whole showcase"
+    "all": "The whole showcase",
+    "searchTitle": "Find a project by its task"
+  },
+  "route": {
+    "label": "The route of a project",
+    "idea": "Idea",
+    "incubator": "Incubator",
+    "evaluation": "AI evaluation",
+    "showcase": "Showcase",
+    "demoDay": "Demo Day",
+    "market": "Market",
+    "hints": {
+      "idea": "The problem and whose it is",
+      "incubator": "14 steps with an AI mentor",
+      "evaluation": "A score by the university rubric",
+      "showcase": "A page for partners",
+      "demoDay": "A pitch and a live vote",
+      "market": "Pilots and investment"
+    }
   }
 }

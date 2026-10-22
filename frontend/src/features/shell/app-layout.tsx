@@ -25,6 +25,7 @@ import { AppShell } from '@/app/layouts/app-shell';
 import { NavLink, NavSection } from '@/app/layouts/nav-link';
 import {
   Avatar,
+  BrandMark,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -37,7 +38,7 @@ import {
   useRegisterCommands,
   type PaletteCommand,
 } from '@/design-system';
-import { hasRole, sessionQuery, useSignOut, type Session } from '@/features/auth/api';
+import { hasRole, sessionQuery, tenantQuery, useSignOut, type Session } from '@/features/auth/api';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import { primaryRole } from './roles';
@@ -52,6 +53,7 @@ export function AppLayout({ session: initial }: { session: Session }) {
     <AppShell
       bleed={bleed}
       brand={<Brand session={session} />}
+      mark={<UniversityMark />}
       nav={<AppNav session={session} />}
       user={<UserMenu session={session} />}
       topbar={<PageTitle />}
@@ -65,6 +67,12 @@ export function AppLayout({ session: initial }: { session: Session }) {
       <Outlet />
     </AppShell>
   );
+}
+
+/** The university's seal at the top of the sidebar, or the Qadam mark. */
+function UniversityMark() {
+  const tenant = useQuery(tenantQuery);
+  return <BrandMark src={tenant.data?.logo_url} />;
 }
 
 function Brand({ session }: { session: Session }) {

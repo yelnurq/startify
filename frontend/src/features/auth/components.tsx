@@ -25,7 +25,11 @@ function AuthAside() {
   return (
     <div className="flex h-full flex-col gap-10 text-white">
       <Link to="/" className="w-fit">
-        <Logo inverted caption={tenant.data ? text(tenant.data.name) : undefined} />
+        <Logo
+          inverted
+          caption={tenant.data ? text(tenant.data.name) : undefined}
+          logoUrl={tenant.data?.logo_url}
+        />
       </Link>
       <div className="my-auto flex max-w-lg flex-col gap-6">
         <Kicker tone="light">{t('aside.cardEyebrow')}</Kicker>
@@ -47,6 +51,12 @@ function AuthAside() {
       </ul>
     </div>
   );
+}
+
+/** The logo of the top bar on phones: the university's seal when it has one. */
+function TenantLogo() {
+  const tenant = useQuery(tenantQuery);
+  return <Logo logoUrl={tenant.data?.logo_url} />;
 }
 
 function BackHome() {
@@ -76,7 +86,7 @@ export function AuthPage({
     <AuthLayout
       logo={
         <Link to="/">
-          <Logo />
+          <TenantLogo />
         </Link>
       }
       back={<BackHome />}
