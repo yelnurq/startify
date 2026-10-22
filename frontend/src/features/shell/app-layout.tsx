@@ -6,6 +6,7 @@ import {
   ChevronsUpDown,
   FileUp,
   Home,
+  Lightbulb,
   LogOut,
   ShieldCheck,
   Sparkles,
@@ -41,9 +42,11 @@ import { primaryRole } from './roles';
 export function AppLayout({ session: initial }: { session: Session }) {
   const live = useQuery(sessionQuery);
   const session = live.data ?? initial;
+  const bleed = useMatches().some((match) => match.staticData.bleed);
   useAppCommands(session);
   return (
     <AppShell
+      bleed={bleed}
       brand={<Brand session={session} />}
       nav={<AppNav session={session} />}
       user={<UserMenu session={session} />}
@@ -83,6 +86,9 @@ function AppNav({ session }: { session: Session }) {
       <NavSection>
         <NavLink to="/app" activeOptions={{ exact: true }} icon={<Home />}>
           {t('nav.home')}
+        </NavLink>
+        <NavLink to="/app/projects" icon={<Lightbulb />}>
+          {t('nav.projects')}
         </NavLink>
         <NavLink to="/app/profile" icon={<User />}>
           {t('nav.profile')}
@@ -222,6 +228,13 @@ function useAppCommands(session: Session) {
         label: t('app:nav.home'),
         icon: <Home />,
         perform: () => void navigate({ to: '/app' }),
+      },
+      {
+        id: 'app.projects',
+        group,
+        label: t('app:nav.projects'),
+        icon: <Lightbulb />,
+        perform: () => void navigate({ to: '/app/projects' }),
       },
       {
         id: 'app.profile',

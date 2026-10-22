@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Home",
+    "projects": "Projects",
     "profile": "My profile",
     "team": "Looking for a team",
     "administration": "Administration",
@@ -21,7 +22,8 @@
     "import": "Data import",
     "knowledge": "Knowledge base",
     "ai": "AI settings",
-    "aiUsage": "AI usage"
+    "aiUsage": "AI usage",
+    "projects": "Projects"
   },
   "user": {
     "menu": "User menu"

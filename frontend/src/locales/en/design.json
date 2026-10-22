@@ -161,7 +161,25 @@
     "score": "Criterion “Market and demand”",
     "scoreValue": "{{value}} of 10",
     "faculty": "Faculty",
-    "facultyValue": "Faculty of Information Technology"
+    "facultyValue": "Faculty of Information Technology",
+    "collab": {
+      "fields": "Fields with actions and groups",
+      "comment": "Comment",
+      "history": "Field history",
+      "features": "Key features",
+      "featuresHint": "A list of answers is one group under one label.",
+      "feature": "Feature {{number}}",
+      "feature1": "A photo of a leaf from a phone",
+      "feature2": "A map of disease spots",
+      "conversation": "Changes and conversation",
+      "diffSame": "Farmers lose ",
+      "diffRemoved": "a lot of the harvest ",
+      "diffAdded": "up to 20% of the wheat harvest ",
+      "mentor": "Mentor",
+      "mentorText": "Good start. How many hectares do your first customers farm on average?",
+      "you": "You",
+      "studentText": "From 200 to 2,000 ha, according to our interviews."
+    }
   },
   "identity": {
     "title": "Badges and avatars",

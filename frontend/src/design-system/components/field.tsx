@@ -43,6 +43,8 @@ interface FieldProps {
   optional?: boolean;
   /** Character counter, e.g. { value: 120, max: 280 }. */
   counter?: { value: number; max: number };
+  /** Small buttons at the end of the label row (comments, history). */
+  actions?: ReactNode;
   id?: string;
   className?: string;
   children: ReactNode;
@@ -55,6 +57,7 @@ export function Field({
   required = false,
   optional = false,
   counter,
+  actions,
   id,
   className,
   children,
@@ -89,12 +92,17 @@ export function Field({
               <span className="ml-1.5 font-normal text-fg-subtle">{t('field.optional')}</span>
             )}
           </label>
-          {counter && (
-            <span
-              id={counterId}
-              className={cn('text-xs tabular-nums', over ? 'text-danger' : 'text-fg-subtle')}
-            >
-              {t('field.counter', { value: counter.value, max: counter.max })}
+          {(counter ?? actions) && (
+            <span className="flex shrink-0 items-center gap-1">
+              {counter && (
+                <span
+                  id={counterId}
+                  className={cn('text-xs tabular-nums', over ? 'text-danger' : 'text-fg-subtle')}
+                >
+                  {t('field.counter', { value: counter.value, max: counter.max })}
+                </span>
+              )}
+              {actions}
             </span>
           )}
         </div>
@@ -117,5 +125,67 @@ export function Field({
         )}
       </div>
     </FieldContext>
+  );
+}
+
+interface FieldSetProps {
+  legend: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  required?: boolean;
+  optional?: boolean;
+  actions?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}
+
+/** A group of controls answering one question (a list, a table) under one legend. */
+export function FieldSet({
+  legend,
+  hint,
+  error,
+  required = false,
+  optional = false,
+  actions,
+  className,
+  children,
+}: FieldSetProps) {
+  const { t } = useTranslation();
+  const generated = useId();
+  const hintId = hint ? `fieldset-${generated}-hint` : undefined;
+  const errorId = error ? `fieldset-${generated}-error` : undefined;
+  return (
+    <fieldset
+      aria-describedby={[errorId, hintId].filter(Boolean).join(' ') || undefined}
+      aria-invalid={error ? true : undefined}
+      className={cn('flex min-w-0 flex-col gap-1.5', className)}
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <legend className="float-left text-sm font-medium text-fg">
+          {legend}
+          {required && (
+            <span aria-hidden className="ml-0.5 text-danger">
+              *
+            </span>
+          )}
+          {optional && (
+            <span className="ml-1.5 font-normal text-fg-subtle">{t('field.optional')}</span>
+          )}
+        </legend>
+        {actions && <span className="flex shrink-0 items-center gap-1">{actions}</span>}
+      </div>
+      {hint && !error && (
+        <p id={hintId} className="text-sm text-fg-subtle">
+          {hint}
+        </p>
+      )}
+      {children}
+      {error && (
+        <p id={errorId} className="flex items-start gap-1.5 text-sm text-danger" aria-live="polite">
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{error}</span>
+        </p>
+      )}
+    </fieldset>
   );
 }

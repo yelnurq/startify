@@ -8,10 +8,8 @@ import {
   FileUp,
   Mail,
   MailCheck,
-  Rocket,
   Sparkles,
   Users,
-  UsersRound,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,17 +21,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  IdeaIllustration,
   ProgressRing,
   Skeleton,
   SkeletonText,
-  StageTrack,
   Tag,
   toast,
   TruncatedText,
 } from '@/design-system';
 import { hasRole, useResendVerification, type Session } from '@/features/auth/api';
 import { meQuery, type Me } from '@/features/profile/api';
+import { CurrentProject } from '@/features/projects/current-project';
 import { ROLE_ORDER } from '@/features/shell/roles';
 import { latestTeamRequestsQuery } from '@/features/team/api';
 import { errorMessage } from '@/shared/api/errors';
@@ -92,7 +89,7 @@ export function DashboardPage({ session }: { session: Session }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-          <IncubatorTeaser />
+          <CurrentProject />
           <LatestRequests />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
@@ -139,47 +136,6 @@ function VerifyEmailBanner({ email }: { email: string }) {
     >
       {t('dashboard.verify.text', { email })}
     </Callout>
-  );
-}
-
-function IncubatorTeaser() {
-  const { t } = useTranslation('app');
-  const stages = (['idea', 'market', 'product', 'launch'] as const).map((id) => ({
-    id,
-    title: t(`dashboard.incubator.stages.${id}`),
-    progress: 0,
-  }));
-  return (
-    <Card className="overflow-hidden">
-      <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-[1fr_auto] sm:items-center">
-        <div className="flex flex-col items-start gap-3">
-          <Badge tone="gold" icon={<Rocket />}>
-            {t('dashboard.incubator.badge')}
-          </Badge>
-          <h2 className="font-display text-xl font-semibold text-fg">
-            {t('dashboard.incubator.title')}
-          </h2>
-          <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
-            {t('dashboard.incubator.text')}
-          </p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button asChild size="sm">
-              <Link to="/app/team">
-                <UsersRound aria-hidden />
-                {t('dashboard.incubator.findTeam')}
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="secondary">
-              <Link to="/app/profile">{t('dashboard.incubator.fillProfile')}</Link>
-            </Button>
-          </div>
-        </div>
-        <IdeaIllustration className="hidden w-40 sm:block" />
-      </div>
-      <div className="border-t border-border bg-surface-raised px-6 py-4">
-        <StageTrack stages={stages} label={t('dashboard.incubator.track')} />
-      </div>
-    </Card>
   );
 }
 

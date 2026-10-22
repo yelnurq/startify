@@ -39,7 +39,10 @@ declare module '@tanstack/react-router' {
       | 'import'
       | 'ai'
       | 'aiUsage'
-      | 'knowledge';
+      | 'knowledge'
+      | 'projects';
+    /** The page brings its own columns: no content padding (project workspace). */
+    bleed?: boolean;
   }
 }
 

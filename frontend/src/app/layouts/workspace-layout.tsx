@@ -1,5 +1,6 @@
+import { useLocation } from '@tanstack/react-router';
 import { ListTree, PanelRightClose, PanelRightOpen } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/design-system/components/button';
@@ -35,11 +36,27 @@ export function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const { t } = useTranslation();
   const [asideOpen, setAsideOpen] = useState(true);
-  const [navSheet, setNavSheet] = useState(false);
-  const [asideSheet, setAsideSheet] = useState(false);
+  // Sheets remember the address they were opened at: navigating closes them.
+  const { pathname } = useLocation();
+  const [navSheetAt, setNavSheetAt] = useState<string | null>(null);
+  const [asideSheetAt, setAsideSheetAt] = useState<string | null>(null);
+  const navSheet = navSheetAt === pathname;
+  const asideSheet = asideSheetAt === pathname;
+  const setNavSheet = (open: boolean) => {
+    setNavSheetAt(open ? pathname : null);
+  };
+  const setAsideSheet = (open: boolean) => {
+    setAsideSheetAt(open ? pathname : null);
+  };
+  // A new page (another step) starts at the top of the centre column.
+  const main = useRef<HTMLElement>(null);
+  useEffect(() => {
+    main.current?.scrollTo({ top: 0 });
+  }, [pathname]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
+    // The columns scroll on their own under the app header, like a desktop app.
+    <div className="flex h-[calc(100dvh-4rem)] flex-col">
       <div className="flex items-center gap-2 border-b border-border bg-surface px-4 py-3 lg:px-6">
         <IconButton
           label={navTitle}
@@ -66,19 +83,22 @@ export function WorkspaceLayout({
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label={navTitle}
-          className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-72 shrink-0 overflow-y-auto border-r border-border bg-surface p-3 lg:block"
+          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-surface p-3 lg:block"
         >
           {nav}
         </aside>
 
-        <section className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-          <div className="mx-auto max-w-3xl">{children}</div>
+        <section
+          ref={main}
+          className="min-w-0 flex-1 overflow-y-auto px-4 pt-6 sm:px-6 lg:px-10 lg:pt-8"
+        >
+          <div className="mx-auto max-w-3xl pb-6 lg:pb-8">{children}</div>
         </section>
 
         <aside
           aria-label={asideTitle}
           className={cn(
-            'sticky top-16 hidden h-[calc(100dvh-4rem)] shrink-0 flex-col border-l border-border bg-surface transition-[width] duration-200 xl:flex',
+            'hidden shrink-0 flex-col border-l border-border bg-surface transition-[width] duration-200 xl:flex',
             asideOpen ? 'w-96' : 'w-14',
           )}
         >

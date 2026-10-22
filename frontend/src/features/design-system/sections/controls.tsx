@@ -2,8 +2,11 @@ import {
   ArrowRight,
   AtSign,
   Bookmark,
+  Bot,
   Download,
   Globe,
+  History,
+  MessageSquarePlus,
   MoreHorizontal,
   Plus,
   Share2,
@@ -15,9 +18,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  Avatar,
   Button,
+  ChatBubble,
   Checkbox,
+  DiffText,
   Field,
+  FieldSet,
   IconButton,
   Input,
   modKey,
@@ -199,6 +206,66 @@ export function FormsSection({ index }: { index: number }) {
           <Field label={t('forms.faculty')}>
             <Input disabled value={t('forms.facultyValue')} readOnly />
           </Field>
+        </Specimen>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Specimen label={t('forms.collab.fields')} bodyClassName="flex flex-col gap-5">
+          <Field
+            label={t('forms.problem')}
+            counter={{ value: 0, max: 2000 }}
+            actions={
+              <>
+                <IconButton
+                  size="sm"
+                  label={t('forms.collab.comment')}
+                  icon={<MessageSquarePlus />}
+                />
+                <IconButton size="sm" label={t('forms.collab.history')} icon={<History />} />
+              </>
+            }
+          >
+            <Textarea rows={2} placeholder={t('forms.problemPlaceholder')} />
+          </Field>
+          <FieldSet
+            legend={t('forms.collab.features')}
+            hint={t('forms.collab.featuresHint')}
+            required
+          >
+            <Input
+              aria-label={t('forms.collab.feature', { number: 1 })}
+              defaultValue={t('forms.collab.feature1')}
+            />
+            <Input
+              aria-label={t('forms.collab.feature', { number: 2 })}
+              defaultValue={t('forms.collab.feature2')}
+            />
+          </FieldSet>
+        </Specimen>
+        <Specimen label={t('forms.collab.conversation')} bodyClassName="flex flex-col gap-4">
+          <DiffText
+            parts={[
+              { kind: 'same', text: t('forms.collab.diffSame') },
+              { kind: 'removed', text: t('forms.collab.diffRemoved') },
+              { kind: 'added', text: t('forms.collab.diffAdded') },
+            ]}
+          />
+          <ChatBubble
+            avatar={
+              <span className="grid size-7 place-items-center rounded-full bg-primary-soft text-primary-soft-fg">
+                <Bot className="size-4" aria-hidden />
+              </span>
+            }
+            meta={t('forms.collab.mentor')}
+          >
+            <p>{t('forms.collab.mentorText')}</p>
+          </ChatBubble>
+          <ChatBubble
+            own
+            avatar={<Avatar name="Айгерим Сарсенова" size="xs" />}
+            meta={t('forms.collab.you')}
+          >
+            <p>{t('forms.collab.studentText')}</p>
+          </ChatBubble>
         </Specimen>
       </div>
     </Section>

@@ -29,11 +29,14 @@ import { Route as USlugRouteImport } from './app/routes/u/$slug'
 import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
 import { Route as AppAdminKnowledgeRouteImport } from './app/routes/app/admin/knowledge'
 import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
+import { Route as AppProjectsIndexRouteImport } from './app/routes/app/projects/index'
 import { Route as AppSettingsSecurityRouteImport } from './app/routes/app/settings/security'
 import { Route as AppTeamIndexRouteImport } from './app/routes/app/team/index'
 import { Route as AppTeamRequestIdRouteImport } from './app/routes/app/team/$requestId'
 import { Route as AppAdminAiIndexRouteImport } from './app/routes/app/admin/ai/index'
 import { Route as AppAdminAiUsageRouteImport } from './app/routes/app/admin/ai/usage'
+import { Route as AppProjectsProjectIdIndexRouteImport } from './app/routes/app/projects/$projectId/index'
+import { Route as AppProjectsProjectIdStepsStepKeyRouteImport } from './app/routes/app/projects/$projectId/steps/$stepKey'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -135,6 +138,11 @@ const AppAdminMembersRoute = AppAdminMembersRouteImport.update({
   path: '/admin/members',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
   id: '/settings/security',
   path: '/settings/security',
@@ -160,6 +168,18 @@ const AppAdminAiUsageRoute = AppAdminAiUsageRouteImport.update({
   path: '/admin/ai/usage',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProjectsProjectIdIndexRoute =
+  AppProjectsProjectIdIndexRouteImport.update({
+    id: '/projects/$projectId/',
+    path: '/projects/$projectId/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProjectsProjectIdStepsStepKeyRoute =
+  AppProjectsProjectIdStepsStepKeyRouteImport.update({
+    id: '/projects/$projectId/steps/$stepKey',
+    path: '/projects/$projectId/steps/$stepKey',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -184,9 +204,12 @@ export interface FileRoutesByFullPath {
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
+  '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -210,9 +233,12 @@ export interface FileRoutesByTo {
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/projects': typeof AppProjectsIndexRoute
   '/app/team': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/admin/ai': typeof AppAdminAiIndexRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -238,9 +264,12 @@ export interface FileRoutesById {
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
+  '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -267,9 +296,12 @@ export interface FileRouteTypes {
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
+    | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
     | '/app/admin/ai/'
+    | '/app/projects/$projectId/'
+    | '/app/projects/$projectId/steps/$stepKey'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -293,9 +325,12 @@ export interface FileRouteTypes {
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
+    | '/app/projects'
     | '/app/team'
     | '/app/admin/ai/usage'
     | '/app/admin/ai'
+    | '/app/projects/$projectId'
+    | '/app/projects/$projectId/steps/$stepKey'
   id:
     | '__root__'
     | '/'
@@ -320,9 +355,12 @@ export interface FileRouteTypes {
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
+    | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
     | '/app/admin/ai/'
+    | '/app/projects/$projectId/'
+    | '/app/projects/$projectId/steps/$stepKey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -485,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminMembersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects/': {
+      id: '/app/projects/'
+      path: '/projects'
+      fullPath: '/app/projects/'
+      preLoaderRoute: typeof AppProjectsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/settings/security': {
       id: '/app/settings/security'
       path: '/settings/security'
@@ -520,6 +565,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminAiUsageRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects/$projectId/': {
+      id: '/app/projects/$projectId/'
+      path: '/projects/$projectId'
+      fullPath: '/app/projects/$projectId/'
+      preLoaderRoute: typeof AppProjectsProjectIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/projects/$projectId/steps/$stepKey': {
+      id: '/app/projects/$projectId/steps/$stepKey'
+      path: '/projects/$projectId/steps/$stepKey'
+      fullPath: '/app/projects/$projectId/steps/$stepKey'
+      preLoaderRoute: typeof AppProjectsProjectIdStepsStepKeyRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -531,9 +590,12 @@ interface AppRouteChildren {
   AppAdminMembersRoute: typeof AppAdminMembersRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppTeamRequestIdRoute: typeof AppTeamRequestIdRoute
+  AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppAdminAiUsageRoute: typeof AppAdminAiUsageRoute
   AppAdminAiIndexRoute: typeof AppAdminAiIndexRoute
+  AppProjectsProjectIdIndexRoute: typeof AppProjectsProjectIdIndexRoute
+  AppProjectsProjectIdStepsStepKeyRoute: typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -544,9 +606,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminMembersRoute: AppAdminMembersRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppTeamRequestIdRoute: AppTeamRequestIdRoute,
+  AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppAdminAiUsageRoute: AppAdminAiUsageRoute,
   AppAdminAiIndexRoute: AppAdminAiIndexRoute,
+  AppProjectsProjectIdIndexRoute: AppProjectsProjectIdIndexRoute,
+  AppProjectsProjectIdStepsStepKeyRoute: AppProjectsProjectIdStepsStepKeyRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

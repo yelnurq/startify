@@ -829,6 +829,485 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find members of the university
+         * @description Members by name for adding to a team or mentioning in a comment. Returns
+         *     active members only, at most `limit`.
+         */
+        get: operations["searchPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incubator/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stages, steps and fields of the incubator
+         * @description Texts come in all three languages; the client picks the current one.
+         */
+        get: operations["getIncubatorTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Projects
+         * @description `scope=mine` (default) lists the projects the member takes part in. `scope=all` lists
+         *     every project of the university and requires `innovation_manager`, `tenant_admin`
+         *     or `leadership`.
+         */
+        get: operations["listProjects"];
+        put?: never;
+        /**
+         * Start a project
+         * @description The creator becomes the owner. When the university has an intellectual property
+         *     policy, `ip_policy_version` must name its current version (`project.ip_policy_required`).
+         */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** One project */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        /**
+         * Archive the project
+         * @description The owner or an `innovation_manager` may archive; archived projects are read-only.
+         */
+        delete: operations["archiveProject"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit the project card
+         * @description Team members (owner, member) may edit.
+         */
+        patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/projects/{projectId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a member or a supervisor
+         * @description The owner adds members of the university. A supervisor must have the `supervisor`
+         *     role and may also be assigned by an `innovation_manager`.
+         */
+        post: operations["addProjectMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member or leave the project
+         * @description The owner removes others; anyone but the owner may leave.
+         */
+        delete: operations["removeProjectMember"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a member's title or hand over ownership
+         * @description Members edit their own title; the owner edits anyone's and may make another member
+         *     the owner (`role: owner`), becoming a member.
+         */
+        patch: operations["updateProjectMember"];
+        trace?: never;
+    };
+    "/projects/{projectId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** Recent changes, comments and completed steps */
+        get: operations["listProjectActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report being in the project and see who else is
+         * @description Clients call it every 15 seconds while the project is open. The answer lists the
+         *     members seen in the last 45 seconds and the current version of every step, so a
+         *     client notices changes made by others.
+         */
+        post: operations["updateProjectPresence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** The state of every step and the progress of the project */
+        get: operations["listProjectSteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        /** The answers of a step */
+        get: operations["getProjectStep"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Save answers
+         * @description Saves the given fields (others keep their values). `If-Match` is required
+         *     (428 `precondition.required`); a stale version fails with 412 `precondition.failed`,
+         *     and the client merges its edits into the current version. Drafts are saved as typed:
+         *     only types, lengths and options are checked here, the minimum is checked on completion.
+         */
+        patch: operations["updateProjectStep"];
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the AI what to strengthen
+         * @description Reviews the step against its criteria; the review is kept with the step.
+         */
+        post: operations["checkProjectStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark the step done
+         * @description Fails with 422 `incubator.step_incomplete` (field errors list what is missing) unless
+         *     the minimum requirements are met. A completed step stays editable; when an edit
+         *     breaks the minimum it returns to `in_progress`.
+         */
+        post: operations["completeProjectStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve the step as a supervisor
+         * @description The project's supervisor or an `innovation_manager` approves a step, also one that
+         *     does not meet the minimum, with a comment.
+         */
+        post: operations["approveProjectStep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        /** History of the step's fields */
+        get: operations["listStepRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+                revisionId: components["parameters"]["RevisionId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put an earlier value back
+         * @description The restored value becomes a new revision; nothing is lost.
+         */
+        post: operations["restoreStepRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/steps/{stepKey}/mentor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The conversation with the AI mentor about the step
+         * @description Messages oldest first; `cursor` loads earlier ones.
+         */
+        get: operations["getMentorConversation"];
+        put?: never;
+        /**
+         * Ask the mentor and stream the answer
+         * @description Team members ask; the answer streams as server-sent events: `message` (the saved
+         *     question, MentorMessage), `delta` (`{"text": "..."}`) for each piece, then `done`
+         *     (the saved answer, MentorMessage) or `error` (Problem). Closing the connection stops
+         *     the model; the partial answer is kept as `cancelled`.
+         *
+         *     A suggested wording for a field is wrapped in
+         *     `<suggestion field="<field key>">…</suggestion>`; the client shows it with an
+         *     "Apply to the field" button.
+         */
+        post: operations["sendMentorMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** Comments */
+        get: operations["listProjectComments"];
+        put?: never;
+        /**
+         * Comment on a step or a field
+         * @description The team, the supervisor and innovation managers may comment and @mention each other.
+         */
+        post: operations["createProjectComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                commentId: components["parameters"]["CommentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a comment
+         * @description The author or an innovation manager.
+         */
+        delete: operations["deleteProjectComment"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit or resolve a comment
+         * @description The author edits the text; anyone who can comment resolves or reopens a thread.
+         */
+        patch: operations["updateProjectComment"];
+        trace?: never;
+    };
+    "/projects/{projectId}/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** Generated one-pagers, pitch decks and startup passports */
+        get: operations["listProjectMaterials"];
+        put?: never;
+        /**
+         * Generate a material from the project data
+         * @description Generation runs in the background (AI texts, then PDF or PPTX); poll the list until
+         *     the status is `ready`. Pitch decks come as PDF or PPTX, the others as PDF.
+         */
+        post: operations["createProjectMaterial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/materials/{materialId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                materialId: components["parameters"]["MaterialId"];
+            };
+            cookie?: never;
+        };
+        /** Download a material */
+        get: operations["getProjectMaterialContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1035,6 +1514,7 @@ export interface components {
             email_domains: string[];
             sso_providers: components["schemas"]["SsoProvider"][];
             consent: components["schemas"]["ConsentPolicy"];
+            ip_policy: components["schemas"]["IpPolicy"] | null;
         };
         /** @description Personal data processing consent shown at sign-up (Law of the RK "On personal data"). */
         ConsentPolicy: {
@@ -1378,6 +1858,399 @@ export interface components {
             };
             errors?: components["schemas"]["FieldError"][];
         };
+        Person: {
+            /** Format: uuid */
+            id: string;
+            full_name: string;
+            avatar_url: string | null;
+            faculty: components["schemas"]["FacultyRef"] | null;
+            roles: components["schemas"]["Role"][];
+            /** @description Address of the public profile, when it is public. */
+            slug: string | null;
+        };
+        PersonList: {
+            items: components["schemas"]["Person"][];
+        };
+        /** @description Intellectual property policy a team accepts when it starts a project. */
+        IpPolicy: {
+            version: string;
+            text: components["schemas"]["LocalizedText"];
+        };
+        /** @enum {string} */
+        FieldType: "text" | "textarea" | "number" | "select" | "list" | "table" | "url";
+        /** @enum {string} */
+        FieldUnit: "kzt" | "count";
+        TemplateOption: {
+            value: string;
+            label: components["schemas"]["LocalizedText"];
+        };
+        TemplateField: {
+            key: string;
+            type: components["schemas"]["FieldType"];
+            /** @description Needed to complete the step (with min_length or min_items). */
+            required: boolean;
+            min_length?: number;
+            max_length?: number;
+            min_items?: number;
+            max_items?: number;
+            unit?: components["schemas"]["FieldUnit"];
+            label: components["schemas"]["LocalizedText"];
+            hint?: components["schemas"]["LocalizedText"];
+            placeholder?: components["schemas"]["LocalizedText"];
+            options?: components["schemas"]["TemplateOption"][];
+            /** @description Columns of a table. */
+            columns?: components["schemas"]["TemplateField"][];
+        };
+        TemplateCriterion: {
+            fields: string[];
+            text: components["schemas"]["LocalizedText"];
+        };
+        TemplateStep: {
+            /** @example problem */
+            key: string;
+            number: number;
+            stage: string;
+            title: components["schemas"]["LocalizedText"];
+            goal: components["schemas"]["LocalizedText"];
+            method: components["schemas"]["LocalizedText"];
+            criteria: components["schemas"]["TemplateCriterion"][];
+            fields: components["schemas"]["TemplateField"][];
+        };
+        TemplateStage: {
+            key: string;
+            title: components["schemas"]["LocalizedText"];
+            steps: components["schemas"]["TemplateStep"][];
+        };
+        IncubatorTemplate: {
+            version: number;
+            stages: components["schemas"]["TemplateStage"][];
+        };
+        /** @enum {string} */
+        Industry: "agritech" | "edtech" | "fintech" | "healthtech" | "logistics" | "cleantech" | "govtech" | "foodtech" | "fashion" | "ecommerce" | "manufacturing" | "energy" | "tourism" | "social" | "other";
+        /** @enum {string} */
+        ProjectRole: "owner" | "member" | "supervisor";
+        /**
+         * @description How the signed-in member relates to the project: a team role, or `manager` for
+         *     innovation managers, administrators and leadership who see every project.
+         * @enum {string}
+         */
+        ProjectAccess: "owner" | "member" | "supervisor" | "manager";
+        /** @enum {string} */
+        StepStatus: "not_started" | "in_progress" | "completed" | "approved";
+        /**
+         * @description Milestones of the project.
+         * @enum {string}
+         */
+        Badge: "idea_stage" | "market_stage" | "product_stage" | "launch_stage" | "first_review" | "materials_ready" | "team_of_three";
+        StageProgress: {
+            key: string;
+            completed: number;
+            total: number;
+        };
+        ProjectProgress: {
+            completed_steps: number;
+            total_steps: number;
+            percent: number;
+            /** @description The first step that is not done yet (the last one when all are). */
+            current_step: string;
+            stages: components["schemas"]["StageProgress"][];
+            /** @description Consecutive days, up to today or yesterday, with changes by the team. */
+            streak_days: number;
+            badges: components["schemas"]["Badge"][];
+        };
+        ProjectMember: {
+            user: components["schemas"]["MemberBrief"];
+            role: components["schemas"]["ProjectRole"];
+            title: string;
+            /** Format: date-time */
+            joined_at: string;
+        };
+        Project: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            tagline: string;
+            industry: components["schemas"]["Industry"];
+            /** @enum {string} */
+            visibility: "private" | "university" | "public";
+            hide_sensitive: boolean;
+            faculty: components["schemas"]["FacultyRef"] | null;
+            members: components["schemas"]["ProjectMember"][];
+            access: components["schemas"]["ProjectAccess"];
+            archived: boolean;
+            progress: components["schemas"]["ProjectProgress"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ProjectSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            tagline: string;
+            industry: components["schemas"]["Industry"];
+            team: components["schemas"]["MemberBrief"][];
+            access: components["schemas"]["ProjectAccess"];
+            archived: boolean;
+            completed_steps: number;
+            total_steps: number;
+            current_step: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ProjectPage: {
+            items: components["schemas"]["ProjectSummary"][];
+            next_cursor: string | null;
+        };
+        ProjectCreate: {
+            title: string;
+            tagline?: string;
+            industry: components["schemas"]["Industry"];
+            ip_policy_version?: string;
+        };
+        ProjectUpdate: {
+            title?: string;
+            tagline?: string;
+            industry?: components["schemas"]["Industry"];
+            hide_sensitive?: boolean;
+        };
+        ProjectMemberAdd: {
+            /** Format: uuid */
+            user_id: string;
+            /** @enum {string} */
+            role: "member" | "supervisor";
+            title?: string;
+        };
+        ProjectMemberUpdate: {
+            title?: string;
+            /**
+             * @description Hand the project over to this member.
+             * @enum {string}
+             */
+            role?: "owner";
+        };
+        /** @enum {string} */
+        ActivityKind: "edit" | "comment" | "step_completed" | "step_approved" | "member_joined";
+        Activity: {
+            kind: components["schemas"]["ActivityKind"];
+            actor: components["schemas"]["MemberBrief"] | null;
+            step_key: string | null;
+            field_key: string | null;
+            /** Format: date-time */
+            at: string;
+        };
+        ActivityList: {
+            items: components["schemas"]["Activity"][];
+        };
+        PresenceUpdate: {
+            step_key?: string;
+        };
+        Viewer: {
+            user: components["schemas"]["MemberBrief"];
+            step_key: string | null;
+            /** Format: date-time */
+            seen_at: string;
+        };
+        Presence: {
+            viewers: components["schemas"]["Viewer"][];
+            /** @description Current version of every saved step, by step key. */
+            versions: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * @description Answers by field key: a string (text, textarea, select, url), a number or null
+         *     (number), an array of strings (list) or an array of objects keyed by column (table).
+         */
+        StepValues: {
+            [key: string]: unknown;
+        };
+        StepGap: {
+            field: string;
+            /** @enum {string} */
+            code: "required" | "minLength" | "minItems";
+            count?: number;
+        };
+        /** @enum {string} */
+        CheckStatus: "ok" | "weak" | "missing";
+        StepCheckItem: {
+            criterion: string;
+            status: components["schemas"]["CheckStatus"];
+            advice: string;
+        };
+        /** @description An AI review of the step. It is a recommendation, not a grade. */
+        StepCheck: {
+            ready: boolean;
+            summary: string;
+            items: components["schemas"]["StepCheckItem"][];
+            model: string;
+            prompt_version: string;
+            /** Format: date-time */
+            checked_at: string;
+            /** @description Version of the step the review was made for. */
+            version: number;
+        };
+        StepSummary: {
+            key: string;
+            status: components["schemas"]["StepStatus"];
+            version: number;
+            /** @description Fields with an answer. */
+            filled: number;
+            total: number;
+            open_comments: number;
+            /** Format: date-time */
+            updated_at: string | null;
+            updated_by: components["schemas"]["MemberBrief"] | null;
+        };
+        StepList: {
+            items: components["schemas"]["StepSummary"][];
+            progress: components["schemas"]["ProjectProgress"];
+        };
+        Step: {
+            key: string;
+            status: components["schemas"]["StepStatus"];
+            version: number;
+            values: components["schemas"]["StepValues"];
+            /** @description What the step lacks to be completed. */
+            missing: components["schemas"]["StepGap"][];
+            check: components["schemas"]["StepCheck"] | null;
+            /** Format: date-time */
+            completed_at: string | null;
+            approved_by: components["schemas"]["MemberBrief"] | null;
+            approval_comment: string | null;
+            /** Format: date-time */
+            updated_at: string | null;
+            updated_by: components["schemas"]["MemberBrief"] | null;
+        };
+        StepUpdate: {
+            values: components["schemas"]["StepValues"];
+            /**
+             * @description `mentor` when the text comes from an applied mentor suggestion.
+             * @default edit
+             * @enum {string}
+             */
+            source: "edit" | "mentor";
+        };
+        StepApprove: {
+            comment: string;
+        };
+        /** @enum {string} */
+        RevisionSource: "edit" | "mentor" | "restore";
+        Revision: {
+            /** Format: uuid */
+            id: string;
+            field: string;
+            /** @description The field's value after the change. */
+            value: unknown;
+            version: number;
+            author: components["schemas"]["MemberBrief"] | null;
+            source: components["schemas"]["RevisionSource"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        RevisionPage: {
+            items: components["schemas"]["Revision"][];
+            next_cursor: string | null;
+        };
+        Comment: {
+            /** Format: uuid */
+            id: string;
+            step_key: string;
+            field_key: string | null;
+            /** Format: uuid */
+            parent_id: string | null;
+            author: components["schemas"]["MemberBrief"] | null;
+            body: string;
+            mentions: components["schemas"]["MemberBrief"][];
+            resolved: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** @description The signed-in member wrote it and may edit it. */
+            editable: boolean;
+        };
+        CommentPage: {
+            items: components["schemas"]["Comment"][];
+            next_cursor: string | null;
+        };
+        CommentCreate: {
+            step_key: string;
+            field_key?: string;
+            /** Format: uuid */
+            parent_id?: string;
+            body: string;
+            mentions?: string[];
+        };
+        CommentUpdate: {
+            body?: string;
+            resolved?: boolean;
+        };
+        MentorSource: {
+            /** Format: uuid */
+            document_id: string;
+            title: string;
+        };
+        MentorMessage: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            role: "user" | "assistant";
+            author: components["schemas"]["MemberBrief"] | null;
+            content: string;
+            /** @enum {string} */
+            status: "ok" | "cancelled" | "error";
+            /** @description Knowledge base documents the answer could draw on. */
+            sources: components["schemas"]["MentorSource"][];
+            /** Format: date-time */
+            created_at: string;
+        };
+        MentorConversation: {
+            items: components["schemas"]["MentorMessage"][];
+            /** @description Loads earlier messages. */
+            next_cursor: string | null;
+            /** @description Modes the university allows; the first is the default. */
+            modes: components["schemas"]["MentorMode"][];
+            /** @description The mentor runs on a provider outside the university. */
+            external: boolean;
+            /** @description The signed-in member may ask (team members only). */
+            can_ask: boolean;
+        };
+        MentorMessageCreate: {
+            content: string;
+            mode?: components["schemas"]["MentorMode"];
+        };
+        /** @enum {string} */
+        MaterialKind: "one_pager" | "pitch_deck" | "passport";
+        /** @enum {string} */
+        MaterialFormat: "pdf" | "pptx";
+        /** @enum {string} */
+        MaterialStatus: "pending" | "ready" | "failed";
+        Material: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["MaterialKind"];
+            format: components["schemas"]["MaterialFormat"];
+            locale: components["schemas"]["Locale"];
+            status: components["schemas"]["MaterialStatus"];
+            error: string | null;
+            download_url: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MaterialList: {
+            items: components["schemas"]["Material"][];
+        };
+        MaterialCreate: {
+            kind: components["schemas"]["MaterialKind"];
+            format: components["schemas"]["MaterialFormat"];
+            locale?: components["schemas"]["Locale"];
+        };
     };
     responses: {
         /** @description Error described in RFC 9457 Problem Details format. */
@@ -1391,6 +2264,14 @@ export interface components {
         };
     };
     parameters: {
+        /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+        IfMatchRequired: string;
+        ProjectId: string;
+        UserId: string;
+        StepKey: string;
+        RevisionId: string;
+        CommentId: string;
+        MaterialId: string;
         /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
         IfMatch: string;
         /** @description Client-generated unique key that makes a creating request safe to retry. */
@@ -2625,6 +3506,771 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    searchPeople: {
+        parameters: {
+            query?: {
+                q?: string;
+                role?: components["schemas"]["Role"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching members. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getIncubatorTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The template. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncubatorTemplate"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "all";
+                q?: string;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Projects, the most recently changed first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description The project. */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    archiveProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated project. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    addProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberAdd"];
+            };
+        };
+        responses: {
+            /** @description The member. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    removeProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description The member. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjectActivity: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activity, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProjectPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresenceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Who is here. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Presence"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjectSteps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Steps in template order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getProjectStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The step. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProjectStep: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match": components["parameters"]["IfMatchRequired"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StepUpdate"];
+            };
+        };
+        responses: {
+            /** @description The saved step. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    checkProjectStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The step with the review. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    completeProjectStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The completed step. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    approveProjectStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StepApprove"];
+            };
+        };
+        responses: {
+            /** @description The approved step. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listStepRevisions: {
+        parameters: {
+            query?: {
+                field?: string;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revisions, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    restoreStepRevision: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match": components["parameters"]["IfMatchRequired"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+                revisionId: components["parameters"]["RevisionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The step. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Step"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getMentorConversation: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Messages and the mentor's options. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorConversation"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    sendMentorMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                stepKey: components["parameters"]["StepKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorMessageCreate"];
+            };
+        };
+        responses: {
+            /** @description An event stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjectComments: {
+        parameters: {
+            query?: {
+                step_key?: string;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comments, oldest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createProjectComment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentCreate"];
+            };
+        };
+        responses: {
+            /** @description The comment. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteProjectComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                commentId: components["parameters"]["CommentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateProjectComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                commentId: components["parameters"]["CommentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentUpdate"];
+            };
+        };
+        responses: {
+            /** @description The comment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjectMaterials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Materials, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createProjectMaterial: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialCreate"];
+            };
+        };
+        responses: {
+            /** @description Scheduled. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Material"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getProjectMaterialContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                materialId: components["parameters"]["MaterialId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
             };
             default: components["responses"]["Problem"];
         };

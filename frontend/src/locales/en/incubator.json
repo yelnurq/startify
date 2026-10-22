@@ -1,0 +1,391 @@
+{
+  "projects": {
+    "title": "Projects",
+    "subtitle": "The incubator takes a team from a problem to a pitch in 14 steps: guided forms, an AI mentor and a review of every step.",
+    "new": "New project",
+    "scope": {
+      "label": "Which projects to show",
+      "mine": "Mine",
+      "all": "All university projects"
+    },
+    "search": "Search by title",
+    "empty": "You have no projects yet",
+    "emptyText": "Start with a problem you want to solve — the AI mentor will help you get to the pitch.",
+    "emptyAll": "The university has no projects yet",
+    "createFirst": "Create your first project",
+    "nothing": "Nothing found",
+    "nothingText": "Try another title.",
+    "more": "Show more",
+    "archived": "Archived",
+    "progress": "{{done}} of {{total}} steps",
+    "progressLabel": "Project progress",
+    "current": "Now: step {{number}}. {{step}}",
+    "access": {
+      "owner": "Owner",
+      "member": "Member",
+      "supervisor": "You supervise",
+      "manager": "University view"
+    }
+  },
+  "industries": {
+    "agritech": "Agritech",
+    "edtech": "Education",
+    "fintech": "Fintech",
+    "healthtech": "Health and medicine",
+    "logistics": "Logistics",
+    "cleantech": "Ecology and clean tech",
+    "govtech": "Public services and cities",
+    "foodtech": "Food technology",
+    "fashion": "Light industry and fashion",
+    "ecommerce": "Retail and e-commerce",
+    "manufacturing": "Manufacturing",
+    "energy": "Energy",
+    "tourism": "Tourism",
+    "social": "Social impact",
+    "other": "Other"
+  },
+  "create": {
+    "title": "New project",
+    "description": "You can change the title and industry later. After creating the project, the first step opens — \"The problem and who has it\".",
+    "name": "Title",
+    "nameHint": "A working title — short and clear.",
+    "namePlaceholder": "For example, AgroScan",
+    "tagline": "Tagline",
+    "taglinePlaceholder": "One sentence on what the project does",
+    "industry": "Industry",
+    "industryPlaceholder": "Choose an industry",
+    "policyTitle": "University intellectual property policy",
+    "accept": "I have read the policy and agree to it",
+    "acceptRequired": "Accept the intellectual property policy to create a project",
+    "submit": "Create project",
+    "done": "Project created"
+  },
+  "nav": {
+    "steps": "Project steps",
+    "overview": "Project overview",
+    "progress": "Project progress",
+    "done": "{{done}} of {{total}} steps done",
+    "fields": "{{filled}} of {{total}} fields",
+    "streak_one": "{{count}} day in a row",
+    "streak_other": "{{count}} days in a row",
+    "comments_one": "{{count}} open comment",
+    "comments_other": "{{count}} open comments"
+  },
+  "workspace": {
+    "here": "In the project now",
+    "archived": "The project is archived — answers are read-only.",
+    "readOnly": "You see the project as a supervisor: the team fills in the answers, you can comment and approve steps.",
+    "notFound": "Project not found",
+    "notFoundText": "It may have been removed, or you have no access to it."
+  },
+  "status": {
+    "not_started": "Not started",
+    "in_progress": "In progress",
+    "completed": "Completed",
+    "approved": "Approved by the supervisor"
+  },
+  "save": {
+    "dirty": "Unsaved changes",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "savedAgo": "Saved {{time}}",
+    "offline": "Offline — will save when back online",
+    "conflict": "Version conflict",
+    "error": "Could not save",
+    "updatedByOthers": "Other members have just changed this step. Your edits will be merged with their version when saved."
+  },
+  "step": {
+    "of": "Step {{number}} of {{total}} · {{stage}}",
+    "method": "Method: {{method}}",
+    "criteria": "What makes a strong answer",
+    "notFound": "There is no such step",
+    "approvedTitle": "Step approved by {{name}}",
+    "check": "Check with AI",
+    "complete": "Complete step",
+    "approve": "Approve",
+    "comments_one": "{{count}} comment",
+    "comments_other": "{{count}} comments",
+    "previous": "Previous step",
+    "next": "Next step",
+    "left": "To complete the step, still needed: {{fields}}",
+    "completedToast": "Step completed",
+    "stageDone": "Stage \"{{stage}}\" complete!",
+    "gap": {
+      "required": "Fill in this field to complete the step",
+      "minLength_one": "The step needs at least {{count}} character here",
+      "minLength_other": "The step needs at least {{count}} characters here",
+      "minItems_one": "Add at least {{count}} item to complete the step",
+      "minItems_other": "Add at least {{count}} items to complete the step"
+    },
+    "commentsNone": "Step comments"
+  },
+  "fields": {
+    "choose": "Choose",
+    "urlPlaceholder": "https://",
+    "invalidNumber": "Enter a number, e.g. 1,500,000",
+    "units": {
+      "kzt": "₸",
+      "count": "pcs"
+    },
+    "empty": "Empty so far",
+    "add": "Add item",
+    "addRow": "Add row",
+    "item": "{{label}}, item {{number}}",
+    "row": "Row {{number}}",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove",
+    "removeRow": "Remove row {{number}}",
+    "comments": "Comment on \"{{field}}\"",
+    "commentsCount_one": "\"{{field}}\": {{count}} open comment",
+    "commentsCount_other": "\"{{field}}\": {{count}} open comments",
+    "history": "History of \"{{field}}\""
+  },
+  "check": {
+    "ready": "The step looks ready",
+    "notReady": "Some things to strengthen",
+    "stale": "Made for an earlier version",
+    "status": {
+      "ok": "Good",
+      "weak": "Strengthen",
+      "missing": "Missing"
+    },
+    "note": "An AI recommendation, not a grade: the team and the supervisor decide. {{model}} · {{prompt}} · {{time}}"
+  },
+  "approve": {
+    "title": "Approve the step",
+    "description": "Approval counts the step as done even when the minimum is not met. The team will see your comment.",
+    "comment": "Comment for the team",
+    "submit": "Approve",
+    "done": "Step approved"
+  },
+  "conflict": {
+    "title": "The step was changed at the same time",
+    "description": "Another member saved these fields while you were editing them. Choose which version to keep.",
+    "descriptionBy": "{{name}} saved these fields while you were editing them. Choose which version to keep.",
+    "choose": "Version of \"{{field}}\"",
+    "mine": "Mine",
+    "theirs": "On the server",
+    "difference": "Your changes compared with the server version",
+    "apply": "Save my choice"
+  },
+  "history": {
+    "title": "History of changes",
+    "empty": "No changes yet",
+    "emptyText": "Every save of the field appears here, and any earlier value can be restored.",
+    "unknown": "A member",
+    "current": "Current",
+    "restore": "Restore",
+    "restored": "Value restored",
+    "more": "Show earlier",
+    "source": {
+      "edit": "Edit",
+      "mentor": "From a mentor suggestion",
+      "restore": "Restored"
+    }
+  },
+  "comments": {
+    "title": "Comments",
+    "wholeStep": "Whole step",
+    "empty": "No comments yet",
+    "emptyText": "Ask the team or the supervisor about this field; mention someone with @.",
+    "new": "New comment",
+    "placeholder": "Write a comment… Mention: @",
+    "hint": "Ctrl+Enter to send",
+    "send": "Send",
+    "reply": "Reply",
+    "replyLabel": "Reply",
+    "replyPlaceholder": "Your reply…",
+    "resolve": "Resolve",
+    "reopen": "Reopen",
+    "resolved": "Resolved",
+    "edit": "Edit comment",
+    "edited": "edited",
+    "delete": "Delete",
+    "deleteTitle": "Delete the comment?",
+    "deleteText": "Replies to it are deleted too.",
+    "mention": "Mention a member",
+    "unknown": "A member"
+  },
+  "mentor": {
+    "title": "AI mentor",
+    "name": "Mentor",
+    "you": "You",
+    "mode": "Mentor mode",
+    "modes": {
+      "coach": "Coach",
+      "coauthor": "Co-author"
+    },
+    "welcome": "Hi! I will help with the step \"{{step}}\": ask questions, suggest a method and show how to make the wording stronger. The decisions and texts are yours.",
+    "prompts": {
+      "start": "Where do I start this step?",
+      "improve": "Help me make it stronger",
+      "check": "What is missing in my answers?"
+    },
+    "placeholder": "Ask the mentor…",
+    "hint": "Enter to send, Shift+Enter for a new line",
+    "send": "Send",
+    "stop": "Stop the answer",
+    "writing": "The mentor is writing…",
+    "earlier": "Show earlier messages",
+    "readOnly": "The project team asks the mentor; you can read their conversation.",
+    "cancelled": "Answer stopped",
+    "failed": "No answer received",
+    "dismiss": "OK",
+    "sources": "Sources:",
+    "suggestion": "Suggestion for \"{{field}}\"",
+    "apply": "Apply to the field",
+    "appliedShort": "Applied",
+    "applied": "Text added to \"{{field}}\""
+  },
+  "overview": {
+    "continue": "Continue: step {{number}}. {{step}}",
+    "allDone": "All 14 steps done — the project is ready for evaluation and the showcase.",
+    "stages": "Project stages",
+    "activity": "Activity"
+  },
+  "badges": {
+    "title": "Milestones",
+    "earned": "earned",
+    "locked": "not earned yet",
+    "idea_stage": {
+      "title": "Idea and problem",
+      "hint": "First stage done: problem, audience, customer journey and solution"
+    },
+    "market_stage": {
+      "title": "Market and team",
+      "hint": "Second stage done: market, competitors, business model and team"
+    },
+    "product_stage": {
+      "title": "Product and metrics",
+      "hint": "Third stage done: MVP, metrics, unit economics and risks"
+    },
+    "launch_stage": {
+      "title": "Ready to launch",
+      "hint": "All stages done: roadmap and pitch"
+    },
+    "first_review": {
+      "title": "First AI review",
+      "hint": "The team checked a step with the AI mentor"
+    },
+    "materials_ready": {
+      "title": "Materials ready",
+      "hint": "A one-pager, pitch deck or startup passport was built"
+    },
+    "team_of_three": {
+      "title": "Team of three",
+      "hint": "The project has at least three members"
+    }
+  },
+  "activity": {
+    "empty": "All quiet so far",
+    "emptyText": "Edits of steps, comments and completed steps of the team appear here.",
+    "someone": "A member",
+    "kind": {
+      "edit": "changed an answer",
+      "comment": "left a comment",
+      "step_completed": "completed a step",
+      "step_approved": "approved a step",
+      "member_joined": "joined the project"
+    },
+    "more_one": "and {{count}} more",
+    "more_other": "and {{count}} more"
+  },
+  "unit": {
+    "title": "Unit economics",
+    "margin": "Margin per unit",
+    "ltv": "LTV",
+    "ratio": "LTV / CAC",
+    "hint": "Fill in the price, variable cost, CAC and purchases — the calculation appears here.",
+    "good": "LTV/CAC above 3: acquiring a customer pays off with room to spare.",
+    "low": "LTV/CAC below 3: think about raising the price or repeat purchases, or lowering the acquisition cost."
+  },
+  "canvas": {
+    "title": "Your Lean Canvas",
+    "text": "Blocks from earlier steps are read-only; edit them through the link. Blue blocks are filled in on this step.",
+    "step": "Step {{number}}",
+    "empty": "Not filled in",
+    "blocks": {
+      "problem": "Problem",
+      "solution": "Solution",
+      "uvp": "Value proposition",
+      "advantage": "Unfair advantage",
+      "segments": "Customer segments",
+      "metrics": "Key metrics",
+      "channels": "Channels",
+      "costs": "Cost structure",
+      "revenue": "Revenue streams"
+    }
+  },
+  "materials": {
+    "title": "Materials",
+    "text": "Build the materials from the project's answers — the AI adds no facts that are not in the steps.",
+    "list": "Built materials",
+    "empty": "No materials yet",
+    "emptyText": "Generate a one-pager, a pitch deck or a startup passport — they appear here.",
+    "generate": "Build {{format}}",
+    "scheduled": "The material is being prepared — this takes up to a minute",
+    "download": "Download",
+    "kind": {
+      "one_pager": "One-pager",
+      "pitch_deck": "Pitch deck",
+      "passport": "Startup passport"
+    },
+    "about": {
+      "one_pager": "The project on one page for partners and the jury",
+      "pitch_deck": "10–12 slides: problem, solution, market, team, the ask",
+      "passport": "A project card with a QR code to the project page"
+    },
+    "status": {
+      "pending": "Preparing",
+      "ready": "Ready",
+      "failed": "Failed"
+    }
+  },
+  "settings": {
+    "open": "Team and settings",
+    "title": "Team and settings",
+    "saved": "Saved",
+    "hideSensitive": "Hide sensitive details",
+    "hideSensitiveHint": "Unit economics and technology stay hidden from everyone outside the team, also on the showcase.",
+    "team": "Team",
+    "add": "Add",
+    "addAs": "Add as",
+    "addSupervisor": "Assign a supervisor",
+    "closeAdd": "Close search",
+    "search": "Name of a university member",
+    "nobody": "Nobody found",
+    "inTeam": "Already in the project",
+    "added": "{{name}} joined the project",
+    "role": {
+      "owner": "Owner",
+      "member": "Member",
+      "supervisor": "Supervisor"
+    },
+    "memberTitle": "Role in the team: {{name}}",
+    "titlePlaceholder": "Role in the team, e.g. CTO",
+    "saveTitle": "Save",
+    "transfer": "Hand over ownership",
+    "transferTitle": "Hand the project over to {{name}}?",
+    "transferText": "The new owner can manage the team and archive the project. You stay a member.",
+    "remove": "Remove from the project",
+    "removeTitle": "Remove {{name}} from the project?",
+    "removeText": "They lose access to the project; their earlier edits stay in the history.",
+    "leave": "Leave the project",
+    "leaveTitle": "Leave the project?",
+    "leaveText": "You lose access to the project. The owner can add you back.",
+    "archive": "Archive the project",
+    "archiveTitle": "Archive the project?",
+    "archiveText": "The project becomes read-only. You cannot undo this yourself.",
+    "archived": "Project archived"
+  },
+  "dashboard": {
+    "badge": "Incubator",
+    "startTitle": "Start your project",
+    "startText": "Describe a problem you want to solve. In 14 steps with the AI mentor you will get to the market, business model and pitch.",
+    "findTeam": "Find a team",
+    "current": "Current project",
+    "open": "Open the project",
+    "activity": "Team activity"
+  }
+}

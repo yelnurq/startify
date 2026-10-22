@@ -13,6 +13,7 @@ export const USERS = {
   timur: 'timur@qadam.test',
   madina: 'madina@qadam.test',
   rector: 'rector@qadam.test',
+  supervisor: 'gulnar@qadam.test',
 } as const;
 
 export type SeededUser = keyof typeof USERS;

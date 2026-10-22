@@ -36,6 +36,8 @@ interface AppShellProps {
   children: ReactNode;
   /** Wider content for dashboards (1440px instead of 1280px). */
   wide?: boolean;
+  /** Full-width content without padding, for layouts with their own columns. */
+  bleed?: boolean;
 }
 
 /** Signed-in application frame: collapsible sidebar, glass top bar, content. */
@@ -47,6 +49,7 @@ export function AppShell({
   actions,
   children,
   wide = false,
+  bleed = false,
 }: AppShellProps) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -157,8 +160,9 @@ export function AppShell({
         <main
           id="main"
           className={cn(
-            'mx-auto w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
-            wide ? 'max-w-wide' : 'max-w-page',
+            'mx-auto w-full min-w-0 flex-1',
+            !bleed && 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
+            !bleed && (wide ? 'max-w-wide' : 'max-w-page'),
           )}
         >
           {children}

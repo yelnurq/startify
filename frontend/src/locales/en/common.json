@@ -186,7 +186,8 @@
       "not_found": "The session was not found or has already ended."
     },
     "precondition": {
-      "failed": "Someone changed this in the meantime. Reload the page and try again."
+      "failed": "Someone changed this in the meantime. Reload the page and try again.",
+      "required": "Reload the page and try the change again"
     },
     "ai": {
       "unavailable": "AI is unavailable right now. Try again in a few minutes.",
@@ -194,12 +195,40 @@
       "invalid_output": "The model answer could not be understood. Try again.",
       "limit_reached": "Today’s AI limit is used up; it resets at {{resets_at}}.",
       "limit_reached_user": "Your AI limit for today is used up; it resets at {{resets_at}}.",
-      "limit_reached_university": "The university’s AI limit for today is used up; it resets at {{resets_at}}."
+      "limit_reached_university": "The university’s AI limit for today is used up; it resets at {{resets_at}}.",
+      "too_many_requests": "Too many AI requests. Try again in {{retry_after_seconds}} s."
     },
     "knowledge": {
       "unsupported_file": "This file is not supported: use PDF, DOCX, TXT or MD.",
       "no_text": "No text was found in the file. If it is a scan, upload a version with a text layer or paste the text.",
       "not_found": "Document not found."
+    },
+    "project": {
+      "not_found": "Project not found",
+      "archived": "The project is archived and cannot be changed",
+      "ip_policy_required": "Accept the university's intellectual property policy",
+      "already_member": "This person is already in the project",
+      "not_member": "You are not a member of this project",
+      "owner_cannot_leave": "The owner cannot leave the project — hand over ownership first",
+      "supervisor_role_required": "Only a teacher with the supervisor role can supervise a project",
+      "member_not_found": "Member not found",
+      "team_full_one": "A team can have at most {{count}} member",
+      "team_full_other": "A team can have at most {{count}} members"
+    },
+    "incubator": {
+      "step_not_found": "There is no such step",
+      "step_incomplete": "The step is not ready yet: fill in the highlighted fields",
+      "field_unknown": "The step has no such field",
+      "revision_not_found": "This version was not found",
+      "comment_not_found": "Comment not found",
+      "parent_not_found": "The comment you are replying to was deleted",
+      "material_not_found": "Material not found",
+      "material_not_ready": "The material is still being prepared",
+      "mentor_forbidden": "Only the project team can ask the mentor",
+      "step_empty": "Fill in at least one field of the step first — there is nothing to check yet",
+      "too_many_materials": "Too many materials in a short time. Please wait a little",
+      "documents_unavailable": "The document service is unavailable. Try again later",
+      "material_failed": "The material could not be built. Please try again"
     }
   },
   "roles": {
@@ -250,5 +279,9 @@
     "suggestions": "Suggestions",
     "limit": "Maximum reached: {{max}}",
     "counter": "{{value}} of {{max}}"
+  },
+  "diff": {
+    "added": "added:",
+    "removed": "removed:"
   }
 }

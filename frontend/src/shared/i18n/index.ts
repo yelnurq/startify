@@ -49,7 +49,16 @@ i18n.on('languageChanged', (lng) => {
 
 /** Translation catalogues loaded on demand by the screens that need them. */
 export type Namespace =
-  'common' | 'design' | 'auth' | 'landing' | 'onboarding' | 'app' | 'team' | 'admin' | 'ai';
+  | 'common'
+  | 'design'
+  | 'auth'
+  | 'landing'
+  | 'onboarding'
+  | 'app'
+  | 'team'
+  | 'admin'
+  | 'ai'
+  | 'incubator';
 
 /** Loads namespaces before a route renders, so no screen flashes raw keys. */
 export async function loadNamespaces(...namespaces: Namespace[]): Promise<void> {
