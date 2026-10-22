@@ -37,7 +37,7 @@ import {
 import { sessionQuery, tenantQuery } from '@/features/auth/api';
 import { showcaseHighlightsQuery } from '@/features/showcase/api';
 import { ShowcaseCardView } from '@/features/showcase/card';
-import { SiteFrame, siteNavClass } from '@/features/showcase/site';
+import { SiteFrame } from '@/features/showcase/site';
 import { useFormatters } from '@/shared/i18n/format';
 import { useLocalized } from '@/shared/i18n/localized';
 
@@ -84,8 +84,6 @@ const AUDIENCE_ICONS: Record<Audience, LucideIcon> = {
 
 const POINTS = ['p1', 'p2', 'p3'] as const;
 
-const NAV = ['how', 'students', 'universities', 'partners'] as const;
-
 const COUNTERS = ['projects', 'published', 'students', 'evaluations'] as const;
 
 function isAudience(value: string): value is Audience {
@@ -94,18 +92,11 @@ function isAudience(value: string): value is Audience {
 
 /** Public home page: what Qadam is, the route of a project, who it is for. */
 export function LandingPage() {
-  const { t } = useTranslation('landing');
   const session = useQuery(sessionQuery);
   const signedIn = Boolean(session.data);
 
   return (
-    <SiteFrame
-      nav={NAV.map((key) => (
-        <a key={key} href={`#${key}`} className={siteNavClass}>
-          {t(`nav.${key}`)}
-        </a>
-      ))}
-    >
+    <SiteFrame>
       <Hero signedIn={signedIn} />
       <Numbers />
       <HowItWorks />
@@ -414,7 +405,7 @@ function Featured() {
   );
 }
 
-/** The audience named in the address (#students and so on), as in the header links. */
+/** The audience named in the address (#universities and so on), as in the footer links. */
 function useAudienceFromHash(): [Audience, (value: Audience) => void] {
   const [audience, setAudience] = useState<Audience>('students');
   useEffect(() => {
@@ -454,7 +445,7 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
           title={t('audiences.title')}
           text={t('audiences.subtitle')}
         />
-        {/* Targets of the header links (#students and so on); the tab follows the address. */}
+        {/* Targets of the footer links (#universities and so on); the tab follows the address. */}
         {AUDIENCES.map((key) => (
           <span key={key} id={key} aria-hidden className="-mt-10 block scroll-mt-28" />
         ))}

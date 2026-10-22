@@ -224,10 +224,7 @@ test.describe('public showcase', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   });
 
-  test('the landing page shows the university, its route and its projects', async ({
-    page,
-    isMobile,
-  }) => {
+  test('the landing page shows the university, its route and its projects', async ({ page }) => {
     await page.goto('/');
     // The university's seal in the header and its photo in the hero.
     await expect(page.getByRole('banner').locator('img[src^="/api/v1/files/"]')).toBeVisible();
@@ -237,9 +234,9 @@ test.describe('public showcase', () => {
     await expect(
       page.getByRole('list', { name: 'Маршрут проекта' }).getByRole('listitem'),
     ).toHaveCount(6);
-    // The header link opens the audience it names (on phones the links are in the menu).
-    if (isMobile) await page.goto('/#partners');
-    else await page.getByRole('banner').getByRole('link', { name: 'Партнёрам' }).click();
+    // The header keeps page links only; the footer link opens the audience it names.
+    await expect(page.getByRole('banner').locator('a[href^="#"]')).toHaveCount(0);
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Партнёрам' }).click();
     await expect(page.getByRole('tab', { name: 'Партнёрам' })).toHaveAttribute(
       'aria-selected',
       'true',
