@@ -27,10 +27,13 @@ import { Route as LoginCodeRouteImport } from './app/routes/login/code'
 import { Route as TeamRequestIdRouteImport } from './app/routes/team/$requestId'
 import { Route as USlugRouteImport } from './app/routes/u/$slug'
 import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
+import { Route as AppAdminKnowledgeRouteImport } from './app/routes/app/admin/knowledge'
 import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
 import { Route as AppSettingsSecurityRouteImport } from './app/routes/app/settings/security'
 import { Route as AppTeamIndexRouteImport } from './app/routes/app/team/index'
 import { Route as AppTeamRequestIdRouteImport } from './app/routes/app/team/$requestId'
+import { Route as AppAdminAiIndexRouteImport } from './app/routes/app/admin/ai/index'
+import { Route as AppAdminAiUsageRouteImport } from './app/routes/app/admin/ai/usage'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -122,6 +125,11 @@ const AppAdminImportRoute = AppAdminImportRouteImport.update({
   path: '/admin/import',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminKnowledgeRoute = AppAdminKnowledgeRouteImport.update({
+  id: '/admin/knowledge',
+  path: '/admin/knowledge',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminMembersRoute = AppAdminMembersRouteImport.update({
   id: '/admin/members',
   path: '/admin/members',
@@ -140,6 +148,16 @@ const AppTeamIndexRoute = AppTeamIndexRouteImport.update({
 const AppTeamRequestIdRoute = AppTeamRequestIdRouteImport.update({
   id: '/team/$requestId',
   path: '/team/$requestId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminAiIndexRoute = AppAdminAiIndexRouteImport.update({
+  id: '/admin/ai/',
+  path: '/admin/ai/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminAiUsageRoute = AppAdminAiUsageRouteImport.update({
+  id: '/admin/ai/usage',
+  path: '/admin/ai/usage',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -162,10 +180,13 @@ export interface FileRoutesByFullPath {
   '/design/': typeof DesignIndexRoute
   '/login/': typeof LoginIndexRoute
   '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/team/': typeof AppTeamIndexRoute
+  '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/admin/ai/': typeof AppAdminAiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -185,10 +206,13 @@ export interface FileRoutesByTo {
   '/design': typeof DesignIndexRoute
   '/login': typeof LoginIndexRoute
   '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/team': typeof AppTeamIndexRoute
+  '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/admin/ai': typeof AppAdminAiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,10 +234,13 @@ export interface FileRoutesById {
   '/design/': typeof DesignIndexRoute
   '/login/': typeof LoginIndexRoute
   '/app/admin/import': typeof AppAdminImportRoute
+  '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/team/': typeof AppTeamIndexRoute
+  '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/admin/ai/': typeof AppAdminAiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -236,10 +263,13 @@ export interface FileRouteTypes {
     | '/design/'
     | '/login/'
     | '/app/admin/import'
+    | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/team/'
+    | '/app/admin/ai/usage'
+    | '/app/admin/ai/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -259,10 +289,13 @@ export interface FileRouteTypes {
     | '/design'
     | '/login'
     | '/app/admin/import'
+    | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/team'
+    | '/app/admin/ai/usage'
+    | '/app/admin/ai'
   id:
     | '__root__'
     | '/'
@@ -283,10 +316,13 @@ export interface FileRouteTypes {
     | '/design/'
     | '/login/'
     | '/app/admin/import'
+    | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/team/'
+    | '/app/admin/ai/usage'
+    | '/app/admin/ai/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -435,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminImportRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/knowledge': {
+      id: '/app/admin/knowledge'
+      path: '/admin/knowledge'
+      fullPath: '/app/admin/knowledge'
+      preLoaderRoute: typeof AppAdminKnowledgeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin/members': {
       id: '/app/admin/members'
       path: '/admin/members'
@@ -463,6 +506,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTeamRequestIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/ai/': {
+      id: '/app/admin/ai/'
+      path: '/admin/ai'
+      fullPath: '/app/admin/ai/'
+      preLoaderRoute: typeof AppAdminAiIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/ai/usage': {
+      id: '/app/admin/ai/usage'
+      path: '/admin/ai/usage'
+      fullPath: '/app/admin/ai/usage'
+      preLoaderRoute: typeof AppAdminAiUsageRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -470,20 +527,26 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAdminImportRoute: typeof AppAdminImportRoute
+  AppAdminKnowledgeRoute: typeof AppAdminKnowledgeRoute
   AppAdminMembersRoute: typeof AppAdminMembersRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppTeamRequestIdRoute: typeof AppTeamRequestIdRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
+  AppAdminAiUsageRoute: typeof AppAdminAiUsageRoute
+  AppAdminAiIndexRoute: typeof AppAdminAiIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppIndexRoute: AppIndexRoute,
   AppAdminImportRoute: AppAdminImportRoute,
+  AppAdminKnowledgeRoute: AppAdminKnowledgeRoute,
   AppAdminMembersRoute: AppAdminMembersRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppTeamRequestIdRoute: AppTeamRequestIdRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
+  AppAdminAiUsageRoute: AppAdminAiUsageRoute,
+  AppAdminAiIndexRoute: AppAdminAiIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

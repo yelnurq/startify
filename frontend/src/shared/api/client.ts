@@ -168,6 +168,19 @@ api.use({
   },
 });
 
+/**
+ * Raw fetch of an API path with the same session handling as `api`, for
+ * responses openapi-fetch cannot represent (event streams).
+ */
+export function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const request = new Request(`${globalThis.location.origin}${API_PREFIX}${path}`, {
+    credentials: 'same-origin',
+    ...init,
+  });
+  request.headers.set('Accept-Language', i18n.language);
+  return fetchWithSession(request);
+}
+
 function isProblem(value: unknown): value is Problem {
   return (
     typeof value === 'object' &&
@@ -214,4 +227,30 @@ export async function unwrap<T>(call: Promise<Outcome<T>>): Promise<T> {
     );
   }
   return data as T;
+}
+
+/** Like `unwrap`, also returning the ETag of the response for a later If-Match. */
+export async function unwrapTagged<T>(
+  call: Promise<Outcome<T>>,
+): Promise<{ data: T; etag: string | undefined }> {
+  let response: Response | undefined;
+  const data = await unwrap(
+    call.then((outcome) => {
+      response = outcome.response;
+      return outcome;
+    }),
+  );
+  return { data, etag: response?.headers.get('ETag') ?? undefined };
+}
+
+/** Throws the ApiError of a failed raw response (see `apiFetch`). */
+export async function throwProblem(response: Response): Promise<never> {
+  const error: unknown = await response.json().catch(() => undefined);
+  await unwrap(Promise.resolve({ error: error ?? null, response }));
+  throw new ApiError({
+    type: 'about:blank',
+    title: 'Error',
+    status: response.status,
+    code: 'internal',
+  });
 }

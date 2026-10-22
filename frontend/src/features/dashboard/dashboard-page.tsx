@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import {
   ArrowRight,
+  BookOpenText,
   Check,
   Circle,
   FileUp,
   Mail,
   MailCheck,
   Rocket,
+  Sparkles,
   Users,
   UsersRound,
 } from 'lucide-react';
@@ -356,6 +358,20 @@ function AdminShortcuts({ admin }: { admin: boolean }) {
             <Link to="/app/admin/import">
               <FileUp aria-hidden />
               {t('nav.import')}
+            </Link>
+          </Button>
+        )}
+        <Button asChild variant="secondary" className="justify-start">
+          <Link to="/app/admin/knowledge">
+            <BookOpenText aria-hidden />
+            {t('nav.knowledge')}
+          </Link>
+        </Button>
+        {admin && (
+          <Button asChild variant="secondary" className="justify-start">
+            <Link to="/app/admin/ai">
+              <Sparkles aria-hidden />
+              {t('nav.ai')}
             </Link>
           </Button>
         )}

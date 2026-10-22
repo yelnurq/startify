@@ -1,6 +1,7 @@
 import 'i18next';
 
 import type admin from '@/locales/ru/admin.json';
+import type ai from '@/locales/ru/ai.json';
 import type app from '@/locales/ru/app.json';
 import type auth from '@/locales/ru/auth.json';
 import type common from '@/locales/ru/common.json';
@@ -23,6 +24,7 @@ declare module 'i18next' {
       app: typeof app;
       team: typeof team;
       admin: typeof admin;
+      ai: typeof ai;
     };
     returnNull: false;
   }

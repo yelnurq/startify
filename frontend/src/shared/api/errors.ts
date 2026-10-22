@@ -17,8 +17,12 @@ export function errorMessage(error: unknown): string {
       // Placeholders must always be filled, or the raw {{…}} would show.
       retry_after_seconds: error.retryAfter ?? error.problem.params?.retry_after_seconds ?? 60,
     };
+    // A `scope` parameter selects a variant of the message (`<code>_<scope>`),
+    // e.g. whose AI limit is used up; the plain message is the fallback.
+    const scope = error.problem.params?.scope;
+    const context = typeof scope === 'string' ? { context: scope } : {};
     // Codes come from the server at runtime, so the key cannot be checked statically.
-    const message = t(key as 'common:errors.internal', { ...params, defaultValue: '' });
+    const message = t(key as 'common:errors.internal', { ...params, ...context, defaultValue: '' });
     if (message !== '') return message;
     if (error.status === 429) return t('common:errors.rate_limited');
     if (error.status === 403) return t('common:errors.rbac.forbidden');

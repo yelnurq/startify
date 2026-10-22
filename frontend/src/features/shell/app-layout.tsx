@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, Outlet, useMatches, useNavigate } from '@tanstack/react-router';
 import {
+  BarChart3,
+  BookOpenText,
   ChevronsUpDown,
   FileUp,
   Home,
   LogOut,
   ShieldCheck,
+  Sparkles,
   User,
   Users,
   UsersRound,
@@ -74,6 +77,7 @@ function AppNav({ session }: { session: Session }) {
   const { t } = useTranslation('app');
   const admin = hasRole(session, 'tenant_admin');
   const manager = hasRole(session, 'innovation_manager');
+  const leadership = hasRole(session, 'leadership');
   return (
     <>
       <NavSection>
@@ -87,14 +91,31 @@ function AppNav({ session }: { session: Session }) {
           {t('nav.team')}
         </NavLink>
       </NavSection>
-      {(admin || manager) && (
+      {(admin || manager || leadership) && (
         <NavSection label={t('nav.administration')}>
-          <NavLink to="/app/admin/members" icon={<Users />}>
-            {t('nav.members')}
-          </NavLink>
+          {(admin || manager) && (
+            <NavLink to="/app/admin/members" icon={<Users />}>
+              {t('nav.members')}
+            </NavLink>
+          )}
           {admin && (
             <NavLink to="/app/admin/import" icon={<FileUp />}>
               {t('nav.import')}
+            </NavLink>
+          )}
+          {(admin || manager) && (
+            <NavLink to="/app/admin/knowledge" icon={<BookOpenText />}>
+              {t('nav.knowledge')}
+            </NavLink>
+          )}
+          {admin && (
+            <NavLink to="/app/admin/ai" icon={<Sparkles />} activeOptions={{ exact: true }}>
+              {t('nav.ai')}
+            </NavLink>
+          )}
+          {(admin || leadership) && (
+            <NavLink to="/app/admin/ai/usage" icon={<BarChart3 />}>
+              {t('nav.aiUsage')}
             </NavLink>
           )}
         </NavSection>
@@ -131,8 +152,8 @@ function UserMenu({ session }: { session: Session }) {
         <button
           type="button"
           className="flex w-full items-center gap-3 rounded-lg p-1.5 text-left transition-colors hover:bg-surface-raised"
-          aria-label={t('app:user.menu')}
         >
+          {/* The accessible name starts with the visible name (WCAG 2.5.3, label in name). */}
           <Avatar name={session.user.full_name} src={session.user.avatar_url} size="sm" />
           <span className="flex min-w-0 flex-1 flex-col">
             <TruncatedText className="text-sm font-medium text-fg">
@@ -144,6 +165,7 @@ function UserMenu({ session }: { session: Session }) {
               </TruncatedText>
             )}
           </span>
+          <span className="sr-only">{t('app:user.menu')}</span>
           <ChevronsUpDown className="size-4 text-fg-faint" aria-hidden />
         </button>
       </DropdownMenuTrigger>
@@ -190,6 +212,7 @@ function useAppCommands(session: Session) {
   const navigate = useNavigate();
   const admin = hasRole(session, 'tenant_admin');
   const manager = hasRole(session, 'innovation_manager');
+  const leadership = hasRole(session, 'leadership');
   const commands = useMemo<PaletteCommand[]>(() => {
     const group = t('common:commandPalette.groups.navigation');
     const items: PaletteCommand[] = [
@@ -240,8 +263,35 @@ function useAppCommands(session: Session) {
         perform: () => void navigate({ to: '/app/admin/import' }),
       });
     }
+    if (admin || manager) {
+      items.push({
+        id: 'app.knowledge',
+        group,
+        label: t('app:nav.knowledge'),
+        icon: <BookOpenText />,
+        perform: () => void navigate({ to: '/app/admin/knowledge' }),
+      });
+    }
+    if (admin) {
+      items.push({
+        id: 'app.ai',
+        group,
+        label: t('app:nav.ai'),
+        icon: <Sparkles />,
+        perform: () => void navigate({ to: '/app/admin/ai' }),
+      });
+    }
+    if (admin || leadership) {
+      items.push({
+        id: 'app.aiUsage',
+        group,
+        label: t('app:nav.aiUsage'),
+        icon: <BarChart3 />,
+        perform: () => void navigate({ to: '/app/admin/ai/usage' }),
+      });
+    }
     return items;
-  }, [t, navigate, admin, manager]);
+  }, [t, navigate, admin, manager, leadership]);
   useRegisterCommands(commands);
 }
 

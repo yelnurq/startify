@@ -30,7 +30,16 @@ declare module '@tanstack/react-router' {
   }
   interface StaticDataRouteOption {
     /** Page title shown in the top bar of the signed-in area (`app:titles.*`). */
-    titleKey?: 'home' | 'profile' | 'team' | 'security' | 'members' | 'import';
+    titleKey?:
+      | 'home'
+      | 'profile'
+      | 'team'
+      | 'security'
+      | 'members'
+      | 'import'
+      | 'ai'
+      | 'aiUsage'
+      | 'knowledge';
   }
 }
 

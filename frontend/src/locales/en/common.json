@@ -187,6 +187,19 @@
     },
     "precondition": {
       "failed": "Someone changed this in the meantime. Reload the page and try again."
+    },
+    "ai": {
+      "unavailable": "AI is unavailable right now. Try again in a few minutes.",
+      "refused": "The model declined this request. Try rephrasing it.",
+      "invalid_output": "The model answer could not be understood. Try again.",
+      "limit_reached": "Today’s AI limit is used up; it resets at {{resets_at}}.",
+      "limit_reached_user": "Your AI limit for today is used up; it resets at {{resets_at}}.",
+      "limit_reached_university": "The university’s AI limit for today is used up; it resets at {{resets_at}}."
+    },
+    "knowledge": {
+      "unsupported_file": "This file is not supported: use PDF, DOCX, TXT or MD.",
+      "no_text": "No text was found in the file. If it is a scan, upload a version with a text layer or paste the text.",
+      "not_found": "Document not found."
     }
   },
   "roles": {
@@ -227,7 +240,8 @@
     "invalid_email": "Enter a valid e-mail address",
     "passwordsMismatch": "The passwords do not match",
     "choose": "Choose a value",
-    "duplicate": "This value is repeated"
+    "duplicate": "This value is repeated",
+    "external_not_allowed": "External providers are switched off: “Local models only” is on"
   },
   "tags": {
     "add": "Add",

@@ -7,7 +7,10 @@
     "members": "Members",
     "import": "Data import",
     "settings": "Settings",
-    "security": "Security"
+    "security": "Security",
+    "knowledge": "Knowledge base",
+    "ai": "AI settings",
+    "aiUsage": "AI usage"
   },
   "titles": {
     "home": "Home",
@@ -15,7 +18,10 @@
     "team": "Looking for a team",
     "security": "Security",
     "members": "Members",
-    "import": "Data import"
+    "import": "Data import",
+    "knowledge": "Knowledge base",
+    "ai": "AI settings",
+    "aiUsage": "AI usage"
   },
   "user": {
     "menu": "User menu"
