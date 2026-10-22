@@ -172,3 +172,17 @@
     --il-success: var(--color-success-400);
   }
 }
+
+/* The server draws the first screen of public pages (#boot) before the app
+   loads; the app renders hidden behind it and removes it once the page is
+   ready (src/app/boot.ts). A first screen in another language than the
+   app's (html[data-locale], public/theme-init.js) is not shown at all.
+   Outside the layers, so that it wins over the utilities on #boot. */
+html[data-locale='kk'] #boot[lang='kk'] ~ #root,
+html[data-locale='ru'] #boot[lang='ru'] ~ #root,
+html[data-locale='en'] #boot[lang='en'] ~ #root,
+html[data-locale='kk'] #boot:not([lang='kk']),
+html[data-locale='ru'] #boot:not([lang='ru']),
+html[data-locale='en'] #boot:not([lang='en']) {
+  display: none;
+}

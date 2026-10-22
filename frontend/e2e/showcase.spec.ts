@@ -199,13 +199,30 @@ test.describe('public showcase', () => {
       }, theme);
       for (const url of ['/showcase', '/showcase/agroscan', '/']) {
         await page.goto(url);
-        await expect(page.locator('main h1')).toBeVisible();
+        // The app's page, not the first screen the server draws before it.
+        await expect(page.locator('#root main h1')).toBeVisible();
+        await expect(page.locator('#boot')).toHaveCount(0);
         await page.waitForLoadState('networkidle');
         await expectNoSeriousViolations(page);
         await expectNoHorizontalScroll(page);
       }
     });
   }
+
+  test('the server draws the first screen, and the app takes its place', async ({ page }) => {
+    const response = await page.request.get('/showcase/agroscan', {
+      headers: { 'Accept-Language': 'ru-RU,ru;q=0.9' },
+    });
+    const html = await response.text();
+    expect(html).toContain('<div id="boot" lang="ru"');
+    expect(html).toContain('AgroScan</h1>');
+    await page.goto('/showcase/agroscan');
+    await expect(page.locator('#boot')).toHaveCount(0);
+    await expect(
+      page.locator('#root').getByRole('heading', { level: 1, name: 'AgroScan' }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+  });
 
   test('the landing page shows live numbers and the best projects', async ({ page }) => {
     await page.goto('/');

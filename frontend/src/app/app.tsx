@@ -5,6 +5,8 @@ import { sessionQuery } from '@/features/auth/api';
 import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
+import { releaseBoot } from './boot';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -23,6 +25,16 @@ const router = createRouter({
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
 });
+
+// The server-drawn first screen of public pages gives way once the first page
+// is drawn with its code and data.
+releaseBoot(
+  () =>
+    router.state.status === 'idle' &&
+    !router.state.isLoading &&
+    queryClient.isFetching() === 0 &&
+    (document.querySelector('#root main')?.childElementCount ?? 0) > 0,
+);
 
 declare module '@tanstack/react-router' {
   interface Register {

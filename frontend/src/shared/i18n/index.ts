@@ -43,8 +43,15 @@ export async function changeLocale(locale: Locale): Promise<void> {
   await i18n.changeLanguage(locale);
 }
 
+// The server draws the first screen of public pages in this language
+// (backend internal/showcase/boot.go reads the cookie).
+const LOCALE_COOKIE = 'qadam_locale';
+
 i18n.on('languageChanged', (lng) => {
   document.documentElement.lang = lng;
+  document.documentElement.dataset.locale = lng;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${LOCALE_COOKIE}=${lng}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
 });
 
 /** Translation catalogues loaded on demand by the screens that need them. */
