@@ -25,6 +25,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/httpx"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/showcase/showcasedb"
+	"github.com/yelnurq/startify/backend/internal/tenant"
 )
 
 // The web client's index.html changes only with a release.
@@ -134,6 +135,8 @@ type meta struct {
 	JSONLD    any
 	// Body is the escaped HTML shown to clients without JavaScript.
 	Body string
+	// Boot is the first screen drawn before the web client loads.
+	Boot string
 }
 
 var (
@@ -196,6 +199,9 @@ func render(shell []byte, m meta) []byte {
 	out = descTag.ReplaceAllLiteralString(out, "")
 	out = titleTag.ReplaceAllLiteralString(out, "<title>"+esc(m.Title)+"</title>")
 	out = strings.Replace(out, "</head>", head.String()+"  </head>", 1)
+	if m.Boot != "" {
+		out = strings.Replace(out, `<div id="root"></div>`, m.Boot+"\n    "+`<div id="root"></div>`, 1)
+	}
 	if m.Body != "" {
 		noscript := "<noscript>" + m.Body + "</noscript>"
 		if strings.Contains(out, `<div id="root"></div>`) {
@@ -230,11 +236,14 @@ func best(t apigen.LocalizedText, locale string) string { return apiconv.TextFro
 // showcase, sitemap.xml and robots.txt). They run after the tenant
 // middleware and without sign-in, so they describe only public pages.
 func (s *Service) SEORoutes(r chi.Router) {
-	r.Get("/showcase", s.catalogPage)
-	r.Get("/showcase/", s.catalogPage)
-	r.Get("/showcase/{slug}", s.projectPage)
-	r.Get("/sitemap.xml", s.sitemap)
-	r.Get("/robots.txt", s.robots)
+	for path, page := range map[string]http.HandlerFunc{
+		"/": s.landingPage, "/showcase": s.catalogPage, "/showcase/": s.catalogPage, "/showcase/{slug}": s.projectPage,
+		"/sitemap.xml": s.sitemap, "/robots.txt": s.robots,
+	} {
+		// Monitors and some crawlers ask with HEAD; the server drops the body.
+		r.Get(path, page)
+		r.Head(path, page)
+	}
 }
 
 func (s *Service) writePage(w http.ResponseWriter, r *http.Request, status int, m meta) {
@@ -242,28 +251,59 @@ func (s *Service) writePage(w http.ResponseWriter, r *http.Request, status int, 
 	h := w.Header()
 	h.Set("Content-Type", "text/html; charset=utf-8")
 	h.Set("Cache-Control", "no-cache")
+	// The first screen follows the visitor's language.
+	h.Set("Vary", "Accept-Language, Cookie")
 	h.Set("Content-Security-Policy", spaCSP)
 	h.Set("Cross-Origin-Resource-Policy", "same-origin")
 	w.WriteHeader(status)
 	_, _ = w.Write(page)
 }
 
-// university returns the tenant of the address with its brand and site.
-func (s *Service) university(r *http.Request) (tenancy.Tenant, string, string, error) {
+// university returns the tenant of the address with its brand and site, and
+// its short name in the tenant's language.
+func (s *Service) university(r *http.Request) (tenancy.Tenant, tenant.University, string, error) {
 	t, err := tenancy.Require(r.Context())
 	if err != nil {
-		return t, "", "", err
+		return t, tenant.University{}, "", err
 	}
 	universities, err := s.Tenants.Universities(r.Context(), []uuid.UUID{t.ID})
 	if err != nil {
-		return t, "", "", err
+		return t, tenant.University{}, "", err
 	}
 	u := universities[t.ID]
-	return t, u.Origin, best(u.Brief.ShortName, t.Locale), nil
+	return t, u, best(u.Brief.ShortName, t.Locale), nil
+}
+
+func (s *Service) landingPage(w http.ResponseWriter, r *http.Request) {
+	t, u, name, err := s.university(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	full := best(u.Brief.Name, t.Locale)
+	m := meta{
+		Lang: t.Locale, Kind: "website", Canonical: u.Origin + "/",
+		Title:       fill(landingTitle, t.Locale, "{university}", name),
+		Description: bootString("landing:hero.subtitle", t.Locale),
+	}
+	m.Body = fmt.Sprintf("<main><h1>%s</h1><p>%s</p><p><a href=\"%s/showcase\">%s</a></p></main>",
+		html.EscapeString(m.Title), html.EscapeString(m.Description), html.EscapeString(u.Origin),
+		html.EscapeString(fill(catalogTitle, t.Locale, "{university}", name)))
+	m.JSONLD = map[string]any{
+		"@context": "https://schema.org", "@type": "WebSite", "name": siteName, "url": m.Canonical,
+		"description": m.Description, "inLanguage": m.Lang,
+		"publisher": map[string]any{"@type": "CollegeOrUniversity", "name": full},
+	}
+	boot := landingBoot(u.Brief, bootLocale(r))
+	if m.Boot, err = renderBoot(&boot); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	s.writePage(w, r, http.StatusOK, m)
 }
 
 func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
-	t, origin, name, err := s.university(r)
+	t, u, name, err := s.university(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -272,6 +312,7 @@ func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
 	params := apigen.ListShowcaseParams{}
 	limit := catalogItems
 	params.Limit = &limit
+	origin := u.Origin
 	m := meta{
 		Lang: t.Locale, Kind: "website", Canonical: origin + "/showcase",
 		Title:       fill(catalogTitle, t.Locale, "{university}", name),
@@ -304,11 +345,16 @@ func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
 		"url": m.Canonical, "inLanguage": m.Lang, "isPartOf": map[string]any{"@type": "WebSite", "name": siteName, "url": origin + "/"},
 		"mainEntity": map[string]any{"@type": "ItemList", "numberOfItems": len(items), "itemListElement": items},
 	}
+	boot := catalogBoot(u.Brief, bootLocale(r), national)
+	if m.Boot, err = renderBoot(&boot); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
 	s.writePage(w, r, http.StatusOK, m)
 }
 
 func (s *Service) projectPage(w http.ResponseWriter, r *http.Request) {
-	t, origin, name, err := s.university(r)
+	t, u, name, err := s.university(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -328,7 +374,13 @@ func (s *Service) projectPage(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	s.writePage(w, r, http.StatusOK, projectMeta(&row, t.Locale, origin, name))
+	m := projectMeta(&row, t.Locale, u.Origin, name)
+	boot := projectBoot(&row, u.Brief, bootLocale(r))
+	if m.Boot, err = renderBoot(&boot); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	s.writePage(w, r, http.StatusOK, m)
 }
 
 func projectMeta(e *showcasedb.ShowcaseEntry, locale, origin, university string) meta {
@@ -396,7 +448,8 @@ type urlSet struct {
 }
 
 func (s *Service) sitemap(w http.ResponseWriter, r *http.Request) {
-	_, origin, _, err := s.university(r)
+	_, u, _, err := s.university(r)
+	origin := u.Origin
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -434,7 +487,8 @@ var robotsDisallowed = []string{
 }
 
 func (s *Service) robots(w http.ResponseWriter, r *http.Request) {
-	_, origin, _, err := s.university(r)
+	_, u, _, err := s.university(r)
+	origin := u.Origin
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

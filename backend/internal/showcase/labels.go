@@ -22,6 +22,10 @@ var (
 		"ru": "Публичные студенческие проекты университетов Казахстана на платформе Qadam.",
 		"en": "Public student projects of Kazakhstan's universities on the Qadam platform.",
 	}
+	landingTitle = apiconv.Text{
+		"kk": "Qadam — {university} инновациялық платформасы", "ru": "Qadam — инновационная платформа {university}",
+		"en": "Qadam — innovation platform of {university}",
+	}
 	projectTitle = apiconv.Text{
 		"kk": "{title} — {university} витринасы", "ru": "{title} — витрина {university}", "en": "{title} — {university} showcase",
 	}

@@ -417,15 +417,37 @@ func TestShowcaseSEO(t *testing.T) {
 	if strings.Count(page, `name="description"`) != 1 || !strings.Contains(rec.Header().Get("Content-Security-Policy"), "script-src 'self'") {
 		t.Fatalf("description tags or CSP: %s", rec.Header())
 	}
+	// The first screen is drawn before the web client, in the visitor's language.
+	if !strings.Contains(page, `<div id="boot" lang="kk"`) || !strings.Contains(page, `</div>`+"\n    "+`<div id="root"></div>`) ||
+		rec.Header().Get("Vary") != "Accept-Language, Cookie" {
+		t.Fatalf("first screen: %s\n%s", rec.Header(), page)
+	}
+	ru := func(r *http.Request) { r.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8") }
+	if page = crawler.do(http.MethodGet, "/showcase/agroscan", nil, ru).Body.String(); !strings.Contains(page, `<div id="boot" lang="ru"`) ||
+		!strings.Contains(page, `href="/showcase">Витрина</a>`) || !strings.Contains(page, "<title>AgroScan — ҚазТБУ витринасы</title>") {
+		t.Fatalf("first screen in Russian:\n%s", page)
+	}
 	rec = crawler.do(http.MethodGet, "/showcase/missing", nil)
 	expect(t, rec, http.StatusNotFound)
-	if !strings.Contains(rec.Body.String(), `<meta name="robots" content="noindex" />`) || !strings.Contains(rec.Body.String(), "index-abc.js") {
+	if !strings.Contains(rec.Body.String(), `<meta name="robots" content="noindex" />`) || !strings.Contains(rec.Body.String(), "index-abc.js") ||
+		strings.Contains(rec.Body.String(), `id="boot"`) {
 		t.Fatalf("missing page: %s", rec.Body)
+	}
+	for _, path := range []string{"/", "/showcase", "/showcase/agroscan", "/robots.txt"} {
+		expect(t, crawler.do(http.MethodHead, path, nil), http.StatusOK)
+	}
+	rec = crawler.do(http.MethodGet, "/", nil, func(r *http.Request) { r.AddCookie(&http.Cookie{Name: "qadam_locale", Value: "en"}) })
+	expect(t, rec, http.StatusOK)
+	if body := rec.Body.String(); !strings.Contains(body, "<title>Qadam — ҚазТБУ инновациялық платформасы</title>") ||
+		!strings.Contains(body, `<link rel="canonical" href="http://kazutb.localhost:3000/" />`) || !strings.Contains(body, `"@type":"WebSite"`) ||
+		!strings.Contains(body, `<div id="boot" lang="en"`) || !strings.Contains(body, `From idea to market — <em class="text-primary-300">one step</em>`) {
+		t.Fatalf("landing page: %s", body)
 	}
 	rec = crawler.do(http.MethodGet, "/showcase?scope=national", nil)
 	expect(t, rec, http.StatusOK)
 	if body := rec.Body.String(); !strings.Contains(body, "Қазақстан университеттерінің жобалар витринасы") || !strings.Contains(body, `"@type":"CollectionPage"`) ||
-		!strings.Contains(body, `<a href="http://kazutb.localhost:3000/showcase/agroscan">AgroScan</a>`) {
+		!strings.Contains(body, `<a href="http://kazutb.localhost:3000/showcase/agroscan">AgroScan</a>`) ||
+		!strings.Contains(body, "Қазақстан университеттерінің жобалары</h1>") {
 		t.Fatalf("catalog page: %s", body)
 	}
 	rec = crawler.do(http.MethodGet, "/sitemap.xml", nil)
