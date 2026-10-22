@@ -407,7 +407,6 @@ function SearchBox({ value, onChange }: { value: string; onChange: (value: strin
         maxLength={LIMITS.search}
         placeholder={t('catalog.search.placeholder')}
         inputSize="lg"
-        className="border-t-2 border-t-primary-500"
         leading={<Search aria-hidden />}
         trailing={
           draft ? (

@@ -341,7 +341,7 @@ function ShowcaseSearch() {
       }}
     >
       <p className="font-semibold text-ink">{t('featured.searchTitle')}</p>
-      <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
         <div className="min-w-0 flex-1">
           <Input
             type="search"
@@ -354,7 +354,6 @@ function ShowcaseSearch() {
             aria-label={t('hero.searchLabel')}
             placeholder={t('hero.searchPlaceholder')}
             leading={<Search />}
-            className="border-t-2 border-t-primary-500"
           />
         </div>
         <Button type="submit" size="lg" variant="ink">

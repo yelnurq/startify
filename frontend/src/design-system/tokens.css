@@ -162,8 +162,8 @@
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-3xl: 28px;
-  /* Buttons, fields and icon buttons are square; cards and panels are rounded. */
-  --radius-control: 0px;
+  /* Buttons, fields and icon buttons are a step less round than the cards around them. */
+  --radius-control: 10px;
   --radius-card: 14px;
 
   --container-page: 80rem;

@@ -250,7 +250,7 @@ export function TypographySection({ index }: { index: number }) {
 }
 
 const RADII = [
-  { cls: 'rounded-control', key: 'radiusInput', px: '0' },
+  { cls: 'rounded-control', key: 'radiusInput', px: '10' },
   { cls: 'rounded-lg', key: 'radiusButton', px: '12' },
   { cls: 'rounded-card', key: 'radiusPanel', px: '14' },
   { cls: 'rounded-2xl', key: 'radiusModal', px: '20' },

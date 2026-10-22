@@ -24,7 +24,7 @@ export function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        'peer grid size-4.5 shrink-0 place-items-center rounded-control border border-border-strong bg-surface transition-colors',
+        'peer grid size-4.5 shrink-0 place-items-center rounded-xs border border-border-strong bg-surface transition-colors',
         'data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-fg',
         'data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-fg',
         'disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
