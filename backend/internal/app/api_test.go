@@ -21,6 +21,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 
+	"github.com/yelnurq/startify/backend/internal/ai/llm"
+	"github.com/yelnurq/startify/backend/internal/ai/mock"
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/mail"
@@ -88,13 +90,14 @@ func newHarness(t *testing.T) *harness {
 		t.Fatal(err)
 	}
 	api := &API{
-		Config:  cfg,
-		Log:     slog.New(slog.NewTextHandler(io.Discard, nil)),
-		DB:      database.App,
-		Cache:   redis.NewClient(&redis.Options{Addr: mr.Addr()}),
-		Metrics: metrics.New(),
-		Storage: h.storage,
-		Queue:   h.queue,
+		Config:    cfg,
+		Log:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+		DB:        database.App,
+		Cache:     redis.NewClient(&redis.Options{Addr: mr.Addr()}),
+		Metrics:   metrics.New(),
+		Storage:   h.storage,
+		Queue:     h.queue,
+		Providers: []llm.Provider{&mock.Provider{}},
 	}
 	h.handler, h.services, err = api.Handler(context.Background())
 	if err != nil {

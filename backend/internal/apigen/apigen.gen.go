@@ -25,6 +25,33 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AiFeature.
+const (
+	AiFeatureEmbedding  AiFeature = "embedding"
+	AiFeatureEvaluation AiFeature = "evaluation"
+	AiFeatureGeneration AiFeature = "generation"
+	AiFeatureMentor     AiFeature = "mentor"
+	AiFeatureSummary    AiFeature = "summary"
+)
+
+// Valid indicates whether the value is a known member of the AiFeature enum.
+func (e AiFeature) Valid() bool {
+	switch e {
+	case AiFeatureEmbedding:
+		return true
+	case AiFeatureEvaluation:
+		return true
+	case AiFeatureGeneration:
+		return true
+	case AiFeatureMentor:
+		return true
+	case AiFeatureSummary:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ImportKind.
 const (
 	ImportKindStructure ImportKind = "structure"
@@ -76,6 +103,27 @@ func (e ImportStatus) Valid() bool {
 	case ImportStatusCommitted:
 		return true
 	case ImportStatusPreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KnowledgeStatus.
+const (
+	KnowledgeStatusFailed  KnowledgeStatus = "failed"
+	KnowledgeStatusPending KnowledgeStatus = "pending"
+	KnowledgeStatusReady   KnowledgeStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the KnowledgeStatus enum.
+func (e KnowledgeStatus) Valid() bool {
+	switch e {
+	case KnowledgeStatusFailed:
+		return true
+	case KnowledgeStatusPending:
+		return true
+	case KnowledgeStatusReady:
 		return true
 	default:
 		return false
@@ -136,6 +184,24 @@ func (e MembershipStatus) Valid() bool {
 	case MembershipStatusInvited:
 		return true
 	case MembershipStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MentorMode.
+const (
+	MentorModeCoach    MentorMode = "coach"
+	MentorModeCoauthor MentorMode = "coauthor"
+)
+
+// Valid indicates whether the value is a known member of the MentorMode enum.
+func (e MentorMode) Valid() bool {
+	switch e {
+	case MentorModeCoach:
+		return true
+	case MentorModeCoauthor:
 		return true
 	default:
 		return false
@@ -253,6 +319,127 @@ func (e TeamRole) Valid() bool {
 	}
 }
 
+// AiCheckRequest defines model for AiCheckRequest.
+type AiCheckRequest struct {
+	Feature AiFeature `json:"feature"`
+
+	// Locale Interface and content language.
+	Locale *Locale `json:"locale,omitempty"`
+}
+
+// AiFeature defines model for AiFeature.
+type AiFeature string
+
+// AiProvider defines model for AiProvider.
+type AiProvider struct {
+	// Local Runs inside the university network; data is not redacted.
+	Local bool `json:"local"`
+
+	// Models Default model per feature.
+	Models map[string]string `json:"models"`
+	Name   string            `json:"name"`
+}
+
+// AiRoute defines model for AiRoute.
+type AiRoute struct {
+	// Model Examples: claude-sonnet-5-5
+	Model *string `json:"model,omitempty"`
+
+	// Provider Examples: anthropic
+	Provider string `json:"provider"`
+}
+
+// AiRoutes Providers of each feature in the order they are tried.
+type AiRoutes map[string][]AiRoute
+
+// AiSettings defines model for AiSettings.
+type AiSettings struct {
+	DailyTenantTokens int64 `json:"daily_tenant_tokens"`
+	DailyUserTokens   int   `json:"daily_user_tokens"`
+
+	// DefaultRoutes Providers of each feature in the order they are tried.
+	DefaultRoutes AiRoutes `json:"default_routes"`
+	LocalOnly     bool     `json:"local_only"`
+
+	// MentorMode `coach` asks and hints; `coauthor` may propose whole texts.
+	MentorMode MentorMode   `json:"mentor_mode"`
+	Providers  []AiProvider `json:"providers"`
+
+	// Routes Providers of each feature in the order they are tried.
+	Routes AiRoutes `json:"routes"`
+}
+
+// AiSettingsUpdate defines model for AiSettingsUpdate.
+type AiSettingsUpdate struct {
+	DailyTenantTokens int64 `json:"daily_tenant_tokens"`
+	DailyUserTokens   int   `json:"daily_user_tokens"`
+	LocalOnly         bool  `json:"local_only"`
+
+	// MentorMode `coach` asks and hints; `coauthor` may propose whole texts.
+	MentorMode MentorMode `json:"mentor_mode"`
+
+	// Routes Providers of each feature in the order they are tried.
+	Routes AiRoutes `json:"routes"`
+}
+
+// AiStatus defines model for AiStatus.
+type AiStatus struct {
+	// DailyLimit Tokens a member may use per day; 0 means no limit.
+	DailyLimit int `json:"daily_limit"`
+
+	// External AI features send data to a provider outside the university.
+	External bool `json:"external"`
+
+	// MentorMode `coach` asks and hints; `coauthor` may propose whole texts.
+	MentorMode MentorMode `json:"mentor_mode"`
+	ResetsAt   time.Time  `json:"resets_at"`
+	UsedToday  int        `json:"used_today"`
+}
+
+// AiUsageByDay defines model for AiUsageByDay.
+type AiUsageByDay struct {
+	CostUsd  float64            `json:"cost_usd"`
+	Day      openapi_types.Date `json:"day"`
+	Requests int                `json:"requests"`
+	Tokens   int64              `json:"tokens"`
+}
+
+// AiUsageByFeature defines model for AiUsageByFeature.
+type AiUsageByFeature struct {
+	CostUsd      float64   `json:"cost_usd"`
+	Failures     int       `json:"failures"`
+	Feature      AiFeature `json:"feature"`
+	InputTokens  int64     `json:"input_tokens"`
+	OutputTokens int64     `json:"output_tokens"`
+	Requests     int       `json:"requests"`
+}
+
+// AiUsageByModel defines model for AiUsageByModel.
+type AiUsageByModel struct {
+	CostUsd  float64 `json:"cost_usd"`
+	Model    string  `json:"model"`
+	Provider string  `json:"provider"`
+	Requests int     `json:"requests"`
+	Tokens   int64   `json:"tokens"`
+}
+
+// AiUsageReport defines model for AiUsageReport.
+type AiUsageReport struct {
+	ByDay     []AiUsageByDay     `json:"by_day"`
+	ByFeature []AiUsageByFeature `json:"by_feature"`
+	ByModel   []AiUsageByModel   `json:"by_model"`
+	Since     time.Time          `json:"since"`
+	Totals    AiUsageTotals      `json:"totals"`
+}
+
+// AiUsageTotals defines model for AiUsageTotals.
+type AiUsageTotals struct {
+	CostUsd      float64 `json:"cost_usd"`
+	InputTokens  int64   `json:"input_tokens"`
+	OutputTokens int64   `json:"output_tokens"`
+	Requests     int     `json:"requests"`
+}
+
 // ConsentPolicy Personal data processing consent shown at sign-up (Law of the RK "On personal data").
 type ConsentPolicy struct {
 	// Text The same text in Kazakh, Russian and English; at least one is present.
@@ -361,6 +548,40 @@ type ImportSummary struct {
 	Valid    int `json:"valid"`
 }
 
+// KnowledgeDocument defines model for KnowledgeDocument.
+type KnowledgeDocument struct {
+	// Characters Length of the extracted text.
+	Characters int                `json:"characters"`
+	ChunkCount int                `json:"chunk_count"`
+	CreatedAt  time.Time          `json:"created_at"`
+	Error      *string            `json:"error"`
+	FileUrl    *string            `json:"file_url"`
+	Id         openapi_types.UUID `json:"id"`
+	Status     KnowledgeStatus    `json:"status"`
+	Title      string             `json:"title"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+}
+
+// KnowledgeDocumentPage defines model for KnowledgeDocumentPage.
+type KnowledgeDocumentPage struct {
+	Items      []KnowledgeDocument `json:"items"`
+	NextCursor *string             `json:"next_cursor"`
+}
+
+// KnowledgeHit defines model for KnowledgeHit.
+type KnowledgeHit struct {
+	DocumentId openapi_types.UUID `json:"document_id"`
+	Excerpt    string             `json:"excerpt"`
+	Heading    *string            `json:"heading"`
+
+	// Score Relevance from 0 to 1.
+	Score float64 `json:"score"`
+	Title string  `json:"title"`
+}
+
+// KnowledgeStatus defines model for KnowledgeStatus.
+type KnowledgeStatus string
+
 // Locale Interface and content language.
 type Locale string
 
@@ -448,6 +669,9 @@ type Membership struct {
 
 // MembershipStatus defines model for MembershipStatus.
 type MembershipStatus string
+
+// MentorMode `coach` asks and hints; `coauthor` may propose whole texts.
+type MentorMode string
 
 // Meta defines model for Meta.
 type Meta struct {
@@ -761,6 +985,17 @@ type Limit = int
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
 
+// UpdateAiSettingsParams defines parameters for UpdateAiSettings.
+type UpdateAiSettingsParams struct {
+	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// GetAiUsageParams defines parameters for GetAiUsage.
+type GetAiUsageParams struct {
+	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
 // CreateImportMultipartBody defines parameters for CreateImport.
 type CreateImportMultipartBody struct {
 	File openapi_types.File `json:"file"`
@@ -768,6 +1003,26 @@ type CreateImportMultipartBody struct {
 	// Kind `structure` — faculties, departments and study groups;
 	// `students` — students with their faculty, group and course.
 	Kind ImportKind `json:"kind"`
+}
+
+// ListKnowledgeDocumentsParams defines parameters for ListKnowledgeDocuments.
+type ListKnowledgeDocumentsParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateKnowledgeDocumentMultipartBody defines parameters for CreateKnowledgeDocument.
+type CreateKnowledgeDocumentMultipartBody struct {
+	File  *openapi_types.File `json:"file,omitempty"`
+	Text  *string             `json:"text,omitempty"`
+	Title string              `json:"title"`
+}
+
+// SearchKnowledgeParams defines parameters for SearchKnowledge.
+type SearchKnowledgeParams struct {
+	Q     string `form:"q" json:"q"`
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListMembersParams defines parameters for ListMembers.
@@ -849,8 +1104,17 @@ type RespondToTeamRequestParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// CheckAiConnectionJSONRequestBody defines body for CheckAiConnection for application/json ContentType.
+type CheckAiConnectionJSONRequestBody = AiCheckRequest
+
+// UpdateAiSettingsJSONRequestBody defines body for UpdateAiSettings for application/json ContentType.
+type UpdateAiSettingsJSONRequestBody = AiSettingsUpdate
+
 // CreateImportMultipartRequestBody defines body for CreateImport for multipart/form-data ContentType.
 type CreateImportMultipartRequestBody CreateImportMultipartBody
+
+// CreateKnowledgeDocumentMultipartRequestBody defines body for CreateKnowledgeDocument for multipart/form-data ContentType.
+type CreateKnowledgeDocumentMultipartRequestBody CreateKnowledgeDocumentMultipartBody
 
 // UpdateMemberJSONRequestBody defines body for UpdateMember for application/json ContentType.
 type UpdateMemberJSONRequestBody = MemberUpdate
@@ -902,6 +1166,18 @@ type RespondToTeamRequestJSONRequestBody = TeamResponseCreate
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// CheckAiConnection Stream a short answer to check a feature's model
+	// (POST /admin/ai/check)
+	CheckAiConnection(w http.ResponseWriter, r *http.Request)
+	// GetAiSettings AI settings of the university
+	// (GET /admin/ai/settings)
+	GetAiSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateAiSettings Change the AI settings of the university
+	// (PUT /admin/ai/settings)
+	UpdateAiSettings(w http.ResponseWriter, r *http.Request, params UpdateAiSettingsParams)
+	// GetAiUsage Tokens and estimated cost of AI calls
+	// (GET /admin/ai/usage)
+	GetAiUsage(w http.ResponseWriter, r *http.Request, params GetAiUsageParams)
 	// CreateImport Upload a CSV or XLSX file for import
 	// (POST /admin/imports)
 	CreateImport(w http.ResponseWriter, r *http.Request)
@@ -911,12 +1187,30 @@ type ServerInterface interface {
 	// CommitImport Apply a previewed import
 	// (POST /admin/imports/{importId}/commit)
 	CommitImport(w http.ResponseWriter, r *http.Request, importId ImportId)
+	// ListKnowledgeDocuments Documents of the knowledge base
+	// (GET /admin/knowledge)
+	ListKnowledgeDocuments(w http.ResponseWriter, r *http.Request, params ListKnowledgeDocumentsParams)
+	// CreateKnowledgeDocument Add a document
+	// (POST /admin/knowledge)
+	CreateKnowledgeDocument(w http.ResponseWriter, r *http.Request)
+	// SearchKnowledge Passages that best match a question
+	// (GET /admin/knowledge/search)
+	SearchKnowledge(w http.ResponseWriter, r *http.Request, params SearchKnowledgeParams)
+	// DeleteKnowledgeDocument Remove a document and its passages
+	// (DELETE /admin/knowledge/{documentId})
+	DeleteKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID)
+	// GetKnowledgeDocument One document
+	// (GET /admin/knowledge/{documentId})
+	GetKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID)
 	// ListMembers Members of the university
 	// (GET /admin/members)
 	ListMembers(w http.ResponseWriter, r *http.Request, params ListMembersParams)
 	// UpdateMember Change roles or status of a member
 	// (PATCH /admin/members/{userId})
 	UpdateMember(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// GetAiStatus AI availability for the signed-in member
+	// (GET /ai/status)
+	GetAiStatus(w http.ResponseWriter, r *http.Request)
 	// ResendVerificationEmail Send the verification letter again
 	// (POST /auth/email/resend)
 	ResendVerificationEmail(w http.ResponseWriter, r *http.Request)
@@ -1028,6 +1322,30 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// CheckAiConnection Stream a short answer to check a feature's model
+// (POST /admin/ai/check)
+func (_ Unimplemented) CheckAiConnection(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAiSettings AI settings of the university
+// (GET /admin/ai/settings)
+func (_ Unimplemented) GetAiSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateAiSettings Change the AI settings of the university
+// (PUT /admin/ai/settings)
+func (_ Unimplemented) UpdateAiSettings(w http.ResponseWriter, r *http.Request, params UpdateAiSettingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAiUsage Tokens and estimated cost of AI calls
+// (GET /admin/ai/usage)
+func (_ Unimplemented) GetAiUsage(w http.ResponseWriter, r *http.Request, params GetAiUsageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // CreateImport Upload a CSV or XLSX file for import
 // (POST /admin/imports)
 func (_ Unimplemented) CreateImport(w http.ResponseWriter, r *http.Request) {
@@ -1046,6 +1364,36 @@ func (_ Unimplemented) CommitImport(w http.ResponseWriter, r *http.Request, impo
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListKnowledgeDocuments Documents of the knowledge base
+// (GET /admin/knowledge)
+func (_ Unimplemented) ListKnowledgeDocuments(w http.ResponseWriter, r *http.Request, params ListKnowledgeDocumentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateKnowledgeDocument Add a document
+// (POST /admin/knowledge)
+func (_ Unimplemented) CreateKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SearchKnowledge Passages that best match a question
+// (GET /admin/knowledge/search)
+func (_ Unimplemented) SearchKnowledge(w http.ResponseWriter, r *http.Request, params SearchKnowledgeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteKnowledgeDocument Remove a document and its passages
+// (DELETE /admin/knowledge/{documentId})
+func (_ Unimplemented) DeleteKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetKnowledgeDocument One document
+// (GET /admin/knowledge/{documentId})
+func (_ Unimplemented) GetKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListMembers Members of the university
 // (GET /admin/members)
 func (_ Unimplemented) ListMembers(w http.ResponseWriter, r *http.Request, params ListMembersParams) {
@@ -1055,6 +1403,12 @@ func (_ Unimplemented) ListMembers(w http.ResponseWriter, r *http.Request, param
 // UpdateMember Change roles or status of a member
 // (PATCH /admin/members/{userId})
 func (_ Unimplemented) UpdateMember(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAiStatus AI availability for the signed-in member
+// (GET /ai/status)
+func (_ Unimplemented) GetAiStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1277,6 +1631,108 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// CheckAiConnection operation middleware
+func (siw *ServerInterfaceWrapper) CheckAiConnection(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckAiConnection(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAiSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetAiSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAiSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAiSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAiSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateAiSettingsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAiSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAiUsage operation middleware
+func (siw *ServerInterfaceWrapper) GetAiUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAiUsageParams
+
+	// ------------- Optional query parameter "days" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "days", r.URL.Query(), &params.Days, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "days"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "days", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAiUsage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateImport operation middleware
 func (siw *ServerInterfaceWrapper) CreateImport(w http.ResponseWriter, r *http.Request) {
 
@@ -1334,6 +1790,164 @@ func (siw *ServerInterfaceWrapper) CommitImport(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CommitImport(w, r, importId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListKnowledgeDocuments operation middleware
+func (siw *ServerInterfaceWrapper) ListKnowledgeDocuments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListKnowledgeDocumentsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListKnowledgeDocuments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateKnowledgeDocument operation middleware
+func (siw *ServerInterfaceWrapper) CreateKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateKnowledgeDocument(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SearchKnowledge operation middleware
+func (siw *ServerInterfaceWrapper) SearchKnowledge(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchKnowledgeParams
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchKnowledge(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteKnowledgeDocument operation middleware
+func (siw *ServerInterfaceWrapper) DeleteKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteKnowledgeDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetKnowledgeDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetKnowledgeDocument(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1445,6 +2059,20 @@ func (siw *ServerInterfaceWrapper) UpdateMember(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateMember(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAiStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetAiStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAiStatus(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2587,11 +3215,246 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/imports/{importId}/commit", wrapper.CommitImport)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/ai/status", wrapper.GetAiStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/ai/settings", wrapper.GetAiSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/ai/settings", wrapper.UpdateAiSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/ai/check", wrapper.CheckAiConnection)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/ai/usage", wrapper.GetAiUsage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/knowledge", wrapper.ListKnowledgeDocuments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/knowledge", wrapper.CreateKnowledgeDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/knowledge/search", wrapper.SearchKnowledge)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/knowledge/{documentId}", wrapper.DeleteKnowledgeDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/knowledge/{documentId}", wrapper.GetKnowledgeDocument)
+	})
 
 	return r
 }
 
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type CheckAiConnectionRequestObject struct {
+	Body *CheckAiConnectionJSONRequestBody
+}
+
+type CheckAiConnectionResponseObject interface {
+	VisitCheckAiConnectionResponse(w http.ResponseWriter) error
+}
+
+type CheckAiConnection200TexteventStreamResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response CheckAiConnection200TexteventStreamResponse) VisitCheckAiConnectionResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		// If w doesn't support flushing, fall back to io.Copy.
+		_, err := io.Copy(w, response.Body)
+		return err
+	}
+	// text/event-stream messages are typically small; use a
+	// modest buffer and flush after each chunk so clients see
+	// events immediately instead of waiting on OS buffering.
+	buf := make([]byte, 4096)
+	for {
+		n, err := response.Body.Read(buf)
+		if n > 0 {
+			if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+				return writeErr
+			}
+			flusher.Flush()
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+type CheckAiConnectiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CheckAiConnectiondefaultApplicationProblemPlusJSONResponse) VisitCheckAiConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiSettingsRequestObject struct {
+}
+
+type GetAiSettingsResponseObject interface {
+	VisitGetAiSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetAiSettings200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetAiSettings200JSONResponse struct {
+	Body    AiSettings
+	Headers GetAiSettings200ResponseHeaders
+}
+
+func (response GetAiSettings200JSONResponse) VisitGetAiSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiSettingsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetAiSettingsdefaultApplicationProblemPlusJSONResponse) VisitGetAiSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAiSettingsRequestObject struct {
+	Params UpdateAiSettingsParams
+	Body   *UpdateAiSettingsJSONRequestBody
+}
+
+type UpdateAiSettingsResponseObject interface {
+	VisitUpdateAiSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateAiSettings200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateAiSettings200JSONResponse struct {
+	Body    AiSettings
+	Headers UpdateAiSettings200ResponseHeaders
+}
+
+func (response UpdateAiSettings200JSONResponse) VisitUpdateAiSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAiSettingsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateAiSettingsdefaultApplicationProblemPlusJSONResponse) VisitUpdateAiSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiUsageRequestObject struct {
+	Params GetAiUsageParams
+}
+
+type GetAiUsageResponseObject interface {
+	VisitGetAiUsageResponse(w http.ResponseWriter) error
+}
+
+type GetAiUsage200JSONResponse AiUsageReport
+
+func (response GetAiUsage200JSONResponse) VisitGetAiUsageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiUsagedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetAiUsagedefaultApplicationProblemPlusJSONResponse) VisitGetAiUsageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type CreateImportRequestObject struct {
 	Body *multipart.Reader
@@ -2710,6 +3573,197 @@ func (response CommitImportdefaultApplicationProblemPlusJSONResponse) VisitCommi
 	return err
 }
 
+type ListKnowledgeDocumentsRequestObject struct {
+	Params ListKnowledgeDocumentsParams
+}
+
+type ListKnowledgeDocumentsResponseObject interface {
+	VisitListKnowledgeDocumentsResponse(w http.ResponseWriter) error
+}
+
+type ListKnowledgeDocuments200JSONResponse KnowledgeDocumentPage
+
+func (response ListKnowledgeDocuments200JSONResponse) VisitListKnowledgeDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListKnowledgeDocumentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListKnowledgeDocumentsdefaultApplicationProblemPlusJSONResponse) VisitListKnowledgeDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKnowledgeDocumentRequestObject struct {
+	Body *multipart.Reader
+}
+
+type CreateKnowledgeDocumentResponseObject interface {
+	VisitCreateKnowledgeDocumentResponse(w http.ResponseWriter) error
+}
+
+type CreateKnowledgeDocument201JSONResponse KnowledgeDocument
+
+func (response CreateKnowledgeDocument201JSONResponse) VisitCreateKnowledgeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse) VisitCreateKnowledgeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchKnowledgeRequestObject struct {
+	Params SearchKnowledgeParams
+}
+
+type SearchKnowledgeResponseObject interface {
+	VisitSearchKnowledgeResponse(w http.ResponseWriter) error
+}
+
+type SearchKnowledge200JSONResponse struct {
+	Items []KnowledgeHit `json:"items"`
+}
+
+func (response SearchKnowledge200JSONResponse) VisitSearchKnowledgeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchKnowledgedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SearchKnowledgedefaultApplicationProblemPlusJSONResponse) VisitSearchKnowledgeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteKnowledgeDocumentRequestObject struct {
+	DocumentId openapi_types.UUID `json:"documentId"`
+}
+
+type DeleteKnowledgeDocumentResponseObject interface {
+	VisitDeleteKnowledgeDocumentResponse(w http.ResponseWriter) error
+}
+
+type DeleteKnowledgeDocument204Response struct {
+}
+
+func (response DeleteKnowledgeDocument204Response) VisitDeleteKnowledgeDocumentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse) VisitDeleteKnowledgeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetKnowledgeDocumentRequestObject struct {
+	DocumentId openapi_types.UUID `json:"documentId"`
+}
+
+type GetKnowledgeDocumentResponseObject interface {
+	VisitGetKnowledgeDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetKnowledgeDocument200JSONResponse KnowledgeDocument
+
+func (response GetKnowledgeDocument200JSONResponse) VisitGetKnowledgeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetKnowledgeDocumentdefaultApplicationProblemPlusJSONResponse) VisitGetKnowledgeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMembersRequestObject struct {
 	Params ListMembersParams
 }
@@ -2778,6 +3832,44 @@ type UpdateMemberdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateMemberdefaultApplicationProblemPlusJSONResponse) VisitUpdateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiStatusRequestObject struct {
+}
+
+type GetAiStatusResponseObject interface {
+	VisitGetAiStatusResponse(w http.ResponseWriter) error
+}
+
+type GetAiStatus200JSONResponse AiStatus
+
+func (response GetAiStatus200JSONResponse) VisitGetAiStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAiStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetAiStatusdefaultApplicationProblemPlusJSONResponse) VisitGetAiStatusResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -4163,6 +5255,18 @@ func (response GetCurrentTenantdefaultApplicationProblemPlusJSONResponse) VisitG
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// CheckAiConnection Stream a short answer to check a feature's model
+	// (POST /admin/ai/check)
+	CheckAiConnection(ctx context.Context, request CheckAiConnectionRequestObject) (CheckAiConnectionResponseObject, error)
+	// GetAiSettings AI settings of the university
+	// (GET /admin/ai/settings)
+	GetAiSettings(ctx context.Context, request GetAiSettingsRequestObject) (GetAiSettingsResponseObject, error)
+	// UpdateAiSettings Change the AI settings of the university
+	// (PUT /admin/ai/settings)
+	UpdateAiSettings(ctx context.Context, request UpdateAiSettingsRequestObject) (UpdateAiSettingsResponseObject, error)
+	// GetAiUsage Tokens and estimated cost of AI calls
+	// (GET /admin/ai/usage)
+	GetAiUsage(ctx context.Context, request GetAiUsageRequestObject) (GetAiUsageResponseObject, error)
 	// CreateImport Upload a CSV or XLSX file for import
 	// (POST /admin/imports)
 	CreateImport(ctx context.Context, request CreateImportRequestObject) (CreateImportResponseObject, error)
@@ -4172,12 +5276,30 @@ type StrictServerInterface interface {
 	// CommitImport Apply a previewed import
 	// (POST /admin/imports/{importId}/commit)
 	CommitImport(ctx context.Context, request CommitImportRequestObject) (CommitImportResponseObject, error)
+	// ListKnowledgeDocuments Documents of the knowledge base
+	// (GET /admin/knowledge)
+	ListKnowledgeDocuments(ctx context.Context, request ListKnowledgeDocumentsRequestObject) (ListKnowledgeDocumentsResponseObject, error)
+	// CreateKnowledgeDocument Add a document
+	// (POST /admin/knowledge)
+	CreateKnowledgeDocument(ctx context.Context, request CreateKnowledgeDocumentRequestObject) (CreateKnowledgeDocumentResponseObject, error)
+	// SearchKnowledge Passages that best match a question
+	// (GET /admin/knowledge/search)
+	SearchKnowledge(ctx context.Context, request SearchKnowledgeRequestObject) (SearchKnowledgeResponseObject, error)
+	// DeleteKnowledgeDocument Remove a document and its passages
+	// (DELETE /admin/knowledge/{documentId})
+	DeleteKnowledgeDocument(ctx context.Context, request DeleteKnowledgeDocumentRequestObject) (DeleteKnowledgeDocumentResponseObject, error)
+	// GetKnowledgeDocument One document
+	// (GET /admin/knowledge/{documentId})
+	GetKnowledgeDocument(ctx context.Context, request GetKnowledgeDocumentRequestObject) (GetKnowledgeDocumentResponseObject, error)
 	// ListMembers Members of the university
 	// (GET /admin/members)
 	ListMembers(ctx context.Context, request ListMembersRequestObject) (ListMembersResponseObject, error)
 	// UpdateMember Change roles or status of a member
 	// (PATCH /admin/members/{userId})
 	UpdateMember(ctx context.Context, request UpdateMemberRequestObject) (UpdateMemberResponseObject, error)
+	// GetAiStatus AI availability for the signed-in member
+	// (GET /ai/status)
+	GetAiStatus(ctx context.Context, request GetAiStatusRequestObject) (GetAiStatusResponseObject, error)
 	// ResendVerificationEmail Send the verification letter again
 	// (POST /auth/email/resend)
 	ResendVerificationEmail(ctx context.Context, request ResendVerificationEmailRequestObject) (ResendVerificationEmailResponseObject, error)
@@ -4324,6 +5446,120 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// CheckAiConnection operation middleware
+func (sh *strictHandler) CheckAiConnection(w http.ResponseWriter, r *http.Request) {
+	var request CheckAiConnectionRequestObject
+
+	var body CheckAiConnectionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckAiConnection(ctx, request.(CheckAiConnectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckAiConnection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckAiConnectionResponseObject); ok {
+		if err := validResponse.VisitCheckAiConnectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAiSettings operation middleware
+func (sh *strictHandler) GetAiSettings(w http.ResponseWriter, r *http.Request) {
+	var request GetAiSettingsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAiSettings(ctx, request.(GetAiSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAiSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAiSettingsResponseObject); ok {
+		if err := validResponse.VisitGetAiSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAiSettings operation middleware
+func (sh *strictHandler) UpdateAiSettings(w http.ResponseWriter, r *http.Request, params UpdateAiSettingsParams) {
+	var request UpdateAiSettingsRequestObject
+
+	request.Params = params
+
+	var body UpdateAiSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAiSettings(ctx, request.(UpdateAiSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAiSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAiSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateAiSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAiUsage operation middleware
+func (sh *strictHandler) GetAiUsage(w http.ResponseWriter, r *http.Request, params GetAiUsageParams) {
+	var request GetAiUsageRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAiUsage(ctx, request.(GetAiUsageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAiUsage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAiUsageResponseObject); ok {
+		if err := validResponse.VisitGetAiUsageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateImport operation middleware
 func (sh *strictHandler) CreateImport(w http.ResponseWriter, r *http.Request) {
 	var request CreateImportRequestObject
@@ -4407,6 +5643,141 @@ func (sh *strictHandler) CommitImport(w http.ResponseWriter, r *http.Request, im
 	}
 }
 
+// ListKnowledgeDocuments operation middleware
+func (sh *strictHandler) ListKnowledgeDocuments(w http.ResponseWriter, r *http.Request, params ListKnowledgeDocumentsParams) {
+	var request ListKnowledgeDocumentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListKnowledgeDocuments(ctx, request.(ListKnowledgeDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListKnowledgeDocuments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListKnowledgeDocumentsResponseObject); ok {
+		if err := validResponse.VisitListKnowledgeDocumentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateKnowledgeDocument operation middleware
+func (sh *strictHandler) CreateKnowledgeDocument(w http.ResponseWriter, r *http.Request) {
+	var request CreateKnowledgeDocumentRequestObject
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateKnowledgeDocument(ctx, request.(CreateKnowledgeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateKnowledgeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateKnowledgeDocumentResponseObject); ok {
+		if err := validResponse.VisitCreateKnowledgeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchKnowledge operation middleware
+func (sh *strictHandler) SearchKnowledge(w http.ResponseWriter, r *http.Request, params SearchKnowledgeParams) {
+	var request SearchKnowledgeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchKnowledge(ctx, request.(SearchKnowledgeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchKnowledge")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchKnowledgeResponseObject); ok {
+		if err := validResponse.VisitSearchKnowledgeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteKnowledgeDocument operation middleware
+func (sh *strictHandler) DeleteKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID) {
+	var request DeleteKnowledgeDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteKnowledgeDocument(ctx, request.(DeleteKnowledgeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteKnowledgeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteKnowledgeDocumentResponseObject); ok {
+		if err := validResponse.VisitDeleteKnowledgeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetKnowledgeDocument operation middleware
+func (sh *strictHandler) GetKnowledgeDocument(w http.ResponseWriter, r *http.Request, documentId openapi_types.UUID) {
+	var request GetKnowledgeDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetKnowledgeDocument(ctx, request.(GetKnowledgeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetKnowledgeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetKnowledgeDocumentResponseObject); ok {
+		if err := validResponse.VisitGetKnowledgeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMembers operation middleware
 func (sh *strictHandler) ListMembers(w http.ResponseWriter, r *http.Request, params ListMembersParams) {
 	var request ListMembersRequestObject
@@ -4459,6 +5830,30 @@ func (sh *strictHandler) UpdateMember(w http.ResponseWriter, r *http.Request, us
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateMemberResponseObject); ok {
 		if err := validResponse.VisitUpdateMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAiStatus operation middleware
+func (sh *strictHandler) GetAiStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetAiStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAiStatus(ctx, request.(GetAiStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAiStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAiStatusResponseObject); ok {
+		if err := validResponse.VisitGetAiStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -5446,141 +6841,171 @@ func (sh *strictHandler) GetCurrentTenant(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

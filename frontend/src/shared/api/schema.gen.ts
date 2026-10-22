@@ -675,10 +675,308 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AI availability for the signed-in member
+         * @description Whether AI features send data to a provider outside the university (the interface
+         *     must warn), and the member's daily allowance.
+         */
+        get: operations["getAiStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AI settings of the university
+         * @description Requires `tenant_admin`.
+         */
+        get: operations["getAiSettings"];
+        /**
+         * Change the AI settings of the university
+         * @description Requires `tenant_admin`. Routes may name configured providers only; with
+         *     `local_only` every route must stay inside the university network.
+         */
+        put: operations["updateAiSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stream a short answer to check a feature's model
+         * @description Requires `tenant_admin`. Server-sent events: `delta` (`{"text": "..."}`) for each
+         *     piece of the answer, then `done` (AiCheckResult) or `error` (Problem). Closing the
+         *     connection stops the model.
+         */
+        post: operations["checkAiConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tokens and estimated cost of AI calls
+         * @description Requires `tenant_admin` or `leadership`.
+         */
+        get: operations["getAiUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/knowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documents of the knowledge base
+         * @description Requires `tenant_admin` or `innovation_manager`.
+         */
+        get: operations["listKnowledgeDocuments"];
+        put?: never;
+        /**
+         * Add a document
+         * @description Requires `tenant_admin` or `innovation_manager`. Send a file (PDF, DOCX, TXT or
+         *     Markdown) or pasted text. The document is split into passages and indexed in the
+         *     background; its status turns `ready` when the mentor can cite it.
+         */
+        post: operations["createKnowledgeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/knowledge/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Passages that best match a question
+         * @description Requires `tenant_admin` or `innovation_manager`. The mentor uses the same search.
+         */
+        get: operations["searchKnowledge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/knowledge/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        /** One document */
+        get: operations["getKnowledgeDocument"];
+        put?: never;
+        post?: never;
+        /** Remove a document and its passages */
+        delete: operations["deleteKnowledgeDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        AiFeature: "mentor" | "evaluation" | "generation" | "summary" | "embedding";
+        /**
+         * @description `coach` asks and hints; `coauthor` may propose whole texts.
+         * @enum {string}
+         */
+        MentorMode: "coach" | "coauthor";
+        AiStatus: {
+            /** @description AI features send data to a provider outside the university. */
+            external: boolean;
+            /** @description Tokens a member may use per day; 0 means no limit. */
+            daily_limit: number;
+            used_today: number;
+            /** Format: date-time */
+            resets_at: string;
+            mentor_mode: components["schemas"]["MentorMode"];
+        };
+        AiRoute: {
+            /** @example anthropic */
+            provider: string;
+            /** @example claude-sonnet-5-5 */
+            model?: string | null;
+        };
+        /** @description Providers of each feature in the order they are tried. */
+        AiRoutes: {
+            [key: string]: components["schemas"]["AiRoute"][];
+        };
+        AiProvider: {
+            name: string;
+            /** @description Runs inside the university network; data is not redacted. */
+            local: boolean;
+            /** @description Default model per feature. */
+            models: {
+                [key: string]: string;
+            };
+        };
+        AiSettings: {
+            routes: components["schemas"]["AiRoutes"];
+            default_routes: components["schemas"]["AiRoutes"];
+            providers: components["schemas"]["AiProvider"][];
+            local_only: boolean;
+            daily_user_tokens: number;
+            /** Format: int64 */
+            daily_tenant_tokens: number;
+            mentor_mode: components["schemas"]["MentorMode"];
+        };
+        AiSettingsUpdate: {
+            routes: components["schemas"]["AiRoutes"];
+            local_only: boolean;
+            daily_user_tokens: number;
+            /** Format: int64 */
+            daily_tenant_tokens: number;
+            mentor_mode: components["schemas"]["MentorMode"];
+        };
+        AiCheckRequest: {
+            feature: components["schemas"]["AiFeature"];
+            locale?: components["schemas"]["Locale"];
+        };
+        AiCheckResult: {
+            provider: string;
+            model: string;
+            prompt_version: string;
+            input_tokens: number;
+            output_tokens: number;
+        };
+        AiUsageTotals: {
+            requests: number;
+            /** Format: int64 */
+            input_tokens: number;
+            /** Format: int64 */
+            output_tokens: number;
+            /** Format: double */
+            cost_usd: number;
+        };
+        AiUsageByFeature: {
+            feature: components["schemas"]["AiFeature"];
+            requests: number;
+            /** Format: int64 */
+            input_tokens: number;
+            /** Format: int64 */
+            output_tokens: number;
+            /** Format: double */
+            cost_usd: number;
+            failures: number;
+        };
+        AiUsageByDay: {
+            /** Format: date */
+            day: string;
+            requests: number;
+            /** Format: int64 */
+            tokens: number;
+            /** Format: double */
+            cost_usd: number;
+        };
+        AiUsageByModel: {
+            provider: string;
+            model: string;
+            requests: number;
+            /** Format: int64 */
+            tokens: number;
+            /** Format: double */
+            cost_usd: number;
+        };
+        AiUsageReport: {
+            /** Format: date-time */
+            since: string;
+            totals: components["schemas"]["AiUsageTotals"];
+            by_feature: components["schemas"]["AiUsageByFeature"][];
+            by_day: components["schemas"]["AiUsageByDay"][];
+            by_model: components["schemas"]["AiUsageByModel"][];
+        };
+        /** @enum {string} */
+        KnowledgeStatus: "pending" | "ready" | "failed";
+        KnowledgeDocument: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            status: components["schemas"]["KnowledgeStatus"];
+            chunk_count: number;
+            /** @description Length of the extracted text. */
+            characters: number;
+            error: string | null;
+            file_url: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        KnowledgeDocumentPage: {
+            items: components["schemas"]["KnowledgeDocument"][];
+            next_cursor: string | null;
+        };
+        KnowledgeHit: {
+            /** Format: uuid */
+            document_id: string;
+            title: string;
+            heading: string | null;
+            excerpt: string;
+            /**
+             * Format: double
+             * @description Relevance from 0 to 1.
+             */
+            score: number;
+        };
         /**
          * @description Interface and content language.
          * @enum {string}
@@ -2082,6 +2380,251 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ImportResult"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAiStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiStatus"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAiSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings with the configured providers and default routes. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSettings"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAiSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description The saved settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSettings"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    checkAiConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description An event stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAiUsage: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiUsageReport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listKnowledgeDocuments: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of documents, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocumentPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    title: string;
+                    text?: string;
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The document, waiting to be indexed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    searchKnowledge: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching passages, best first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["KnowledgeHit"][];
+                    };
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteKnowledgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

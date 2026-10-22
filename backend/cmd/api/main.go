@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	_ "time/tzdata" // daily AI limits reset at local midnight on any host
 
 	"github.com/yelnurq/startify/backend/internal/app"
 	"github.com/yelnurq/startify/backend/internal/platform/buildinfo"

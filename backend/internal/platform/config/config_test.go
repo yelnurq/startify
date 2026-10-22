@@ -132,3 +132,31 @@ func TestEnvKey(t *testing.T) {
 		}
 	}
 }
+
+func TestAIConfig(t *testing.T) {
+	cfg, err := FromEnviron(validEnviron())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AI.Default != "mock" || cfg.AI.Timezone != "Asia/Almaty" || !cfg.AI.AnthropicServerFallbacks || !cfg.AI.OpenAILocal {
+		t.Fatalf("defaults %+v", cfg.AI)
+	}
+	cfg, err = FromEnviron(append(validEnviron(),
+		"QADAM_AI_DEFAULT=openai", "QADAM_AI_OPENAI_BASE_URL=http://ollama:11434/v1", "QADAM_AI_OPENAI_MODEL=qwen3:14b",
+		"QADAM_AI_OPENAI_EMBEDDING_MODEL=bge-m3", "QADAM_AI_ROUTES=mentor=openai;embedding=openai"))
+	if err != nil || cfg.AI.OpenAIModel != "qwen3:14b" || cfg.AI.Routes != "mentor=openai;embedding=openai" {
+		t.Fatalf("openai %+v %v", cfg.AI, err)
+	}
+	for env, want := range map[string]string{
+		"QADAM_AI_DEFAULT=anthropic":            "QADAM_AI_ANTHROPIC_API_KEY is required",
+		"QADAM_AI_DEFAULT=openai":               "QADAM_AI_OPENAI_BASE_URL and QADAM_AI_OPENAI_MODEL are required",
+		"QADAM_AI_DEFAULT=gpt":                  "QADAM_AI_DEFAULT must be",
+		"QADAM_AI_OPENAI_BASE_URL=ollama:11434": "must be an http(s) URL",
+		"QADAM_AI_TIMEZONE=Mars/Olympus":        "unknown time zone",
+		"QADAM_AI_REQUEST_TIMEOUT=1s":           "QADAM_AI_REQUEST_TIMEOUT",
+	} {
+		if _, err := FromEnviron(append(validEnviron(), env)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: %v", env, err)
+		}
+	}
+}

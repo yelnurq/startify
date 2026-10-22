@@ -9,6 +9,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apiconv"
 	"github.com/yelnurq/startify/backend/internal/auth"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/jobs"
 )
 
 // DemoPassword is the password of every demo account. Demo data is for
@@ -210,7 +211,7 @@ func AllKazUTBMembers() []Member {
 }
 
 // Demo creates the demonstration installation: KazUTB with structure,
-// accounts and team requests, and the sandbox university.
+// accounts, team requests and knowledge base, and the sandbox university.
 func Demo(ctx context.Context, database *db.DB) error {
 	kazutb, err := Tenant(ctx, database, KazUTB)
 	if err != nil {
@@ -235,6 +236,13 @@ func Demo(ctx context.Context, database *db.DB) error {
 		authors[m.Email] = id
 	}
 	if err := TeamRequests(ctx, database, kazutb.ID, authors, KazUTBRequests); err != nil {
+		return err
+	}
+	queue, err := jobs.NewQueue(database)
+	if err != nil {
+		return err
+	}
+	if err := KnowledgeDocuments(ctx, database, queue, kazutb.ID, KazUTBKnowledge); err != nil {
 		return err
 	}
 

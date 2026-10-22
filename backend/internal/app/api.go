@@ -12,11 +12,14 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/yelnurq/startify/backend/internal/ai"
+	"github.com/yelnurq/startify/backend/internal/ai/llm"
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/audit"
 	"github.com/yelnurq/startify/backend/internal/auth"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/imports"
+	"github.com/yelnurq/startify/backend/internal/knowledge"
 	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/org"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
@@ -52,19 +55,23 @@ type API struct {
 	Queue   jobs.Enqueuer
 	// Scanner replaces the ClamAV client (tests).
 	Scanner files.Scanner
+	// Providers replace the configured language models (tests).
+	Providers []llm.Provider
 }
 
 // Every module names its handler Handler; aliases give the embedded fields
 // distinct names.
 type (
-	systemHandler  = system.Handler
-	tenantHandler  = tenant.Handler
-	authHandler    = auth.Handler
-	userHandler    = user.Handler
-	orgHandler     = org.Handler
-	filesHandler   = files.Handler
-	teamHandler    = team.Handler
-	importsHandler = imports.Handler
+	systemHandler    = system.Handler
+	tenantHandler    = tenant.Handler
+	authHandler      = auth.Handler
+	userHandler      = user.Handler
+	orgHandler       = org.Handler
+	filesHandler     = files.Handler
+	teamHandler      = team.Handler
+	importsHandler   = imports.Handler
+	aiHandler        = ai.Handler
+	knowledgeHandler = knowledge.Handler
 )
 
 // server composes the module handlers into the generated strict interface.
@@ -78,19 +85,23 @@ type server struct {
 	*filesHandler
 	*teamHandler
 	*importsHandler
+	*aiHandler
+	*knowledgeHandler
 }
 
 var _ apigen.StrictServerInterface = (*server)(nil)
 
 // Services are the module services, exposed for tests and tools.
 type Services struct {
-	Tenants *tenant.Service
-	Auth    *auth.Service
-	Users   *user.Service
-	Org     *org.Service
-	Files   *files.Service
-	Team    *team.Service
-	Imports *imports.Service
+	Tenants   *tenant.Service
+	Auth      *auth.Service
+	Users     *user.Service
+	Org       *org.Service
+	Files     *files.Service
+	Team      *team.Service
+	Imports   *imports.Service
+	AI        *ai.Gateway
+	Knowledge *knowledge.Service
 }
 
 func (a *API) services(ctx context.Context) (*Services, error) {
@@ -127,14 +138,24 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,
 	})
+	providers := a.Providers
+	if providers == nil {
+		providers = ai.ConfiguredProviders(cfg.AI, 25*time.Millisecond)
+	}
+	gateway, err := ai.NewGateway(a.DB, providers, cfg.AI, a.Log)
+	if err != nil {
+		return nil, err
+	}
 	return &Services{
-		Tenants: tenants,
-		Auth:    authSvc,
-		Users:   users,
-		Org:     orgs,
-		Files:   fileSvc,
-		Team:    team.NewService(a.DB, users, mailer, limiter, auditLog),
-		Imports: imports.NewService(a.DB, orgs, users, authSvc, auditLog),
+		AI:        gateway,
+		Knowledge: knowledge.NewService(a.DB, gateway, fileSvc, a.Queue, auditLog),
+		Tenants:   tenants,
+		Auth:      authSvc,
+		Users:     users,
+		Org:       orgs,
+		Files:     fileSvc,
+		Team:      team.NewService(a.DB, users, mailer, limiter, auditLog),
+		Imports:   imports.NewService(a.DB, orgs, users, authSvc, auditLog),
 	}, nil
 }
 
@@ -184,6 +205,14 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 		filesHandler:   files.NewHandler(svc.Files),
 		teamHandler:    team.NewHandler(svc.Team),
 		importsHandler: imports.NewHandler(svc.Imports),
+		aiHandler: ai.NewHandler(svc.AI, func(ctx context.Context, locale string) string {
+			s, err := svc.Tenants.CurrentSettings(ctx)
+			if err != nil {
+				return "Qadam"
+			}
+			return s.Name.Best(locale)
+		}),
+		knowledgeHandler: knowledge.NewHandler(svc.Knowledge),
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {

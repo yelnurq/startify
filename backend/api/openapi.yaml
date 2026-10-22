@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Qadam API
-  version: 0.2.0
+  version: 0.3.0
   summary: AI-платформа инновационной и проектной деятельности университета.
   description: |
     Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
@@ -46,6 +46,10 @@ tags:
     description: The "looking for teammates" board.
   - name: admin
     description: University administration (tenant administrators).
+  - name: ai
+    description: Language models - status, university settings, usage, connection check.
+  - name: knowledge
+    description: The university knowledge base the AI mentor cites.
 paths:
   /meta:
     get:
@@ -942,6 +946,236 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /ai/status:
+    get:
+      operationId: getAiStatus
+      tags: [ai]
+      summary: AI availability for the signed-in member
+      description: |
+        Whether AI features send data to a provider outside the university (the interface
+        must warn), and the member's daily allowance.
+      responses:
+        "200":
+          description: Status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiStatus"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/settings:
+    get:
+      operationId: getAiSettings
+      tags: [ai]
+      summary: AI settings of the university
+      description: Requires `tenant_admin`.
+      responses:
+        "200":
+          description: Settings with the configured providers and default routes.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAiSettings
+      tags: [ai]
+      summary: Change the AI settings of the university
+      description: |
+        Requires `tenant_admin`. Routes may name configured providers only; with
+        `local_only` every route must stay inside the university network.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSettingsUpdate"
+      responses:
+        "200":
+          description: The saved settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/check:
+    post:
+      operationId: checkAiConnection
+      tags: [ai]
+      summary: Stream a short answer to check a feature's model
+      description: |
+        Requires `tenant_admin`. Server-sent events: `delta` (`{"text": "..."}`) for each
+        piece of the answer, then `done` (AiCheckResult) or `error` (Problem). Closing the
+        connection stops the model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiCheckRequest"
+      responses:
+        "200":
+          description: An event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/usage:
+    get:
+      operationId: getAiUsage
+      tags: [ai]
+      summary: Tokens and estimated cost of AI calls
+      description: Requires `tenant_admin` or `leadership`.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        "200":
+          description: Usage report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiUsageReport"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge:
+    get:
+      operationId: listKnowledgeDocuments
+      tags: [knowledge]
+      summary: Documents of the knowledge base
+      description: Requires `tenant_admin` or `innovation_manager`.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of documents, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocumentPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createKnowledgeDocument
+      tags: [knowledge]
+      summary: Add a document
+      description: |
+        Requires `tenant_admin` or `innovation_manager`. Send a file (PDF, DOCX, TXT or
+        Markdown) or pasted text. The document is split into passages and indexed in the
+        background; its status turns `ready` when the mentor can cite it.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                text:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: The document, waiting to be indexed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocument"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge/search:
+    get:
+      operationId: searchKnowledge
+      tags: [knowledge]
+      summary: Passages that best match a question
+      description: Requires `tenant_admin` or `innovation_manager`. The mentor uses the same search.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 500
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Matching passages, best first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/KnowledgeHit"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge/{documentId}:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getKnowledgeDocument
+      tags: [knowledge]
+      summary: One document
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocument"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteKnowledgeDocument
+      tags: [knowledge]
+      summary: Remove a document and its passages
+      responses:
+        "204":
+          description: Removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1017,6 +1251,282 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
   schemas:
+    AiFeature:
+      type: string
+      enum: [mentor, evaluation, generation, summary, embedding]
+    MentorMode:
+      type: string
+      enum: [coach, coauthor]
+      description: "`coach` asks and hints; `coauthor` may propose whole texts."
+    AiStatus:
+      type: object
+      additionalProperties: false
+      required: [external, daily_limit, used_today, resets_at, mentor_mode]
+      properties:
+        external:
+          type: boolean
+          description: AI features send data to a provider outside the university.
+        daily_limit:
+          type: integer
+          description: Tokens a member may use per day; 0 means no limit.
+        used_today:
+          type: integer
+        resets_at:
+          type: string
+          format: date-time
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiRoute:
+      type: object
+      additionalProperties: false
+      required: [provider]
+      properties:
+        provider:
+          type: string
+          examples: [anthropic]
+        model:
+          type: [string, "null"]
+          maxLength: 100
+          examples: [claude-sonnet-5-5]
+    AiRoutes:
+      type: object
+      description: Providers of each feature in the order they are tried.
+      additionalProperties:
+        type: array
+        maxItems: 5
+        items:
+          $ref: "#/components/schemas/AiRoute"
+    AiProvider:
+      type: object
+      additionalProperties: false
+      required: [name, local, models]
+      properties:
+        name:
+          type: string
+        local:
+          type: boolean
+          description: Runs inside the university network; data is not redacted.
+        models:
+          type: object
+          description: Default model per feature.
+          additionalProperties:
+            type: string
+    AiSettings:
+      type: object
+      additionalProperties: false
+      required: [routes, default_routes, providers, local_only, daily_user_tokens, daily_tenant_tokens, mentor_mode]
+      properties:
+        routes:
+          $ref: "#/components/schemas/AiRoutes"
+        default_routes:
+          $ref: "#/components/schemas/AiRoutes"
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiProvider"
+        local_only:
+          type: boolean
+        daily_user_tokens:
+          type: integer
+        daily_tenant_tokens:
+          type: integer
+          format: int64
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiSettingsUpdate:
+      type: object
+      additionalProperties: false
+      required: [routes, local_only, daily_user_tokens, daily_tenant_tokens, mentor_mode]
+      properties:
+        routes:
+          $ref: "#/components/schemas/AiRoutes"
+        local_only:
+          type: boolean
+        daily_user_tokens:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        daily_tenant_tokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [feature]
+      properties:
+        feature:
+          $ref: "#/components/schemas/AiFeature"
+        locale:
+          $ref: "#/components/schemas/Locale"
+    AiCheckResult:
+      type: object
+      additionalProperties: false
+      required: [provider, model, prompt_version, input_tokens, output_tokens]
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        prompt_version:
+          type: string
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+    AiUsageTotals:
+      type: object
+      additionalProperties: false
+      required: [requests, input_tokens, output_tokens, cost_usd]
+      properties:
+        requests:
+          type: integer
+        input_tokens:
+          type: integer
+          format: int64
+        output_tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageByFeature:
+      type: object
+      additionalProperties: false
+      required: [feature, requests, input_tokens, output_tokens, cost_usd, failures]
+      properties:
+        feature:
+          $ref: "#/components/schemas/AiFeature"
+        requests:
+          type: integer
+        input_tokens:
+          type: integer
+          format: int64
+        output_tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+        failures:
+          type: integer
+    AiUsageByDay:
+      type: object
+      additionalProperties: false
+      required: [day, requests, tokens, cost_usd]
+      properties:
+        day:
+          type: string
+          format: date
+        requests:
+          type: integer
+        tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageByModel:
+      type: object
+      additionalProperties: false
+      required: [provider, model, requests, tokens, cost_usd]
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        requests:
+          type: integer
+        tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageReport:
+      type: object
+      additionalProperties: false
+      required: [since, totals, by_feature, by_day, by_model]
+      properties:
+        since:
+          type: string
+          format: date-time
+        totals:
+          $ref: "#/components/schemas/AiUsageTotals"
+        by_feature:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByFeature"
+        by_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByDay"
+        by_model:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByModel"
+    KnowledgeStatus:
+      type: string
+      enum: [pending, ready, failed]
+    KnowledgeDocument:
+      type: object
+      additionalProperties: false
+      required: [id, title, status, chunk_count, characters, error, file_url, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/KnowledgeStatus"
+        chunk_count:
+          type: integer
+        characters:
+          type: integer
+          description: Length of the extracted text.
+        error:
+          type: [string, "null"]
+        file_url:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    KnowledgeDocumentPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/KnowledgeDocument"
+        next_cursor:
+          type: [string, "null"]
+    KnowledgeHit:
+      type: object
+      additionalProperties: false
+      required: [document_id, title, heading, excerpt, score]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        heading:
+          type: [string, "null"]
+        excerpt:
+          type: string
+        score:
+          type: number
+          format: double
+          description: Relevance from 0 to 1.
     Locale:
       type: string
       description: Interface and content language.

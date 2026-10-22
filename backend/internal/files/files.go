@@ -37,6 +37,7 @@ const (
 	PurposeAvatar     = "avatar"
 	PurposeTenantLogo = "tenant_logo"
 	PurposeAttachment = "attachment"
+	PurposeKnowledge  = "knowledge"
 )
 
 // Visibilities of files.

@@ -6,11 +6,15 @@ import (
 
 	"github.com/riverqueue/river"
 
+	"github.com/yelnurq/startify/backend/internal/ai"
+	"github.com/yelnurq/startify/backend/internal/ai/llm"
 	"github.com/yelnurq/startify/backend/internal/auth"
 	"github.com/yelnurq/startify/backend/internal/files"
+	"github.com/yelnurq/startify/backend/internal/knowledge"
 	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/jobs"
 	"github.com/yelnurq/startify/backend/internal/platform/maintenance"
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
 )
@@ -20,9 +24,11 @@ type Worker struct {
 	Config *config.Config
 	DB     *db.DB
 	Log    *slog.Logger
-	// Sender and Storage default to SMTP and S3; tests replace them.
-	Sender  mail.Sender
-	Storage files.Storage
+	// Sender, Storage and Providers default to SMTP, S3 and the configured
+	// language models; tests replace them.
+	Sender    mail.Sender
+	Storage   files.Storage
+	Providers []llm.Provider
 }
 
 // Workers registers the job handlers of every module.
@@ -39,7 +45,20 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 			return nil, err
 		}
 	}
+	if w.Providers == nil {
+		w.Providers = ai.ConfiguredProviders(w.Config.AI, 0)
+	}
+	gateway, err := ai.NewGateway(w.DB, w.Providers, w.Config.AI, w.Log)
+	if err != nil {
+		return nil, err
+	}
+	queue, err := jobs.NewQueue(w.DB)
+	if err != nil {
+		return nil, err
+	}
 	workers := river.NewWorkers()
+	river.AddWorker(workers, &knowledge.IndexWorker{DB: w.DB, Gateway: gateway})
+	river.AddWorker(workers, &knowledge.ReindexWorker{DB: w.DB, Gateway: gateway, Queue: queue})
 	river.AddWorker(workers, &maintenance.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &auth.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &files.PurgeWorker{DB: w.DB, Store: w.Storage})
@@ -58,7 +77,8 @@ func (w *Worker) Queues() map[string]river.QueueConfig {
 
 // PeriodicJobs returns the schedule of recurring jobs.
 func (w *Worker) PeriodicJobs() []*river.PeriodicJob {
-	jobs := maintenance.PeriodicJobs()
-	jobs = append(jobs, auth.PeriodicJobs()...)
-	return append(jobs, files.PeriodicJobs()...)
+	periodic := maintenance.PeriodicJobs()
+	periodic = append(periodic, auth.PeriodicJobs()...)
+	periodic = append(periodic, files.PeriodicJobs()...)
+	return append(periodic, knowledge.PeriodicJobs()...)
 }

@@ -49,6 +49,9 @@ overrides:
           import: net/netip
           type: Addr
           pointer: true
+      # Embeddings travel as pgvector text literals ("[0.1,0.2]").
+      - db_type: vector
+        go_type: string
 sql:
   - engine: postgresql
     schema: db/migrations
@@ -145,6 +148,28 @@ sql:
       go:
         package: teamdb
         out: internal/team/teamdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/ai
+    gen:
+      go:
+        package: aidb
+        out: internal/ai/aidb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/knowledge
+    gen:
+      go:
+        package: knowledgedb
+        out: internal/knowledge/knowledgedb
         sql_package: pgx/v5
         emit_empty_slices: true
         emit_pointers_for_null_types: true

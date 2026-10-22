@@ -45,6 +45,36 @@ type Config struct {
 	SMTP     SMTP     `koanf:"smtp"`
 	S3       S3       `koanf:"s3"`
 	Files    Files    `koanf:"files"`
+	AI       AI       `koanf:"ai"`
+}
+
+// AI configures language-model providers. Which provider and model serve a
+// feature is set by Routes and can be overridden per university.
+type AI struct {
+	// Default is the provider of features without a route: mock, anthropic or openai.
+	Default string `koanf:"default"`
+	// Routes lists providers per feature with fallbacks, e.g.
+	// "mentor=anthropic:claude-sonnet-5-5,openai;embedding=openai".
+	Routes string `koanf:"routes"`
+
+	AnthropicAPIKey  string `koanf:"anthropic_api_key"`
+	AnthropicBaseURL string `koanf:"anthropic_base_url"`
+	// AnthropicServerFallbacks lets the API re-run a request declined by a
+	// model's safety classifiers on a recommended fallback model.
+	AnthropicServerFallbacks bool `koanf:"anthropic_server_fallbacks"`
+
+	// OpenAI-compatible server: OpenAI, vLLM, Ollama, LM Studio.
+	OpenAIBaseURL        string `koanf:"openai_base_url"`
+	OpenAIAPIKey         string `koanf:"openai_api_key"`
+	OpenAIModel          string `koanf:"openai_model"`
+	OpenAIEmbeddingModel string `koanf:"openai_embedding_model"`
+	// OpenAILocal marks a server inside the university network: data sent to
+	// it is not redacted and users see no external-provider warning.
+	OpenAILocal bool `koanf:"openai_local"`
+
+	// Timezone sets when daily limits reset.
+	Timezone       string        `koanf:"timezone"`
+	RequestTimeout time.Duration `koanf:"request_timeout"`
 }
 
 // Tenant configures how host names map to universities.
@@ -162,38 +192,44 @@ type Worker struct {
 
 func defaults() map[string]any {
 	return map[string]any{
-		"env":                      string(EnvDevelopment),
-		"app.public_url":           "http://localhost:3000",
-		"app.default_locale":       "kk",
-		"http.addr":                ":8080",
-		"http.read_header_timeout": "5s",
-		"http.read_timeout":        "60s",
-		"http.idle_timeout":        "120s",
-		"http.shutdown_timeout":    "20s",
-		"http.request_timeout":     "30s",
-		"http.max_body_bytes":      1 << 20,
-		"http.trusted_proxies":     "",
-		"database.max_conns":       20,
-		"database.min_conns":       2,
-		"valkey.addr":              "localhost:6379",
-		"valkey.db":                0,
-		"log.level":                "info",
-		"log.format":               "json",
-		"otel.sample_ratio":        1.0,
-		"worker.addr":              ":8081",
-		"worker.concurrency":       20,
-		"tenant.base_domain":       "localhost",
-		"tenant.default":           "",
-		"auth.access_ttl":          "15m",
-		"auth.refresh_ttl":         "720h",
-		"smtp.port":                1025,
-		"smtp.from":                "no-reply@qadam.kz",
-		"smtp.from_name":           "Qadam",
-		"smtp.tls":                 "none",
-		"s3.bucket":                "qadam",
-		"s3.region":                "us-east-1",
-		"files.scan":               "optional",
-		"files.max_bytes":          25 << 20,
+		"env":                           string(EnvDevelopment),
+		"app.public_url":                "http://localhost:3000",
+		"app.default_locale":            "kk",
+		"http.addr":                     ":8080",
+		"http.read_header_timeout":      "5s",
+		"http.read_timeout":             "60s",
+		"http.idle_timeout":             "120s",
+		"http.shutdown_timeout":         "20s",
+		"http.request_timeout":          "30s",
+		"http.max_body_bytes":           1 << 20,
+		"http.trusted_proxies":          "",
+		"database.max_conns":            20,
+		"database.min_conns":            2,
+		"valkey.addr":                   "localhost:6379",
+		"valkey.db":                     0,
+		"log.level":                     "info",
+		"log.format":                    "json",
+		"otel.sample_ratio":             1.0,
+		"worker.addr":                   ":8081",
+		"worker.concurrency":            20,
+		"tenant.base_domain":            "localhost",
+		"tenant.default":                "",
+		"auth.access_ttl":               "15m",
+		"auth.refresh_ttl":              "720h",
+		"smtp.port":                     1025,
+		"smtp.from":                     "no-reply@qadam.kz",
+		"smtp.from_name":                "Qadam",
+		"smtp.tls":                      "none",
+		"s3.bucket":                     "qadam",
+		"s3.region":                     "us-east-1",
+		"files.scan":                    "optional",
+		"files.max_bytes":               25 << 20,
+		"ai.default":                    "mock",
+		"ai.routes":                     "",
+		"ai.anthropic_server_fallbacks": true,
+		"ai.openai_local":               true,
+		"ai.timezone":                   "Asia/Almaty",
+		"ai.request_timeout":            "120s",
 	}
 }
 
@@ -384,6 +420,31 @@ func (c *Config) Validate() error {
 	}
 	if c.Files.MaxBytes < 1<<20 || c.Files.MaxBytes > 200<<20 {
 		fail("QADAM_FILES_MAX_BYTES must be within [1 MiB, 200 MiB]")
+	}
+
+	switch c.AI.Default {
+	case "mock":
+	case "anthropic":
+		if c.AI.AnthropicAPIKey == "" {
+			fail("QADAM_AI_ANTHROPIC_API_KEY is required when QADAM_AI_DEFAULT=anthropic")
+		}
+	case "openai":
+		if c.AI.OpenAIBaseURL == "" || c.AI.OpenAIModel == "" {
+			fail("QADAM_AI_OPENAI_BASE_URL and QADAM_AI_OPENAI_MODEL are required when QADAM_AI_DEFAULT=openai")
+		}
+	default:
+		fail("QADAM_AI_DEFAULT must be mock, anthropic or openai, got %q", c.AI.Default)
+	}
+	if c.AI.OpenAIBaseURL != "" {
+		if u, err := url.Parse(c.AI.OpenAIBaseURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			fail("QADAM_AI_OPENAI_BASE_URL must be an http(s) URL, got %q", c.AI.OpenAIBaseURL)
+		}
+	}
+	if _, err := time.LoadLocation(c.AI.Timezone); err != nil {
+		fail("QADAM_AI_TIMEZONE: unknown time zone %q", c.AI.Timezone)
+	}
+	if c.AI.RequestTimeout < 10*time.Second || c.AI.RequestTimeout > 30*time.Minute {
+		fail("QADAM_AI_REQUEST_TIMEOUT must be within [10s, 30m]")
 	}
 
 	if len(errs) > 0 {
