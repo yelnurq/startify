@@ -1,6 +1,6 @@
 // Command seed fills the database with the demonstration data: the KazUTB
-// structure, demo accounts of every role and requests for teammates. It is
-// idempotent and refuses to run in production.
+// structure, demo accounts of every role, requests for teammates and student
+// projects. It is idempotent and refuses to run in production.
 package main
 
 import (
@@ -50,5 +50,6 @@ func run() error {
 		}
 	}
 	fmt.Printf("  and %d more students: <name>.<surname>@qadam.test\n", seed.GeneratedStudents)
+	fmt.Printf("KazUTB has %d demo projects, from a first draft of the problem to a finished pitch.\n", len(seed.KazUTBProjects))
 	return nil
 }

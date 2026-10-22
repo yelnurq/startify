@@ -47,4 +47,5 @@ type TenantSetting struct {
 	IpPolicyText      json.RawMessage
 	ContactModeration bool
 	UpdatedAt         time.Time
+	IpPolicyVersion   string
 }

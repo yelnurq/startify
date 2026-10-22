@@ -28,6 +28,7 @@ var quote = strings.NewReplacer("<", "‹", ">", "›").Replace
 
 var funcs = template.FuncMap{
 	"quote": quote,
+	"inc":   func(i int) int { return i + 1 },
 	"language": func(locale string) string {
 		if l, ok := languages[locale]; ok {
 			return l
@@ -92,15 +93,43 @@ type Source struct {
 	Text  string
 }
 
+// FieldRef names a field the mentor may suggest a wording for.
+type FieldRef struct {
+	Key   string
+	Label string
+}
+
 // Mentor is the data of the mentor prompt.
 type Mentor struct {
+	StepNumber   int
 	StepName     string
+	StepGoal     string
+	Criteria     []string
+	Fields       []FieldRef
 	ProjectTitle string
 	// Mode is coach or coauthor.
 	Mode        string
 	Locale      string
 	ProjectData string
 	Knowledge   []Source
+}
+
+// StepCheck is the data of the review of one incubator step.
+type StepCheck struct {
+	StepNumber int
+	StepName   string
+	StepGoal   string
+	Criteria   []string
+	Locale     string
+	// Answers is JSON with the step key and its values.
+	Answers string
+}
+
+// Materials is the data of the pitch materials prompt.
+type Materials struct {
+	Slides      int
+	Locale      string
+	ProjectData string
 }
 
 // Criterion is a rubric line of the evaluation prompt.

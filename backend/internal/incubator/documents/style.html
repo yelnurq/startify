@@ -1,0 +1,12 @@
+{{define "style"}}<style>
+  :root { --accent: {{.Color}}; --ink: #101828; --muted: #475467; --faint: #98a2b3; --line: #e4e7ec; --soft: #f5f7fa; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10.5pt; line-height: 1.5; }
+  h1, h2, h3, p, ul { margin: 0; }
+  .eyebrow { font-size: 8.5pt; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .accent { color: var(--accent); }
+  .rule { width: 56px; height: 4px; border-radius: 2px; background: var(--accent); }
+  .foot { margin-top: auto; padding-top: 6mm; border-top: 1px solid var(--line); font-size: 7.5pt; color: var(--faint); }
+</style>{{end}}

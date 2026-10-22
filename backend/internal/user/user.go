@@ -786,6 +786,64 @@ func (s *Service) member(ctx context.Context, userID uuid.UUID) (apigen.Member, 
 	return out, nil
 }
 
+// People finds active members of the university by name, for adding to a
+// team or mentioning in a comment.
+func (s *Service) People(ctx context.Context, params apigen.SearchPeopleParams) ([]apigen.Person, error) {
+	if _, err := authz.Require(ctx); err != nil {
+		return nil, err
+	}
+	limit := 20
+	if params.Limit != nil {
+		limit = min(max(*params.Limit, 1), 50)
+	}
+	args := userdb.SearchPeopleParams{RowLimit: int32(limit)}
+	if params.Q != nil {
+		if q := strings.TrimSpace(*params.Q); q != "" {
+			q = likeEscaper.Replace(q)
+			args.Q = &q
+		}
+	}
+	if params.Role != nil {
+		if !params.Role.Valid() {
+			return nil, apperr.BadRequest("request.invalid_parameter", "unknown role")
+		}
+		r := string(*params.Role)
+		args.Role = &r
+	}
+	out := []apigen.Person{}
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		rows, err := s.q(ctx).SearchPeople(ctx, args)
+		if err != nil {
+			return err
+		}
+		var faculties []uuid.UUID
+		for i := range rows {
+			faculties = append(faculties, ids(rows[i].FacultyID)...)
+		}
+		refs, err := s.org.LoadRefs(ctx, faculties, nil, nil)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			p := apigen.Person{Id: r.ID, FullName: r.FullName, AvatarUrl: apiconv.FileURL(r.AvatarFileID), Roles: rolesAPI(r.Roles)}
+			if r.FacultyID != nil {
+				if f, ok := refs.Faculties[*r.FacultyID]; ok {
+					p.Faculty = &f
+				}
+			}
+			if r.IsPublic && r.PublicSlug != nil {
+				p.Slug = r.PublicSlug
+			}
+			out = append(out, p)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("user: people: %w", err)
+	}
+	return out, nil
+}
+
 // Briefs describes users for lists (authors of requests, replies).
 func (s *Service) Briefs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]apigen.MemberBrief, error) {
 	out := map[uuid.UUID]apigen.MemberBrief{}
@@ -994,6 +1052,15 @@ func (h *Handler) GetPublicProfile(ctx context.Context, req apigen.GetPublicProf
 		return nil, err
 	}
 	return apigen.GetPublicProfile200JSONResponse(p), nil
+}
+
+// SearchPeople implements apigen.StrictServerInterface.
+func (h *Handler) SearchPeople(ctx context.Context, req apigen.SearchPeopleRequestObject) (apigen.SearchPeopleResponseObject, error) {
+	people, err := h.svc.People(ctx, req.Params)
+	if err != nil {
+		return nil, err
+	}
+	return apigen.SearchPeople200JSONResponse{Items: people}, nil
 }
 
 // ListMembers implements apigen.StrictServerInterface.

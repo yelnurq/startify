@@ -360,6 +360,62 @@ func (q *Queries) ListMembers(ctx context.Context, arg ListMembersParams) ([]Lis
 	return items, nil
 }
 
+const searchPeople = `-- name: SearchPeople :many
+SELECT u.id, u.full_name, u.avatar_file_id, m.roles, m.faculty_id, p.public_slug, coalesce(p.is_public, false)::boolean AS is_public
+  FROM memberships m
+  JOIN users u ON u.id = m.user_id
+  LEFT JOIN user_profiles p ON p.user_id = u.id
+ WHERE m.tenant_id = app_current_tenant() AND m.status = 'active'
+   AND ($1::text IS NULL OR u.full_name ILIKE '%' || $1::text || '%')
+   AND ($2::text IS NULL OR $2::text = ANY(m.roles))
+ ORDER BY u.full_name, u.id
+ LIMIT $3
+`
+
+type SearchPeopleParams struct {
+	Q        *string
+	Role     *string
+	RowLimit int32
+}
+
+type SearchPeopleRow struct {
+	ID           uuid.UUID
+	FullName     string
+	AvatarFileID *uuid.UUID
+	Roles        []string
+	FacultyID    *uuid.UUID
+	PublicSlug   *string
+	IsPublic     bool
+}
+
+func (q *Queries) SearchPeople(ctx context.Context, arg SearchPeopleParams) ([]SearchPeopleRow, error) {
+	rows, err := q.db.Query(ctx, searchPeople, arg.Q, arg.Role, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchPeopleRow{}
+	for rows.Next() {
+		var i SearchPeopleRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.AvatarFileID,
+			&i.Roles,
+			&i.FacultyID,
+			&i.PublicSlug,
+			&i.IsPublic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setUserAvatar = `-- name: SetUserAvatar :exec
 UPDATE users SET avatar_file_id = $1 WHERE id = $2
 `

@@ -11,6 +11,31 @@ import (
 	"github.com/google/uuid"
 )
 
+type AiConversation struct {
+	ID          uuid.UUID
+	TenantID    uuid.UUID
+	SubjectType string
+	SubjectID   uuid.UUID
+	Topic       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type AiMessage struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	ConversationID uuid.UUID
+	Role           string
+	AuthorID       *uuid.UUID
+	Content        string
+	Status         string
+	Provider       *string
+	Model          *string
+	PromptVersion  *string
+	Meta           json.RawMessage
+	CreatedAt      time.Time
+}
+
 type TenantAiSetting struct {
 	TenantID          uuid.UUID
 	Routes            json.RawMessage

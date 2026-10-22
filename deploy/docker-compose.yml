@@ -38,6 +38,8 @@ x-backend-env: &backend-env
   QADAM_AI_OPENAI_MODEL: ${OPENAI_MODEL:-}
   QADAM_AI_OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-}
   QADAM_AI_OPENAI_LOCAL: ${OPENAI_LOCAL:-true}
+  # Renders pitch materials and reports to PDF.
+  QADAM_GOTENBERG_URL: http://gotenberg:3000
 
 services:
   postgres:

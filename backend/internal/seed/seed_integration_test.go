@@ -31,6 +31,8 @@ var tenantTables = []string{
 	"tenant_settings", "tenant_oidc_providers", "faculties", "departments", "study_groups", "memberships",
 	"sessions", "auth_tokens", "files", "audit_log", "import_jobs", "team_requests", "team_responses",
 	"tenant_ai_settings", "ai_usage", "knowledge_documents", "knowledge_chunks",
+	"projects", "project_members", "project_step_data", "project_revisions", "project_comments",
+	"ai_conversations", "ai_messages", "project_materials",
 }
 
 // counter counts the rows a data scope can see.
@@ -92,6 +94,27 @@ func TestDemoIsIdempotentAndIsolated(t *testing.T) {
 	}
 	if jobs != len(KazUTBKnowledge) {
 		t.Fatalf("index jobs: %d", jobs)
+	}
+	if n := c.rows(k, "projects"); n != len(KazUTBProjects) {
+		t.Fatalf("projects after two runs: %d", n)
+	}
+	done := 0
+	for i := range KazUTBProjects {
+		done += KazUTBProjects[i].Done
+	}
+	var completed, completedRows int
+	err = database.App.ReadTx(k, func(ctx context.Context) error {
+		conn := database.App.Conn(ctx)
+		if err := conn.QueryRow(ctx, "SELECT coalesce(sum(completed_steps), 0) FROM projects").Scan(&completed); err != nil {
+			return err
+		}
+		return conn.QueryRow(ctx, "SELECT count(*) FROM project_step_data WHERE status = 'completed'").Scan(&completedRows)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if completed != done || completedRows != done {
+		t.Fatalf("completed steps: %d in projects, %d step rows, want %d", completed, completedRows, done)
 	}
 
 	// Every tenant table shows only the rows of the scope; without a scope, none.

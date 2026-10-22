@@ -21,6 +21,7 @@ const (
 	KindNotFound
 	KindConflict
 	KindPreconditionFailed
+	KindPreconditionRequired
 	KindTooLarge
 	KindRateLimited
 	KindUnavailable
@@ -104,6 +105,12 @@ func Conflict(code, message string) *Error { return New(KindConflict, code, mess
 // PreconditionFailed reports a failed If-Match check.
 func PreconditionFailed(code, message string) *Error {
 	return New(KindPreconditionFailed, code, message)
+}
+
+// PreconditionRequired reports a missing If-Match on a resource that is only
+// updated with one.
+func PreconditionRequired(code, message string) *Error {
+	return New(KindPreconditionRequired, code, message)
 }
 
 // RateLimited reports an exhausted quota.

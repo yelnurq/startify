@@ -25,6 +25,33 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ActivityKind.
+const (
+	ActivityKindComment       ActivityKind = "comment"
+	ActivityKindEdit          ActivityKind = "edit"
+	ActivityKindMemberJoined  ActivityKind = "member_joined"
+	ActivityKindStepApproved  ActivityKind = "step_approved"
+	ActivityKindStepCompleted ActivityKind = "step_completed"
+)
+
+// Valid indicates whether the value is a known member of the ActivityKind enum.
+func (e ActivityKind) Valid() bool {
+	switch e {
+	case ActivityKindComment:
+		return true
+	case ActivityKindEdit:
+		return true
+	case ActivityKindMemberJoined:
+		return true
+	case ActivityKindStepApproved:
+		return true
+	case ActivityKindStepCompleted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AiFeature.
 const (
 	AiFeatureEmbedding  AiFeature = "embedding"
@@ -46,6 +73,111 @@ func (e AiFeature) Valid() bool {
 	case AiFeatureMentor:
 		return true
 	case AiFeatureSummary:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Badge.
+const (
+	BadgeFirstReview    Badge = "first_review"
+	BadgeIdeaStage      Badge = "idea_stage"
+	BadgeLaunchStage    Badge = "launch_stage"
+	BadgeMarketStage    Badge = "market_stage"
+	BadgeMaterialsReady Badge = "materials_ready"
+	BadgeProductStage   Badge = "product_stage"
+	BadgeTeamOfThree    Badge = "team_of_three"
+)
+
+// Valid indicates whether the value is a known member of the Badge enum.
+func (e Badge) Valid() bool {
+	switch e {
+	case BadgeFirstReview:
+		return true
+	case BadgeIdeaStage:
+		return true
+	case BadgeLaunchStage:
+		return true
+	case BadgeMarketStage:
+		return true
+	case BadgeMaterialsReady:
+		return true
+	case BadgeProductStage:
+		return true
+	case BadgeTeamOfThree:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckStatus.
+const (
+	CheckStatusMissing CheckStatus = "missing"
+	CheckStatusOk      CheckStatus = "ok"
+	CheckStatusWeak    CheckStatus = "weak"
+)
+
+// Valid indicates whether the value is a known member of the CheckStatus enum.
+func (e CheckStatus) Valid() bool {
+	switch e {
+	case CheckStatusMissing:
+		return true
+	case CheckStatusOk:
+		return true
+	case CheckStatusWeak:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FieldType.
+const (
+	FieldTypeList     FieldType = "list"
+	FieldTypeNumber   FieldType = "number"
+	FieldTypeSelect   FieldType = "select"
+	FieldTypeTable    FieldType = "table"
+	FieldTypeText     FieldType = "text"
+	FieldTypeTextarea FieldType = "textarea"
+	FieldTypeUrl      FieldType = "url"
+)
+
+// Valid indicates whether the value is a known member of the FieldType enum.
+func (e FieldType) Valid() bool {
+	switch e {
+	case FieldTypeList:
+		return true
+	case FieldTypeNumber:
+		return true
+	case FieldTypeSelect:
+		return true
+	case FieldTypeTable:
+		return true
+	case FieldTypeText:
+		return true
+	case FieldTypeTextarea:
+		return true
+	case FieldTypeUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FieldUnit.
+const (
+	FieldUnitCount FieldUnit = "count"
+	FieldUnitKzt   FieldUnit = "kzt"
+)
+
+// Valid indicates whether the value is a known member of the FieldUnit enum.
+func (e FieldUnit) Valid() bool {
+	switch e {
+	case FieldUnitCount:
+		return true
+	case FieldUnitKzt:
 		return true
 	default:
 		return false
@@ -109,6 +241,63 @@ func (e ImportStatus) Valid() bool {
 	}
 }
 
+// Defines values for Industry.
+const (
+	IndustryAgritech      Industry = "agritech"
+	IndustryCleantech     Industry = "cleantech"
+	IndustryEcommerce     Industry = "ecommerce"
+	IndustryEdtech        Industry = "edtech"
+	IndustryEnergy        Industry = "energy"
+	IndustryFashion       Industry = "fashion"
+	IndustryFintech       Industry = "fintech"
+	IndustryFoodtech      Industry = "foodtech"
+	IndustryGovtech       Industry = "govtech"
+	IndustryHealthtech    Industry = "healthtech"
+	IndustryLogistics     Industry = "logistics"
+	IndustryManufacturing Industry = "manufacturing"
+	IndustryOther         Industry = "other"
+	IndustrySocial        Industry = "social"
+	IndustryTourism       Industry = "tourism"
+)
+
+// Valid indicates whether the value is a known member of the Industry enum.
+func (e Industry) Valid() bool {
+	switch e {
+	case IndustryAgritech:
+		return true
+	case IndustryCleantech:
+		return true
+	case IndustryEcommerce:
+		return true
+	case IndustryEdtech:
+		return true
+	case IndustryEnergy:
+		return true
+	case IndustryFashion:
+		return true
+	case IndustryFintech:
+		return true
+	case IndustryFoodtech:
+		return true
+	case IndustryGovtech:
+		return true
+	case IndustryHealthtech:
+		return true
+	case IndustryLogistics:
+		return true
+	case IndustryManufacturing:
+		return true
+	case IndustryOther:
+		return true
+	case IndustrySocial:
+		return true
+	case IndustryTourism:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KnowledgeStatus.
 const (
 	KnowledgeStatusFailed  KnowledgeStatus = "failed"
@@ -145,6 +334,66 @@ func (e Locale) Valid() bool {
 	case LocaleKk:
 		return true
 	case LocaleRu:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MaterialFormat.
+const (
+	MaterialFormatPdf  MaterialFormat = "pdf"
+	MaterialFormatPptx MaterialFormat = "pptx"
+)
+
+// Valid indicates whether the value is a known member of the MaterialFormat enum.
+func (e MaterialFormat) Valid() bool {
+	switch e {
+	case MaterialFormatPdf:
+		return true
+	case MaterialFormatPptx:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MaterialKind.
+const (
+	MaterialKindOnePager  MaterialKind = "one_pager"
+	MaterialKindPassport  MaterialKind = "passport"
+	MaterialKindPitchDeck MaterialKind = "pitch_deck"
+)
+
+// Valid indicates whether the value is a known member of the MaterialKind enum.
+func (e MaterialKind) Valid() bool {
+	switch e {
+	case MaterialKindOnePager:
+		return true
+	case MaterialKindPassport:
+		return true
+	case MaterialKindPitchDeck:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MaterialStatus.
+const (
+	MaterialStatusFailed  MaterialStatus = "failed"
+	MaterialStatusPending MaterialStatus = "pending"
+	MaterialStatusReady   MaterialStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the MaterialStatus enum.
+func (e MaterialStatus) Valid() bool {
+	switch e {
+	case MaterialStatusFailed:
+		return true
+	case MaterialStatusPending:
+		return true
+	case MaterialStatusReady:
 		return true
 	default:
 		return false
@@ -190,6 +439,45 @@ func (e MembershipStatus) Valid() bool {
 	}
 }
 
+// Defines values for MentorMessageRole.
+const (
+	MentorMessageRoleAssistant MentorMessageRole = "assistant"
+	MentorMessageRoleUser      MentorMessageRole = "user"
+)
+
+// Valid indicates whether the value is a known member of the MentorMessageRole enum.
+func (e MentorMessageRole) Valid() bool {
+	switch e {
+	case MentorMessageRoleAssistant:
+		return true
+	case MentorMessageRoleUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MentorMessageStatus.
+const (
+	MentorMessageStatusCancelled MentorMessageStatus = "cancelled"
+	MentorMessageStatusError     MentorMessageStatus = "error"
+	MentorMessageStatusOk        MentorMessageStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the MentorMessageStatus enum.
+func (e MentorMessageStatus) Valid() bool {
+	switch e {
+	case MentorMessageStatusCancelled:
+		return true
+	case MentorMessageStatusError:
+		return true
+	case MentorMessageStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MentorMode.
 const (
 	MentorModeCoach    MentorMode = "coach"
@@ -202,6 +490,126 @@ func (e MentorMode) Valid() bool {
 	case MentorModeCoach:
 		return true
 	case MentorModeCoauthor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectVisibility.
+const (
+	ProjectVisibilityPrivate    ProjectVisibility = "private"
+	ProjectVisibilityPublic     ProjectVisibility = "public"
+	ProjectVisibilityUniversity ProjectVisibility = "university"
+)
+
+// Valid indicates whether the value is a known member of the ProjectVisibility enum.
+func (e ProjectVisibility) Valid() bool {
+	switch e {
+	case ProjectVisibilityPrivate:
+		return true
+	case ProjectVisibilityPublic:
+		return true
+	case ProjectVisibilityUniversity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectAccess.
+const (
+	ProjectAccessManager    ProjectAccess = "manager"
+	ProjectAccessMember     ProjectAccess = "member"
+	ProjectAccessOwner      ProjectAccess = "owner"
+	ProjectAccessSupervisor ProjectAccess = "supervisor"
+)
+
+// Valid indicates whether the value is a known member of the ProjectAccess enum.
+func (e ProjectAccess) Valid() bool {
+	switch e {
+	case ProjectAccessManager:
+		return true
+	case ProjectAccessMember:
+		return true
+	case ProjectAccessOwner:
+		return true
+	case ProjectAccessSupervisor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectMemberAddRole.
+const (
+	ProjectMemberAddRoleMember     ProjectMemberAddRole = "member"
+	ProjectMemberAddRoleSupervisor ProjectMemberAddRole = "supervisor"
+)
+
+// Valid indicates whether the value is a known member of the ProjectMemberAddRole enum.
+func (e ProjectMemberAddRole) Valid() bool {
+	switch e {
+	case ProjectMemberAddRoleMember:
+		return true
+	case ProjectMemberAddRoleSupervisor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectMemberUpdateRole.
+const (
+	ProjectMemberUpdateRoleOwner ProjectMemberUpdateRole = "owner"
+)
+
+// Valid indicates whether the value is a known member of the ProjectMemberUpdateRole enum.
+func (e ProjectMemberUpdateRole) Valid() bool {
+	switch e {
+	case ProjectMemberUpdateRoleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectRole.
+const (
+	ProjectRoleMember     ProjectRole = "member"
+	ProjectRoleOwner      ProjectRole = "owner"
+	ProjectRoleSupervisor ProjectRole = "supervisor"
+)
+
+// Valid indicates whether the value is a known member of the ProjectRole enum.
+func (e ProjectRole) Valid() bool {
+	switch e {
+	case ProjectRoleMember:
+		return true
+	case ProjectRoleOwner:
+		return true
+	case ProjectRoleSupervisor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RevisionSource.
+const (
+	RevisionSourceEdit    RevisionSource = "edit"
+	RevisionSourceMentor  RevisionSource = "mentor"
+	RevisionSourceRestore RevisionSource = "restore"
+)
+
+// Valid indicates whether the value is a known member of the RevisionSource enum.
+func (e RevisionSource) Valid() bool {
+	switch e {
+	case RevisionSourceEdit:
+		return true
+	case RevisionSourceMentor:
+		return true
+	case RevisionSourceRestore:
 		return true
 	default:
 		return false
@@ -238,6 +646,69 @@ func (e Role) Valid() bool {
 	case RoleSupervisor:
 		return true
 	case RoleTenantAdmin:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepGapCode.
+const (
+	StepGapCodeMinItems  StepGapCode = "minItems"
+	StepGapCodeMinLength StepGapCode = "minLength"
+	StepGapCodeRequired  StepGapCode = "required"
+)
+
+// Valid indicates whether the value is a known member of the StepGapCode enum.
+func (e StepGapCode) Valid() bool {
+	switch e {
+	case StepGapCodeMinItems:
+		return true
+	case StepGapCodeMinLength:
+		return true
+	case StepGapCodeRequired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepStatus.
+const (
+	StepStatusApproved   StepStatus = "approved"
+	StepStatusCompleted  StepStatus = "completed"
+	StepStatusInProgress StepStatus = "in_progress"
+	StepStatusNotStarted StepStatus = "not_started"
+)
+
+// Valid indicates whether the value is a known member of the StepStatus enum.
+func (e StepStatus) Valid() bool {
+	switch e {
+	case StepStatusApproved:
+		return true
+	case StepStatusCompleted:
+		return true
+	case StepStatusInProgress:
+		return true
+	case StepStatusNotStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepUpdateSource.
+const (
+	StepUpdateSourceEdit   StepUpdateSource = "edit"
+	StepUpdateSourceMentor StepUpdateSource = "mentor"
+)
+
+// Valid indicates whether the value is a known member of the StepUpdateSource enum.
+func (e StepUpdateSource) Valid() bool {
+	switch e {
+	case StepUpdateSourceEdit:
+		return true
+	case StepUpdateSourceMentor:
 		return true
 	default:
 		return false
@@ -317,6 +788,41 @@ func (e TeamRole) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// Defines values for ListProjectsParamsScope.
+const (
+	ListProjectsParamsScopeAll  ListProjectsParamsScope = "all"
+	ListProjectsParamsScopeMine ListProjectsParamsScope = "mine"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectsParamsScope enum.
+func (e ListProjectsParamsScope) Valid() bool {
+	switch e {
+	case ListProjectsParamsScopeAll:
+		return true
+	case ListProjectsParamsScopeMine:
+		return true
+	default:
+		return false
+	}
+}
+
+// Activity defines model for Activity.
+type Activity struct {
+	Actor    *MemberBrief `json:"actor"`
+	At       time.Time    `json:"at"`
+	FieldKey *string      `json:"field_key"`
+	Kind     ActivityKind `json:"kind"`
+	StepKey  *string      `json:"step_key"`
+}
+
+// ActivityKind defines model for ActivityKind.
+type ActivityKind string
+
+// ActivityList defines model for ActivityList.
+type ActivityList struct {
+	Items []Activity `json:"items"`
 }
 
 // AiCheckRequest defines model for AiCheckRequest.
@@ -440,6 +946,50 @@ type AiUsageTotals struct {
 	Requests     int     `json:"requests"`
 }
 
+// Badge Milestones of the project.
+type Badge string
+
+// CheckStatus defines model for CheckStatus.
+type CheckStatus string
+
+// Comment defines model for Comment.
+type Comment struct {
+	Author    *MemberBrief `json:"author"`
+	Body      string       `json:"body"`
+	CreatedAt time.Time    `json:"created_at"`
+
+	// Editable The signed-in member wrote it and may edit it.
+	Editable  bool                `json:"editable"`
+	FieldKey  *string             `json:"field_key"`
+	Id        openapi_types.UUID  `json:"id"`
+	Mentions  []MemberBrief       `json:"mentions"`
+	ParentId  *openapi_types.UUID `json:"parent_id"`
+	Resolved  bool                `json:"resolved"`
+	StepKey   string              `json:"step_key"`
+	UpdatedAt time.Time           `json:"updated_at"`
+}
+
+// CommentCreate defines model for CommentCreate.
+type CommentCreate struct {
+	Body     string                `json:"body"`
+	FieldKey *string               `json:"field_key,omitempty"`
+	Mentions *[]openapi_types.UUID `json:"mentions,omitempty"`
+	ParentId *openapi_types.UUID   `json:"parent_id,omitempty"`
+	StepKey  string                `json:"step_key"`
+}
+
+// CommentPage defines model for CommentPage.
+type CommentPage struct {
+	Items      []Comment `json:"items"`
+	NextCursor *string   `json:"next_cursor"`
+}
+
+// CommentUpdate defines model for CommentUpdate.
+type CommentUpdate struct {
+	Body     *string `json:"body,omitempty"`
+	Resolved *bool   `json:"resolved,omitempty"`
+}
+
 // ConsentPolicy Personal data processing consent shown at sign-up (Law of the RK "On personal data").
 type ConsentPolicy struct {
 	// Text The same text in Kazakh, Russian and English; at least one is present.
@@ -495,6 +1045,12 @@ type FieldError struct {
 	Params *map[string]interface{} `json:"params,omitempty"`
 }
 
+// FieldType defines model for FieldType.
+type FieldType string
+
+// FieldUnit defines model for FieldUnit.
+type FieldUnit string
+
 // ImportJob defines model for ImportJob.
 type ImportJob struct {
 	Columns     []string           `json:"columns"`
@@ -546,6 +1102,22 @@ type ImportSummary struct {
 	ToUpdate int `json:"to_update"`
 	Total    int `json:"total"`
 	Valid    int `json:"valid"`
+}
+
+// IncubatorTemplate defines model for IncubatorTemplate.
+type IncubatorTemplate struct {
+	Stages  []TemplateStage `json:"stages"`
+	Version int             `json:"version"`
+}
+
+// Industry defines model for Industry.
+type Industry string
+
+// IpPolicy Intellectual property policy a team accepts when it starts a project.
+type IpPolicy struct {
+	// Text The same text in Kazakh, Russian and English; at least one is present.
+	Text    LocalizedText `json:"text"`
+	Version string        `json:"version"`
 }
 
 // KnowledgeDocument defines model for KnowledgeDocument.
@@ -603,6 +1175,44 @@ type LoginRequest struct {
 	Email    openapi_types.Email `json:"email"`
 	Password string              `json:"password"`
 }
+
+// Material defines model for Material.
+type Material struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	DownloadUrl *string            `json:"download_url"`
+	Error       *string            `json:"error"`
+	Format      MaterialFormat     `json:"format"`
+	Id          openapi_types.UUID `json:"id"`
+	Kind        MaterialKind       `json:"kind"`
+
+	// Locale Interface and content language.
+	Locale    Locale         `json:"locale"`
+	Status    MaterialStatus `json:"status"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
+
+// MaterialCreate defines model for MaterialCreate.
+type MaterialCreate struct {
+	Format MaterialFormat `json:"format"`
+	Kind   MaterialKind   `json:"kind"`
+
+	// Locale Interface and content language.
+	Locale *Locale `json:"locale,omitempty"`
+}
+
+// MaterialFormat defines model for MaterialFormat.
+type MaterialFormat string
+
+// MaterialKind defines model for MaterialKind.
+type MaterialKind string
+
+// MaterialList defines model for MaterialList.
+type MaterialList struct {
+	Items []Material `json:"items"`
+}
+
+// MaterialStatus defines model for MaterialStatus.
+type MaterialStatus string
 
 // Me defines model for Me.
 type Me struct {
@@ -670,8 +1280,57 @@ type Membership struct {
 // MembershipStatus defines model for MembershipStatus.
 type MembershipStatus string
 
+// MentorConversation defines model for MentorConversation.
+type MentorConversation struct {
+	// CanAsk The signed-in member may ask (team members only).
+	CanAsk bool `json:"can_ask"`
+
+	// External The mentor runs on a provider outside the university.
+	External bool            `json:"external"`
+	Items    []MentorMessage `json:"items"`
+
+	// Modes Modes the university allows; the first is the default.
+	Modes []MentorMode `json:"modes"`
+
+	// NextCursor Loads earlier messages.
+	NextCursor *string `json:"next_cursor"`
+}
+
+// MentorMessage defines model for MentorMessage.
+type MentorMessage struct {
+	Author    *MemberBrief       `json:"author"`
+	Content   string             `json:"content"`
+	CreatedAt time.Time          `json:"created_at"`
+	Id        openapi_types.UUID `json:"id"`
+	Role      MentorMessageRole  `json:"role"`
+
+	// Sources Knowledge base documents the answer could draw on.
+	Sources []MentorSource      `json:"sources"`
+	Status  MentorMessageStatus `json:"status"`
+}
+
+// MentorMessageRole defines model for MentorMessage.Role.
+type MentorMessageRole string
+
+// MentorMessageStatus defines model for MentorMessage.Status.
+type MentorMessageStatus string
+
+// MentorMessageCreate defines model for MentorMessageCreate.
+type MentorMessageCreate struct {
+	Content string `json:"content"`
+
+	// Mode `coach` asks and hints; `coauthor` may propose whole texts.
+	Mode *MentorMode `json:"mode,omitempty"`
+}
+
 // MentorMode `coach` asks and hints; `coauthor` may propose whole texts.
 type MentorMode string
+
+// MentorSource defines model for MentorSource.
+type MentorSource struct {
+	DocumentId openapi_types.UUID `json:"document_id"`
+	Title      string             `json:"title"`
+}
 
 // Meta defines model for Meta.
 type Meta struct {
@@ -723,6 +1382,35 @@ type PasswordResetRequest struct {
 	Token    string `json:"token"`
 }
 
+// Person defines model for Person.
+type Person struct {
+	AvatarUrl *string            `json:"avatar_url"`
+	Faculty   *FacultyRef        `json:"faculty"`
+	FullName  string             `json:"full_name"`
+	Id        openapi_types.UUID `json:"id"`
+	Roles     []Role             `json:"roles"`
+
+	// Slug Address of the public profile, when it is public.
+	Slug *string `json:"slug"`
+}
+
+// PersonList defines model for PersonList.
+type PersonList struct {
+	Items []Person `json:"items"`
+}
+
+// Presence defines model for Presence.
+type Presence struct {
+	// Versions Current version of every saved step, by step key.
+	Versions map[string]int `json:"versions"`
+	Viewers  []Viewer       `json:"viewers"`
+}
+
+// PresenceUpdate defines model for PresenceUpdate.
+type PresenceUpdate struct {
+	StepKey *string `json:"step_key,omitempty"`
+}
+
 // Problem RFC 9457 Problem Details extended with a localisable `code`.
 type Problem struct {
 	// Code Stable machine-readable error code used for localisation.
@@ -771,6 +1459,117 @@ type ProfileUpdate struct {
 	Skills         []string     `json:"skills"`
 }
 
+// Project defines model for Project.
+type Project struct {
+	// Access How the signed-in member relates to the project: a team role, or `manager` for
+	// innovation managers, administrators and leadership who see every project.
+	Access        ProjectAccess      `json:"access"`
+	Archived      bool               `json:"archived"`
+	CreatedAt     time.Time          `json:"created_at"`
+	Faculty       *FacultyRef        `json:"faculty"`
+	HideSensitive bool               `json:"hide_sensitive"`
+	Id            openapi_types.UUID `json:"id"`
+	Industry      Industry           `json:"industry"`
+	Members       []ProjectMember    `json:"members"`
+	Progress      ProjectProgress    `json:"progress"`
+	Tagline       string             `json:"tagline"`
+	Title         string             `json:"title"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	Visibility    ProjectVisibility  `json:"visibility"`
+}
+
+// ProjectVisibility defines model for Project.Visibility.
+type ProjectVisibility string
+
+// ProjectAccess How the signed-in member relates to the project: a team role, or `manager` for
+// innovation managers, administrators and leadership who see every project.
+type ProjectAccess string
+
+// ProjectCreate defines model for ProjectCreate.
+type ProjectCreate struct {
+	Industry        Industry `json:"industry"`
+	IpPolicyVersion *string  `json:"ip_policy_version,omitempty"`
+	Tagline         *string  `json:"tagline,omitempty"`
+	Title           string   `json:"title"`
+}
+
+// ProjectMember defines model for ProjectMember.
+type ProjectMember struct {
+	JoinedAt time.Time   `json:"joined_at"`
+	Role     ProjectRole `json:"role"`
+	Title    string      `json:"title"`
+	User     MemberBrief `json:"user"`
+}
+
+// ProjectMemberAdd defines model for ProjectMemberAdd.
+type ProjectMemberAdd struct {
+	Role   ProjectMemberAddRole `json:"role"`
+	Title  *string              `json:"title,omitempty"`
+	UserId openapi_types.UUID   `json:"user_id"`
+}
+
+// ProjectMemberAddRole defines model for ProjectMemberAdd.Role.
+type ProjectMemberAddRole string
+
+// ProjectMemberUpdate defines model for ProjectMemberUpdate.
+type ProjectMemberUpdate struct {
+	// Role Hand the project over to this member.
+	Role  *ProjectMemberUpdateRole `json:"role,omitempty"`
+	Title *string                  `json:"title,omitempty"`
+}
+
+// ProjectMemberUpdateRole Hand the project over to this member.
+type ProjectMemberUpdateRole string
+
+// ProjectPage defines model for ProjectPage.
+type ProjectPage struct {
+	Items      []ProjectSummary `json:"items"`
+	NextCursor *string          `json:"next_cursor"`
+}
+
+// ProjectProgress defines model for ProjectProgress.
+type ProjectProgress struct {
+	Badges         []Badge `json:"badges"`
+	CompletedSteps int     `json:"completed_steps"`
+
+	// CurrentStep The first step that is not done yet (the last one when all are).
+	CurrentStep string          `json:"current_step"`
+	Percent     int             `json:"percent"`
+	Stages      []StageProgress `json:"stages"`
+
+	// StreakDays Consecutive days, up to today or yesterday, with changes by the team.
+	StreakDays int `json:"streak_days"`
+	TotalSteps int `json:"total_steps"`
+}
+
+// ProjectRole defines model for ProjectRole.
+type ProjectRole string
+
+// ProjectSummary defines model for ProjectSummary.
+type ProjectSummary struct {
+	// Access How the signed-in member relates to the project: a team role, or `manager` for
+	// innovation managers, administrators and leadership who see every project.
+	Access         ProjectAccess      `json:"access"`
+	Archived       bool               `json:"archived"`
+	CompletedSteps int                `json:"completed_steps"`
+	CurrentStep    string             `json:"current_step"`
+	Id             openapi_types.UUID `json:"id"`
+	Industry       Industry           `json:"industry"`
+	Tagline        string             `json:"tagline"`
+	Team           []MemberBrief      `json:"team"`
+	Title          string             `json:"title"`
+	TotalSteps     int                `json:"total_steps"`
+	UpdatedAt      time.Time          `json:"updated_at"`
+}
+
+// ProjectUpdate defines model for ProjectUpdate.
+type ProjectUpdate struct {
+	HideSensitive *bool     `json:"hide_sensitive,omitempty"`
+	Industry      *Industry `json:"industry,omitempty"`
+	Tagline       *string   `json:"tagline,omitempty"`
+	Title         *string   `json:"title,omitempty"`
+}
+
 // PublicProfile defines model for PublicProfile.
 type PublicProfile struct {
 	AvatarUrl      *string      `json:"avatar_url"`
@@ -796,6 +1595,29 @@ type RegisterRequest struct {
 	Locale   Locale `json:"locale"`
 	Password string `json:"password"`
 }
+
+// Revision defines model for Revision.
+type Revision struct {
+	Author    *MemberBrief       `json:"author"`
+	CreatedAt time.Time          `json:"created_at"`
+	Field     string             `json:"field"`
+	Id        openapi_types.UUID `json:"id"`
+	Source    RevisionSource     `json:"source"`
+	UpdatedAt time.Time          `json:"updated_at"`
+
+	// Value The field's value after the change.
+	Value   interface{} `json:"value"`
+	Version int         `json:"version"`
+}
+
+// RevisionPage defines model for RevisionPage.
+type RevisionPage struct {
+	Items      []Revision `json:"items"`
+	NextCursor *string    `json:"next_cursor"`
+}
+
+// RevisionSource defines model for RevisionSource.
+type RevisionSource string
 
 // Role Role of a member in the university: `student`; `supervisor` (scientific supervisor);
 // `mentor`; `jury` (competition expert); `innovation_manager` (commercialisation / AI centre);
@@ -827,6 +1649,107 @@ type SsoProvider struct {
 	// Name The same text in Kazakh, Russian and English; at least one is present.
 	Name LocalizedText `json:"name"`
 }
+
+// StageProgress defines model for StageProgress.
+type StageProgress struct {
+	Completed int    `json:"completed"`
+	Key       string `json:"key"`
+	Total     int    `json:"total"`
+}
+
+// Step defines model for Step.
+type Step struct {
+	ApprovalComment *string      `json:"approval_comment"`
+	ApprovedBy      *MemberBrief `json:"approved_by"`
+	Check           *StepCheck   `json:"check"`
+	CompletedAt     *time.Time   `json:"completed_at"`
+	Key             string       `json:"key"`
+
+	// Missing What the step lacks to be completed.
+	Missing   []StepGap    `json:"missing"`
+	Status    StepStatus   `json:"status"`
+	UpdatedAt *time.Time   `json:"updated_at"`
+	UpdatedBy *MemberBrief `json:"updated_by"`
+
+	// Values Answers by field key: a string (text, textarea, select, url), a number or null
+	// (number), an array of strings (list) or an array of objects keyed by column (table).
+	Values  StepValues `json:"values"`
+	Version int        `json:"version"`
+}
+
+// StepApprove defines model for StepApprove.
+type StepApprove struct {
+	Comment string `json:"comment"`
+}
+
+// StepCheck An AI review of the step. It is a recommendation, not a grade.
+type StepCheck struct {
+	CheckedAt     time.Time       `json:"checked_at"`
+	Items         []StepCheckItem `json:"items"`
+	Model         string          `json:"model"`
+	PromptVersion string          `json:"prompt_version"`
+	Ready         bool            `json:"ready"`
+	Summary       string          `json:"summary"`
+
+	// Version Version of the step the review was made for.
+	Version int `json:"version"`
+}
+
+// StepCheckItem defines model for StepCheckItem.
+type StepCheckItem struct {
+	Advice    string      `json:"advice"`
+	Criterion string      `json:"criterion"`
+	Status    CheckStatus `json:"status"`
+}
+
+// StepGap defines model for StepGap.
+type StepGap struct {
+	Code  StepGapCode `json:"code"`
+	Count *int        `json:"count,omitempty"`
+	Field string      `json:"field"`
+}
+
+// StepGapCode defines model for StepGap.Code.
+type StepGapCode string
+
+// StepList defines model for StepList.
+type StepList struct {
+	Items    []StepSummary   `json:"items"`
+	Progress ProjectProgress `json:"progress"`
+}
+
+// StepStatus defines model for StepStatus.
+type StepStatus string
+
+// StepSummary defines model for StepSummary.
+type StepSummary struct {
+	// Filled Fields with an answer.
+	Filled       int          `json:"filled"`
+	Key          string       `json:"key"`
+	OpenComments int          `json:"open_comments"`
+	Status       StepStatus   `json:"status"`
+	Total        int          `json:"total"`
+	UpdatedAt    *time.Time   `json:"updated_at"`
+	UpdatedBy    *MemberBrief `json:"updated_by"`
+	Version      int          `json:"version"`
+}
+
+// StepUpdate defines model for StepUpdate.
+type StepUpdate struct {
+	// Source `mentor` when the text comes from an applied mentor suggestion.
+	Source *StepUpdateSource `json:"source,omitempty"`
+
+	// Values Answers by field key: a string (text, textarea, select, url), a number or null
+	// (number), an array of strings (list) or an array of objects keyed by column (table).
+	Values StepValues `json:"values"`
+}
+
+// StepUpdateSource `mentor` when the text comes from an applied mentor suggestion.
+type StepUpdateSource string
+
+// StepValues Answers by field key: a string (text, textarea, select, url), a number or null
+// (number), an array of strings (list) or an array of objects keyed by column (table).
+type StepValues map[string]interface{}
 
 // StudyGroup defines model for StudyGroup.
 type StudyGroup struct {
@@ -908,6 +1831,76 @@ type TeamResponseCreate struct {
 // TeamRole defines model for TeamRole.
 type TeamRole string
 
+// TemplateCriterion defines model for TemplateCriterion.
+type TemplateCriterion struct {
+	Fields []string `json:"fields"`
+
+	// Text The same text in Kazakh, Russian and English; at least one is present.
+	Text LocalizedText `json:"text"`
+}
+
+// TemplateField defines model for TemplateField.
+type TemplateField struct {
+	// Columns Columns of a table.
+	Columns *[]TemplateField `json:"columns,omitempty"`
+
+	// Hint The same text in Kazakh, Russian and English; at least one is present.
+	Hint *LocalizedText `json:"hint,omitempty"`
+	Key  string         `json:"key"`
+
+	// Label The same text in Kazakh, Russian and English; at least one is present.
+	Label     LocalizedText     `json:"label"`
+	MaxItems  *int              `json:"max_items,omitempty"`
+	MaxLength *int              `json:"max_length,omitempty"`
+	MinItems  *int              `json:"min_items,omitempty"`
+	MinLength *int              `json:"min_length,omitempty"`
+	Options   *[]TemplateOption `json:"options,omitempty"`
+
+	// Placeholder The same text in Kazakh, Russian and English; at least one is present.
+	Placeholder *LocalizedText `json:"placeholder,omitempty"`
+
+	// Required Needed to complete the step (with min_length or min_items).
+	Required bool       `json:"required"`
+	Type     FieldType  `json:"type"`
+	Unit     *FieldUnit `json:"unit,omitempty"`
+}
+
+// TemplateOption defines model for TemplateOption.
+type TemplateOption struct {
+	// Label The same text in Kazakh, Russian and English; at least one is present.
+	Label LocalizedText `json:"label"`
+	Value string        `json:"value"`
+}
+
+// TemplateStage defines model for TemplateStage.
+type TemplateStage struct {
+	Key   string         `json:"key"`
+	Steps []TemplateStep `json:"steps"`
+
+	// Title The same text in Kazakh, Russian and English; at least one is present.
+	Title LocalizedText `json:"title"`
+}
+
+// TemplateStep defines model for TemplateStep.
+type TemplateStep struct {
+	Criteria []TemplateCriterion `json:"criteria"`
+	Fields   []TemplateField     `json:"fields"`
+
+	// Goal The same text in Kazakh, Russian and English; at least one is present.
+	Goal LocalizedText `json:"goal"`
+
+	// Key Examples: problem
+	Key string `json:"key"`
+
+	// Method The same text in Kazakh, Russian and English; at least one is present.
+	Method LocalizedText `json:"method"`
+	Number int           `json:"number"`
+	Stage  string        `json:"stage"`
+
+	// Title The same text in Kazakh, Russian and English; at least one is present.
+	Title LocalizedText `json:"title"`
+}
+
 // Tenant defines model for Tenant.
 type Tenant struct {
 	// Consent Personal data processing consent shown at sign-up (Law of the RK "On personal data").
@@ -919,6 +1912,7 @@ type Tenant struct {
 	// EmailDomains Allowed e-mail domains for self sign-up; empty means any.
 	EmailDomains []string           `json:"email_domains"`
 	Id           openapi_types.UUID `json:"id"`
+	IpPolicy     *IpPolicy          `json:"ip_policy"`
 	LogoUrl      *string            `json:"logo_url"`
 
 	// Name The same text in Kazakh, Russian and English; at least one is present.
@@ -967,6 +1961,16 @@ type User struct {
 	Locale Locale `json:"locale"`
 }
 
+// Viewer defines model for Viewer.
+type Viewer struct {
+	SeenAt  time.Time   `json:"seen_at"`
+	StepKey *string     `json:"step_key"`
+	User    MemberBrief `json:"user"`
+}
+
+// CommentId defines model for CommentId.
+type CommentId = openapi_types.UUID
+
 // Cursor defines model for Cursor.
 type Cursor = string
 
@@ -976,14 +1980,32 @@ type IdempotencyKey = string
 // IfMatch defines model for IfMatch.
 type IfMatch = string
 
+// IfMatchRequired defines model for IfMatchRequired.
+type IfMatchRequired = string
+
 // ImportId defines model for ImportId.
 type ImportId = openapi_types.UUID
 
 // Limit defines model for Limit.
 type Limit = int
 
+// MaterialId defines model for MaterialId.
+type MaterialId = openapi_types.UUID
+
+// ProjectId defines model for ProjectId.
+type ProjectId = openapi_types.UUID
+
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
+
+// RevisionId defines model for RevisionId.
+type RevisionId = openapi_types.UUID
+
+// StepKey defines model for StepKey.
+type StepKey = string
+
+// UserId defines model for UserId.
+type UserId = openapi_types.UUID
 
 // UpdateAiSettingsParams defines parameters for UpdateAiSettings.
 type UpdateAiSettingsParams struct {
@@ -1059,6 +2081,92 @@ type RegisterParams struct {
 // UploadAvatarMultipartBody defines parameters for UploadAvatar.
 type UploadAvatarMultipartBody struct {
 	File openapi_types.File `json:"file"`
+}
+
+// SearchPeopleParams defines parameters for SearchPeople.
+type SearchPeopleParams struct {
+	Q     *string `form:"q,omitempty" json:"q,omitempty"`
+	Role  *Role   `form:"role,omitempty" json:"role,omitempty"`
+	Limit *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListProjectsParams defines parameters for ListProjects.
+type ListProjectsParams struct {
+	Scope *ListProjectsParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+	Q     *string                  `form:"q,omitempty" json:"q,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListProjectsParamsScope defines parameters for ListProjects.
+type ListProjectsParamsScope string
+
+// CreateProjectParams defines parameters for CreateProject.
+type CreateProjectParams struct {
+	// IdempotencyKey Client-generated unique key that makes a creating request safe to retry.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// UpdateProjectParams defines parameters for UpdateProject.
+type UpdateProjectParams struct {
+	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// ListProjectActivityParams defines parameters for ListProjectActivity.
+type ListProjectActivityParams struct {
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListProjectCommentsParams defines parameters for ListProjectComments.
+type ListProjectCommentsParams struct {
+	StepKey *string `form:"step_key,omitempty" json:"step_key,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateProjectCommentParams defines parameters for CreateProjectComment.
+type CreateProjectCommentParams struct {
+	// IdempotencyKey Client-generated unique key that makes a creating request safe to retry.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// CreateProjectMaterialParams defines parameters for CreateProjectMaterial.
+type CreateProjectMaterialParams struct {
+	// IdempotencyKey Client-generated unique key that makes a creating request safe to retry.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// UpdateProjectStepParams defines parameters for UpdateProjectStep.
+type UpdateProjectStepParams struct {
+	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
+	IfMatch IfMatchRequired `json:"If-Match"`
+}
+
+// GetMentorConversationParams defines parameters for GetMentorConversation.
+type GetMentorConversationParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListStepRevisionsParams defines parameters for ListStepRevisions.
+type ListStepRevisionsParams struct {
+	Field *string `form:"field,omitempty" json:"field,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// RestoreStepRevisionParams defines parameters for RestoreStepRevision.
+type RestoreStepRevisionParams struct {
+	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
+	IfMatch IfMatchRequired `json:"If-Match"`
 }
 
 // ListStudyGroupsParams defines parameters for ListStudyGroups.
@@ -1154,6 +2262,39 @@ type CompleteOnboardingJSONRequestBody = OnboardingRequest
 
 // UpdateProfileJSONRequestBody defines body for UpdateProfile for application/json ContentType.
 type UpdateProfileJSONRequestBody = ProfileUpdate
+
+// CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
+type CreateProjectJSONRequestBody = ProjectCreate
+
+// UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
+type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// CreateProjectCommentJSONRequestBody defines body for CreateProjectComment for application/json ContentType.
+type CreateProjectCommentJSONRequestBody = CommentCreate
+
+// UpdateProjectCommentJSONRequestBody defines body for UpdateProjectComment for application/json ContentType.
+type UpdateProjectCommentJSONRequestBody = CommentUpdate
+
+// CreateProjectMaterialJSONRequestBody defines body for CreateProjectMaterial for application/json ContentType.
+type CreateProjectMaterialJSONRequestBody = MaterialCreate
+
+// AddProjectMemberJSONRequestBody defines body for AddProjectMember for application/json ContentType.
+type AddProjectMemberJSONRequestBody = ProjectMemberAdd
+
+// UpdateProjectMemberJSONRequestBody defines body for UpdateProjectMember for application/json ContentType.
+type UpdateProjectMemberJSONRequestBody = ProjectMemberUpdate
+
+// UpdateProjectPresenceJSONRequestBody defines body for UpdateProjectPresence for application/json ContentType.
+type UpdateProjectPresenceJSONRequestBody = PresenceUpdate
+
+// UpdateProjectStepJSONRequestBody defines body for UpdateProjectStep for application/json ContentType.
+type UpdateProjectStepJSONRequestBody = StepUpdate
+
+// ApproveProjectStepJSONRequestBody defines body for ApproveProjectStep for application/json ContentType.
+type ApproveProjectStepJSONRequestBody = StepApprove
+
+// SendMentorMessageJSONRequestBody defines body for SendMentorMessage for application/json ContentType.
+type SendMentorMessageJSONRequestBody = MentorMessageCreate
 
 // CreateTeamRequestJSONRequestBody defines body for CreateTeamRequest for application/json ContentType.
 type CreateTeamRequestJSONRequestBody = TeamRequestCreate
@@ -1268,6 +2409,9 @@ type ServerInterface interface {
 	// GetFileContent Download a file
 	// (GET /files/{fileId}/content)
 	GetFileContent(w http.ResponseWriter, r *http.Request, fileId openapi_types.UUID)
+	// GetIncubatorTemplate Stages, steps and fields of the incubator
+	// (GET /incubator/template)
+	GetIncubatorTemplate(w http.ResponseWriter, r *http.Request)
 	// GetMe The signed-in user with membership and profile
 	// (GET /me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -1289,9 +2433,93 @@ type ServerInterface interface {
 	// GetMeta Platform metadata
 	// (GET /meta)
 	GetMeta(w http.ResponseWriter, r *http.Request)
+	// SearchPeople Find members of the university
+	// (GET /people)
+	SearchPeople(w http.ResponseWriter, r *http.Request, params SearchPeopleParams)
 	// GetPublicProfile Public profile
 	// (GET /profiles/{slug})
 	GetPublicProfile(w http.ResponseWriter, r *http.Request, slug string)
+	// ListProjects Projects
+	// (GET /projects)
+	ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams)
+	// CreateProject Start a project
+	// (POST /projects)
+	CreateProject(w http.ResponseWriter, r *http.Request, params CreateProjectParams)
+	// ArchiveProject Archive the project
+	// (DELETE /projects/{projectId})
+	ArchiveProject(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// GetProject One project
+	// (GET /projects/{projectId})
+	GetProject(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// UpdateProject Edit the project card
+	// (PATCH /projects/{projectId})
+	UpdateProject(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateProjectParams)
+	// ListProjectActivity Recent changes, comments and completed steps
+	// (GET /projects/{projectId}/activity)
+	ListProjectActivity(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectActivityParams)
+	// ListProjectComments Comments
+	// (GET /projects/{projectId}/comments)
+	ListProjectComments(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectCommentsParams)
+	// CreateProjectComment Comment on a step or a field
+	// (POST /projects/{projectId}/comments)
+	CreateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectCommentParams)
+	// DeleteProjectComment Delete a comment
+	// (DELETE /projects/{projectId}/comments/{commentId})
+	DeleteProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId)
+	// UpdateProjectComment Edit or resolve a comment
+	// (PATCH /projects/{projectId}/comments/{commentId})
+	UpdateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId)
+	// ListProjectMaterials Generated one-pagers, pitch decks and startup passports
+	// (GET /projects/{projectId}/materials)
+	ListProjectMaterials(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// CreateProjectMaterial Generate a material from the project data
+	// (POST /projects/{projectId}/materials)
+	CreateProjectMaterial(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectMaterialParams)
+	// GetProjectMaterialContent Download a material
+	// (GET /projects/{projectId}/materials/{materialId}/content)
+	GetProjectMaterialContent(w http.ResponseWriter, r *http.Request, projectId ProjectId, materialId MaterialId)
+	// AddProjectMember Add a member or a supervisor
+	// (POST /projects/{projectId}/members)
+	AddProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// RemoveProjectMember Remove a member or leave the project
+	// (DELETE /projects/{projectId}/members/{userId})
+	RemoveProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId)
+	// UpdateProjectMember Change a member's title or hand over ownership
+	// (PATCH /projects/{projectId}/members/{userId})
+	UpdateProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId)
+	// UpdateProjectPresence Report being in the project and see who else is
+	// (POST /projects/{projectId}/presence)
+	UpdateProjectPresence(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// ListProjectSteps The state of every step and the progress of the project
+	// (GET /projects/{projectId}/steps)
+	ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// GetProjectStep The answers of a step
+	// (GET /projects/{projectId}/steps/{stepKey})
+	GetProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey)
+	// UpdateProjectStep Save answers
+	// (PATCH /projects/{projectId}/steps/{stepKey})
+	UpdateProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params UpdateProjectStepParams)
+	// ApproveProjectStep Approve the step as a supervisor
+	// (POST /projects/{projectId}/steps/{stepKey}/approve)
+	ApproveProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey)
+	// CheckProjectStep Ask the AI what to strengthen
+	// (POST /projects/{projectId}/steps/{stepKey}/check)
+	CheckProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey)
+	// CompleteProjectStep Mark the step done
+	// (POST /projects/{projectId}/steps/{stepKey}/complete)
+	CompleteProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey)
+	// GetMentorConversation The conversation with the AI mentor about the step
+	// (GET /projects/{projectId}/steps/{stepKey}/mentor)
+	GetMentorConversation(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params GetMentorConversationParams)
+	// SendMentorMessage Ask the mentor and stream the answer
+	// (POST /projects/{projectId}/steps/{stepKey}/mentor)
+	SendMentorMessage(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey)
+	// ListStepRevisions History of the step's fields
+	// (GET /projects/{projectId}/steps/{stepKey}/revisions)
+	ListStepRevisions(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params ListStepRevisionsParams)
+	// RestoreStepRevision Put an earlier value back
+	// (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
+	RestoreStepRevision(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, revisionId RevisionId, params RestoreStepRevisionParams)
 	// ListStudyGroups Study groups
 	// (GET /study-groups)
 	ListStudyGroups(w http.ResponseWriter, r *http.Request, params ListStudyGroupsParams)
@@ -1526,6 +2754,12 @@ func (_ Unimplemented) GetFileContent(w http.ResponseWriter, r *http.Request, fi
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GetIncubatorTemplate Stages, steps and fields of the incubator
+// (GET /incubator/template)
+func (_ Unimplemented) GetIncubatorTemplate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMe The signed-in user with membership and profile
 // (GET /me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -1568,9 +2802,177 @@ func (_ Unimplemented) GetMeta(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// SearchPeople Find members of the university
+// (GET /people)
+func (_ Unimplemented) SearchPeople(w http.ResponseWriter, r *http.Request, params SearchPeopleParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetPublicProfile Public profile
 // (GET /profiles/{slug})
 func (_ Unimplemented) GetPublicProfile(w http.ResponseWriter, r *http.Request, slug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjects Projects
+// (GET /projects)
+func (_ Unimplemented) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateProject Start a project
+// (POST /projects)
+func (_ Unimplemented) CreateProject(w http.ResponseWriter, r *http.Request, params CreateProjectParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ArchiveProject Archive the project
+// (DELETE /projects/{projectId})
+func (_ Unimplemented) ArchiveProject(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProject One project
+// (GET /projects/{projectId})
+func (_ Unimplemented) GetProject(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProject Edit the project card
+// (PATCH /projects/{projectId})
+func (_ Unimplemented) UpdateProject(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateProjectParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjectActivity Recent changes, comments and completed steps
+// (GET /projects/{projectId}/activity)
+func (_ Unimplemented) ListProjectActivity(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjectComments Comments
+// (GET /projects/{projectId}/comments)
+func (_ Unimplemented) ListProjectComments(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectCommentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateProjectComment Comment on a step or a field
+// (POST /projects/{projectId}/comments)
+func (_ Unimplemented) CreateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectCommentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteProjectComment Delete a comment
+// (DELETE /projects/{projectId}/comments/{commentId})
+func (_ Unimplemented) DeleteProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProjectComment Edit or resolve a comment
+// (PATCH /projects/{projectId}/comments/{commentId})
+func (_ Unimplemented) UpdateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjectMaterials Generated one-pagers, pitch decks and startup passports
+// (GET /projects/{projectId}/materials)
+func (_ Unimplemented) ListProjectMaterials(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateProjectMaterial Generate a material from the project data
+// (POST /projects/{projectId}/materials)
+func (_ Unimplemented) CreateProjectMaterial(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectMaterialParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProjectMaterialContent Download a material
+// (GET /projects/{projectId}/materials/{materialId}/content)
+func (_ Unimplemented) GetProjectMaterialContent(w http.ResponseWriter, r *http.Request, projectId ProjectId, materialId MaterialId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AddProjectMember Add a member or a supervisor
+// (POST /projects/{projectId}/members)
+func (_ Unimplemented) AddProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RemoveProjectMember Remove a member or leave the project
+// (DELETE /projects/{projectId}/members/{userId})
+func (_ Unimplemented) RemoveProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProjectMember Change a member's title or hand over ownership
+// (PATCH /projects/{projectId}/members/{userId})
+func (_ Unimplemented) UpdateProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProjectPresence Report being in the project and see who else is
+// (POST /projects/{projectId}/presence)
+func (_ Unimplemented) UpdateProjectPresence(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjectSteps The state of every step and the progress of the project
+// (GET /projects/{projectId}/steps)
+func (_ Unimplemented) ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProjectStep The answers of a step
+// (GET /projects/{projectId}/steps/{stepKey})
+func (_ Unimplemented) GetProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProjectStep Save answers
+// (PATCH /projects/{projectId}/steps/{stepKey})
+func (_ Unimplemented) UpdateProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params UpdateProjectStepParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ApproveProjectStep Approve the step as a supervisor
+// (POST /projects/{projectId}/steps/{stepKey}/approve)
+func (_ Unimplemented) ApproveProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CheckProjectStep Ask the AI what to strengthen
+// (POST /projects/{projectId}/steps/{stepKey}/check)
+func (_ Unimplemented) CheckProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CompleteProjectStep Mark the step done
+// (POST /projects/{projectId}/steps/{stepKey}/complete)
+func (_ Unimplemented) CompleteProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorConversation The conversation with the AI mentor about the step
+// (GET /projects/{projectId}/steps/{stepKey}/mentor)
+func (_ Unimplemented) GetMentorConversation(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params GetMentorConversationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SendMentorMessage Ask the mentor and stream the answer
+// (POST /projects/{projectId}/steps/{stepKey}/mentor)
+func (_ Unimplemented) SendMentorMessage(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListStepRevisions History of the step's fields
+// (GET /projects/{projectId}/steps/{stepKey}/revisions)
+func (_ Unimplemented) ListStepRevisions(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params ListStepRevisionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RestoreStepRevision Put an earlier value back
+// (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
+func (_ Unimplemented) RestoreStepRevision(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, revisionId RevisionId, params RestoreStepRevisionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2481,6 +3883,20 @@ func (siw *ServerInterfaceWrapper) GetFileContent(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetIncubatorTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetIncubatorTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncubatorTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -2579,6 +3995,65 @@ func (siw *ServerInterfaceWrapper) GetMeta(w http.ResponseWriter, r *http.Reques
 	handler.ServeHTTP(w, r)
 }
 
+// SearchPeople operation middleware
+func (siw *ServerInterfaceWrapper) SearchPeople(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchPeopleParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "role" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "role", r.URL.Query(), &params.Role, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "role"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchPeople(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPublicProfile operation middleware
 func (siw *ServerInterfaceWrapper) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 
@@ -2596,6 +4071,1161 @@ func (siw *ServerInterfaceWrapper) GetPublicProfile(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPublicProfile(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListProjects(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectsParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjects(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProject operation middleware
+func (siw *ServerInterfaceWrapper) CreateProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProjectParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProject(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveProject operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProject operation middleware
+func (siw *ServerInterfaceWrapper) GetProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProject operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProjectParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProject(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectActivity operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectActivityParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectActivity(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectComments operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectComments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectCommentsParams
+
+	// ------------- Optional query parameter "step_key" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "step_key", r.URL.Query(), &params.StepKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "step_key"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "step_key", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectComments(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectComment operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectComment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProjectCommentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectComment(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProjectComment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProjectComment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "commentId" -------------
+	var commentId CommentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "commentId", chi.URLParam(r, "commentId"), &commentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProjectComment(w, r, projectId, commentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectComment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectComment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "commentId" -------------
+	var commentId CommentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "commentId", chi.URLParam(r, "commentId"), &commentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectComment(w, r, projectId, commentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectMaterials operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectMaterials(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectMaterials(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectMaterial operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectMaterial(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProjectMaterialParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectMaterial(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectMaterialContent operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectMaterialContent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "materialId" -------------
+	var materialId MaterialId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "materialId", chi.URLParam(r, "materialId"), &materialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "materialId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectMaterialContent(w, r, projectId, materialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddProjectMember operation middleware
+func (siw *ServerInterfaceWrapper) AddProjectMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddProjectMember(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveProjectMember operation middleware
+func (siw *ServerInterfaceWrapper) RemoveProjectMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId UserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveProjectMember(w, r, projectId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectMember operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId UserId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectMember(w, r, projectId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectPresence operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectPresence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectPresence(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectSteps operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectSteps(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectSteps(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectStep operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectStep(w, r, projectId, stepKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectStep operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProjectStepParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchRequired
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectStep(w, r, projectId, stepKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveProjectStep operation middleware
+func (siw *ServerInterfaceWrapper) ApproveProjectStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveProjectStep(w, r, projectId, stepKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CheckProjectStep operation middleware
+func (siw *ServerInterfaceWrapper) CheckProjectStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckProjectStep(w, r, projectId, stepKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteProjectStep operation middleware
+func (siw *ServerInterfaceWrapper) CompleteProjectStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteProjectStep(w, r, projectId, stepKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorConversation operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorConversation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMentorConversationParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorConversation(w, r, projectId, stepKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SendMentorMessage operation middleware
+func (siw *ServerInterfaceWrapper) SendMentorMessage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendMentorMessage(w, r, projectId, stepKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStepRevisions operation middleware
+func (siw *ServerInterfaceWrapper) ListStepRevisions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStepRevisionsParams
+
+	// ------------- Optional query parameter "field" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "field", r.URL.Query(), &params.Field, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "field"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "field", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStepRevisions(w, r, projectId, stepKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RestoreStepRevision operation middleware
+func (siw *ServerInterfaceWrapper) RestoreStepRevision(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "stepKey" -------------
+	var stepKey StepKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stepKey", chi.URLParam(r, "stepKey"), &stepKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stepKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "revisionId" -------------
+	var revisionId RevisionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revisionId", chi.URLParam(r, "revisionId"), &revisionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revisionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RestoreStepRevisionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchRequired
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RestoreStepRevision(w, r, projectId, stepKey, revisionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3244,6 +5874,93 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/knowledge/{documentId}", wrapper.GetKnowledgeDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/people", wrapper.SearchPeople)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/incubator/template", wrapper.GetIncubatorTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects", wrapper.ListProjects)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects", wrapper.CreateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{projectId}", wrapper.ArchiveProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}", wrapper.GetProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{projectId}", wrapper.UpdateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/members", wrapper.AddProjectMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{projectId}/members/{userId}", wrapper.RemoveProjectMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{projectId}/members/{userId}", wrapper.UpdateProjectMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/activity", wrapper.ListProjectActivity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/presence", wrapper.UpdateProjectPresence)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/steps", wrapper.ListProjectSteps)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/steps/{stepKey}", wrapper.GetProjectStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{projectId}/steps/{stepKey}", wrapper.UpdateProjectStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/check", wrapper.CheckProjectStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/complete", wrapper.CompleteProjectStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/approve", wrapper.ApproveProjectStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/revisions", wrapper.ListStepRevisions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore", wrapper.RestoreStepRevision)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/mentor", wrapper.GetMentorConversation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/steps/{stepKey}/mentor", wrapper.SendMentorMessage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/comments", wrapper.ListProjectComments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/comments", wrapper.CreateProjectComment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{projectId}/comments/{commentId}", wrapper.DeleteProjectComment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{projectId}/comments/{commentId}", wrapper.UpdateProjectComment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/materials", wrapper.ListProjectMaterials)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/materials", wrapper.CreateProjectMaterial)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/materials/{materialId}/content", wrapper.GetProjectMaterialContent)
 	})
 
 	return r
@@ -4610,6 +7327,44 @@ func (response GetFileContentdefaultApplicationProblemPlusJSONResponse) VisitGet
 	return err
 }
 
+type GetIncubatorTemplateRequestObject struct {
+}
+
+type GetIncubatorTemplateResponseObject interface {
+	VisitGetIncubatorTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetIncubatorTemplate200JSONResponse IncubatorTemplate
+
+func (response GetIncubatorTemplate200JSONResponse) VisitGetIncubatorTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncubatorTemplatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIncubatorTemplatedefaultApplicationProblemPlusJSONResponse) VisitGetIncubatorTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -4874,6 +7629,45 @@ func (response GetMetadefaultApplicationProblemPlusJSONResponse) VisitGetMetaRes
 	return err
 }
 
+type SearchPeopleRequestObject struct {
+	Params SearchPeopleParams
+}
+
+type SearchPeopleResponseObject interface {
+	VisitSearchPeopleResponse(w http.ResponseWriter) error
+}
+
+type SearchPeople200JSONResponse PersonList
+
+func (response SearchPeople200JSONResponse) VisitSearchPeopleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchPeopledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SearchPeopledefaultApplicationProblemPlusJSONResponse) VisitSearchPeopleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetPublicProfileRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -4902,6 +7696,1201 @@ type GetPublicProfiledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetPublicProfiledefaultApplicationProblemPlusJSONResponse) VisitGetPublicProfileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectsRequestObject struct {
+	Params ListProjectsParams
+}
+
+type ListProjectsResponseObject interface {
+	VisitListProjectsResponse(w http.ResponseWriter) error
+}
+
+type ListProjects200JSONResponse ProjectPage
+
+func (response ListProjects200JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectsdefaultApplicationProblemPlusJSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectRequestObject struct {
+	Params CreateProjectParams
+	Body   *CreateProjectJSONRequestBody
+}
+
+type CreateProjectResponseObject interface {
+	VisitCreateProjectResponse(w http.ResponseWriter) error
+}
+
+type CreateProject201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateProject201JSONResponse struct {
+	Body    Project
+	Headers CreateProject201ResponseHeaders
+}
+
+func (response CreateProject201JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateProjectdefaultApplicationProblemPlusJSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ArchiveProjectRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type ArchiveProjectResponseObject interface {
+	VisitArchiveProjectResponse(w http.ResponseWriter) error
+}
+
+type ArchiveProject204Response struct {
+}
+
+func (response ArchiveProject204Response) VisitArchiveProjectResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ArchiveProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ArchiveProjectdefaultApplicationProblemPlusJSONResponse) VisitArchiveProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type GetProjectResponseObject interface {
+	VisitGetProjectResponse(w http.ResponseWriter) error
+}
+
+type GetProject200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetProject200JSONResponse struct {
+	Body    Project
+	Headers GetProject200ResponseHeaders
+}
+
+func (response GetProject200JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetProjectdefaultApplicationProblemPlusJSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    UpdateProjectParams
+	Body      *UpdateProjectJSONRequestBody
+}
+
+type UpdateProjectResponseObject interface {
+	VisitUpdateProjectResponse(w http.ResponseWriter) error
+}
+
+type UpdateProject200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateProject200JSONResponse struct {
+	Body    Project
+	Headers UpdateProject200ResponseHeaders
+}
+
+func (response UpdateProject200JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateProjectdefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectActivityRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    ListProjectActivityParams
+}
+
+type ListProjectActivityResponseObject interface {
+	VisitListProjectActivityResponse(w http.ResponseWriter) error
+}
+
+type ListProjectActivity200JSONResponse ActivityList
+
+func (response ListProjectActivity200JSONResponse) VisitListProjectActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectActivitydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectActivitydefaultApplicationProblemPlusJSONResponse) VisitListProjectActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectCommentsRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    ListProjectCommentsParams
+}
+
+type ListProjectCommentsResponseObject interface {
+	VisitListProjectCommentsResponse(w http.ResponseWriter) error
+}
+
+type ListProjectComments200JSONResponse CommentPage
+
+func (response ListProjectComments200JSONResponse) VisitListProjectCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectCommentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectCommentsdefaultApplicationProblemPlusJSONResponse) VisitListProjectCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectCommentRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    CreateProjectCommentParams
+	Body      *CreateProjectCommentJSONRequestBody
+}
+
+type CreateProjectCommentResponseObject interface {
+	VisitCreateProjectCommentResponse(w http.ResponseWriter) error
+}
+
+type CreateProjectComment201JSONResponse Comment
+
+func (response CreateProjectComment201JSONResponse) VisitCreateProjectCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectCommentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateProjectCommentdefaultApplicationProblemPlusJSONResponse) VisitCreateProjectCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProjectCommentRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	CommentId CommentId `json:"commentId"`
+}
+
+type DeleteProjectCommentResponseObject interface {
+	VisitDeleteProjectCommentResponse(w http.ResponseWriter) error
+}
+
+type DeleteProjectComment204Response struct {
+}
+
+func (response DeleteProjectComment204Response) VisitDeleteProjectCommentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteProjectCommentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteProjectCommentdefaultApplicationProblemPlusJSONResponse) VisitDeleteProjectCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectCommentRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	CommentId CommentId `json:"commentId"`
+	Body      *UpdateProjectCommentJSONRequestBody
+}
+
+type UpdateProjectCommentResponseObject interface {
+	VisitUpdateProjectCommentResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectComment200JSONResponse Comment
+
+func (response UpdateProjectComment200JSONResponse) VisitUpdateProjectCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectCommentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateProjectCommentdefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectMaterialsRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type ListProjectMaterialsResponseObject interface {
+	VisitListProjectMaterialsResponse(w http.ResponseWriter) error
+}
+
+type ListProjectMaterials200JSONResponse MaterialList
+
+func (response ListProjectMaterials200JSONResponse) VisitListProjectMaterialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectMaterialsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectMaterialsdefaultApplicationProblemPlusJSONResponse) VisitListProjectMaterialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectMaterialRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    CreateProjectMaterialParams
+	Body      *CreateProjectMaterialJSONRequestBody
+}
+
+type CreateProjectMaterialResponseObject interface {
+	VisitCreateProjectMaterialResponse(w http.ResponseWriter) error
+}
+
+type CreateProjectMaterial202JSONResponse Material
+
+func (response CreateProjectMaterial202JSONResponse) VisitCreateProjectMaterialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectMaterialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateProjectMaterialdefaultApplicationProblemPlusJSONResponse) VisitCreateProjectMaterialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectMaterialContentRequestObject struct {
+	ProjectId  ProjectId  `json:"projectId"`
+	MaterialId MaterialId `json:"materialId"`
+}
+
+type GetProjectMaterialContentResponseObject interface {
+	VisitGetProjectMaterialContentResponse(w http.ResponseWriter) error
+}
+
+type GetProjectMaterialContent200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetProjectMaterialContent200ApplicationoctetStreamResponse) VisitGetProjectMaterialContentResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetProjectMaterialContentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetProjectMaterialContentdefaultApplicationProblemPlusJSONResponse) VisitGetProjectMaterialContentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProjectMemberRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Body      *AddProjectMemberJSONRequestBody
+}
+
+type AddProjectMemberResponseObject interface {
+	VisitAddProjectMemberResponse(w http.ResponseWriter) error
+}
+
+type AddProjectMember201JSONResponse ProjectMember
+
+func (response AddProjectMember201JSONResponse) VisitAddProjectMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProjectMemberdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response AddProjectMemberdefaultApplicationProblemPlusJSONResponse) VisitAddProjectMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveProjectMemberRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	UserId    UserId    `json:"userId"`
+}
+
+type RemoveProjectMemberResponseObject interface {
+	VisitRemoveProjectMemberResponse(w http.ResponseWriter) error
+}
+
+type RemoveProjectMember204Response struct {
+}
+
+func (response RemoveProjectMember204Response) VisitRemoveProjectMemberResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveProjectMemberdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RemoveProjectMemberdefaultApplicationProblemPlusJSONResponse) VisitRemoveProjectMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectMemberRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	UserId    UserId    `json:"userId"`
+	Body      *UpdateProjectMemberJSONRequestBody
+}
+
+type UpdateProjectMemberResponseObject interface {
+	VisitUpdateProjectMemberResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectMember200JSONResponse ProjectMember
+
+func (response UpdateProjectMember200JSONResponse) VisitUpdateProjectMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectMemberdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateProjectMemberdefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectPresenceRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Body      *UpdateProjectPresenceJSONRequestBody
+}
+
+type UpdateProjectPresenceResponseObject interface {
+	VisitUpdateProjectPresenceResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectPresence200JSONResponse Presence
+
+func (response UpdateProjectPresence200JSONResponse) VisitUpdateProjectPresenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectPresencedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateProjectPresencedefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectPresenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectStepsRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type ListProjectStepsResponseObject interface {
+	VisitListProjectStepsResponse(w http.ResponseWriter) error
+}
+
+type ListProjectSteps200JSONResponse StepList
+
+func (response ListProjectSteps200JSONResponse) VisitListProjectStepsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectStepsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectStepsdefaultApplicationProblemPlusJSONResponse) VisitListProjectStepsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectStepRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+}
+
+type GetProjectStepResponseObject interface {
+	VisitGetProjectStepResponse(w http.ResponseWriter) error
+}
+
+type GetProjectStep200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetProjectStep200JSONResponse struct {
+	Body    Step
+	Headers GetProjectStep200ResponseHeaders
+}
+
+func (response GetProjectStep200JSONResponse) VisitGetProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectStepdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetProjectStepdefaultApplicationProblemPlusJSONResponse) VisitGetProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectStepRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+	Params    UpdateProjectStepParams
+	Body      *UpdateProjectStepJSONRequestBody
+}
+
+type UpdateProjectStepResponseObject interface {
+	VisitUpdateProjectStepResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectStep200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateProjectStep200JSONResponse struct {
+	Body    Step
+	Headers UpdateProjectStep200ResponseHeaders
+}
+
+func (response UpdateProjectStep200JSONResponse) VisitUpdateProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectStepdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateProjectStepdefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveProjectStepRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+	Body      *ApproveProjectStepJSONRequestBody
+}
+
+type ApproveProjectStepResponseObject interface {
+	VisitApproveProjectStepResponse(w http.ResponseWriter) error
+}
+
+type ApproveProjectStep200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveProjectStep200JSONResponse struct {
+	Body    Step
+	Headers ApproveProjectStep200ResponseHeaders
+}
+
+func (response ApproveProjectStep200JSONResponse) VisitApproveProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveProjectStepdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ApproveProjectStepdefaultApplicationProblemPlusJSONResponse) VisitApproveProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckProjectStepRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+}
+
+type CheckProjectStepResponseObject interface {
+	VisitCheckProjectStepResponse(w http.ResponseWriter) error
+}
+
+type CheckProjectStep200ResponseHeaders struct {
+	ETag *string
+}
+
+type CheckProjectStep200JSONResponse struct {
+	Body    Step
+	Headers CheckProjectStep200ResponseHeaders
+}
+
+func (response CheckProjectStep200JSONResponse) VisitCheckProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckProjectStepdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CheckProjectStepdefaultApplicationProblemPlusJSONResponse) VisitCheckProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteProjectStepRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+}
+
+type CompleteProjectStepResponseObject interface {
+	VisitCompleteProjectStepResponse(w http.ResponseWriter) error
+}
+
+type CompleteProjectStep200ResponseHeaders struct {
+	ETag *string
+}
+
+type CompleteProjectStep200JSONResponse struct {
+	Body    Step
+	Headers CompleteProjectStep200ResponseHeaders
+}
+
+func (response CompleteProjectStep200JSONResponse) VisitCompleteProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteProjectStepdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CompleteProjectStepdefaultApplicationProblemPlusJSONResponse) VisitCompleteProjectStepResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorConversationRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+	Params    GetMentorConversationParams
+}
+
+type GetMentorConversationResponseObject interface {
+	VisitGetMentorConversationResponse(w http.ResponseWriter) error
+}
+
+type GetMentorConversation200JSONResponse MentorConversation
+
+func (response GetMentorConversation200JSONResponse) VisitGetMentorConversationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorConversationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetMentorConversationdefaultApplicationProblemPlusJSONResponse) VisitGetMentorConversationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SendMentorMessageRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+	Body      *SendMentorMessageJSONRequestBody
+}
+
+type SendMentorMessageResponseObject interface {
+	VisitSendMentorMessageResponse(w http.ResponseWriter) error
+}
+
+type SendMentorMessage200TexteventStreamResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response SendMentorMessage200TexteventStreamResponse) VisitSendMentorMessageResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		// If w doesn't support flushing, fall back to io.Copy.
+		_, err := io.Copy(w, response.Body)
+		return err
+	}
+	// text/event-stream messages are typically small; use a
+	// modest buffer and flush after each chunk so clients see
+	// events immediately instead of waiting on OS buffering.
+	buf := make([]byte, 4096)
+	for {
+		n, err := response.Body.Read(buf)
+		if n > 0 {
+			if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+				return writeErr
+			}
+			flusher.Flush()
+		}
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+type SendMentorMessagedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SendMentorMessagedefaultApplicationProblemPlusJSONResponse) VisitSendMentorMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStepRevisionsRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	StepKey   StepKey   `json:"stepKey"`
+	Params    ListStepRevisionsParams
+}
+
+type ListStepRevisionsResponseObject interface {
+	VisitListStepRevisionsResponse(w http.ResponseWriter) error
+}
+
+type ListStepRevisions200JSONResponse RevisionPage
+
+func (response ListStepRevisions200JSONResponse) VisitListStepRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStepRevisionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListStepRevisionsdefaultApplicationProblemPlusJSONResponse) VisitListStepRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestoreStepRevisionRequestObject struct {
+	ProjectId  ProjectId  `json:"projectId"`
+	StepKey    StepKey    `json:"stepKey"`
+	RevisionId RevisionId `json:"revisionId"`
+	Params     RestoreStepRevisionParams
+}
+
+type RestoreStepRevisionResponseObject interface {
+	VisitRestoreStepRevisionResponse(w http.ResponseWriter) error
+}
+
+type RestoreStepRevision200ResponseHeaders struct {
+	ETag *string
+}
+
+type RestoreStepRevision200JSONResponse struct {
+	Body    Step
+	Headers RestoreStepRevision200ResponseHeaders
+}
+
+func (response RestoreStepRevision200JSONResponse) VisitRestoreStepRevisionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestoreStepRevisiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RestoreStepRevisiondefaultApplicationProblemPlusJSONResponse) VisitRestoreStepRevisionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5357,6 +9346,9 @@ type StrictServerInterface interface {
 	// GetFileContent Download a file
 	// (GET /files/{fileId}/content)
 	GetFileContent(ctx context.Context, request GetFileContentRequestObject) (GetFileContentResponseObject, error)
+	// GetIncubatorTemplate Stages, steps and fields of the incubator
+	// (GET /incubator/template)
+	GetIncubatorTemplate(ctx context.Context, request GetIncubatorTemplateRequestObject) (GetIncubatorTemplateResponseObject, error)
 	// GetMe The signed-in user with membership and profile
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -5378,9 +9370,93 @@ type StrictServerInterface interface {
 	// GetMeta Platform metadata
 	// (GET /meta)
 	GetMeta(ctx context.Context, request GetMetaRequestObject) (GetMetaResponseObject, error)
+	// SearchPeople Find members of the university
+	// (GET /people)
+	SearchPeople(ctx context.Context, request SearchPeopleRequestObject) (SearchPeopleResponseObject, error)
 	// GetPublicProfile Public profile
 	// (GET /profiles/{slug})
 	GetPublicProfile(ctx context.Context, request GetPublicProfileRequestObject) (GetPublicProfileResponseObject, error)
+	// ListProjects Projects
+	// (GET /projects)
+	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
+	// CreateProject Start a project
+	// (POST /projects)
+	CreateProject(ctx context.Context, request CreateProjectRequestObject) (CreateProjectResponseObject, error)
+	// ArchiveProject Archive the project
+	// (DELETE /projects/{projectId})
+	ArchiveProject(ctx context.Context, request ArchiveProjectRequestObject) (ArchiveProjectResponseObject, error)
+	// GetProject One project
+	// (GET /projects/{projectId})
+	GetProject(ctx context.Context, request GetProjectRequestObject) (GetProjectResponseObject, error)
+	// UpdateProject Edit the project card
+	// (PATCH /projects/{projectId})
+	UpdateProject(ctx context.Context, request UpdateProjectRequestObject) (UpdateProjectResponseObject, error)
+	// ListProjectActivity Recent changes, comments and completed steps
+	// (GET /projects/{projectId}/activity)
+	ListProjectActivity(ctx context.Context, request ListProjectActivityRequestObject) (ListProjectActivityResponseObject, error)
+	// ListProjectComments Comments
+	// (GET /projects/{projectId}/comments)
+	ListProjectComments(ctx context.Context, request ListProjectCommentsRequestObject) (ListProjectCommentsResponseObject, error)
+	// CreateProjectComment Comment on a step or a field
+	// (POST /projects/{projectId}/comments)
+	CreateProjectComment(ctx context.Context, request CreateProjectCommentRequestObject) (CreateProjectCommentResponseObject, error)
+	// DeleteProjectComment Delete a comment
+	// (DELETE /projects/{projectId}/comments/{commentId})
+	DeleteProjectComment(ctx context.Context, request DeleteProjectCommentRequestObject) (DeleteProjectCommentResponseObject, error)
+	// UpdateProjectComment Edit or resolve a comment
+	// (PATCH /projects/{projectId}/comments/{commentId})
+	UpdateProjectComment(ctx context.Context, request UpdateProjectCommentRequestObject) (UpdateProjectCommentResponseObject, error)
+	// ListProjectMaterials Generated one-pagers, pitch decks and startup passports
+	// (GET /projects/{projectId}/materials)
+	ListProjectMaterials(ctx context.Context, request ListProjectMaterialsRequestObject) (ListProjectMaterialsResponseObject, error)
+	// CreateProjectMaterial Generate a material from the project data
+	// (POST /projects/{projectId}/materials)
+	CreateProjectMaterial(ctx context.Context, request CreateProjectMaterialRequestObject) (CreateProjectMaterialResponseObject, error)
+	// GetProjectMaterialContent Download a material
+	// (GET /projects/{projectId}/materials/{materialId}/content)
+	GetProjectMaterialContent(ctx context.Context, request GetProjectMaterialContentRequestObject) (GetProjectMaterialContentResponseObject, error)
+	// AddProjectMember Add a member or a supervisor
+	// (POST /projects/{projectId}/members)
+	AddProjectMember(ctx context.Context, request AddProjectMemberRequestObject) (AddProjectMemberResponseObject, error)
+	// RemoveProjectMember Remove a member or leave the project
+	// (DELETE /projects/{projectId}/members/{userId})
+	RemoveProjectMember(ctx context.Context, request RemoveProjectMemberRequestObject) (RemoveProjectMemberResponseObject, error)
+	// UpdateProjectMember Change a member's title or hand over ownership
+	// (PATCH /projects/{projectId}/members/{userId})
+	UpdateProjectMember(ctx context.Context, request UpdateProjectMemberRequestObject) (UpdateProjectMemberResponseObject, error)
+	// UpdateProjectPresence Report being in the project and see who else is
+	// (POST /projects/{projectId}/presence)
+	UpdateProjectPresence(ctx context.Context, request UpdateProjectPresenceRequestObject) (UpdateProjectPresenceResponseObject, error)
+	// ListProjectSteps The state of every step and the progress of the project
+	// (GET /projects/{projectId}/steps)
+	ListProjectSteps(ctx context.Context, request ListProjectStepsRequestObject) (ListProjectStepsResponseObject, error)
+	// GetProjectStep The answers of a step
+	// (GET /projects/{projectId}/steps/{stepKey})
+	GetProjectStep(ctx context.Context, request GetProjectStepRequestObject) (GetProjectStepResponseObject, error)
+	// UpdateProjectStep Save answers
+	// (PATCH /projects/{projectId}/steps/{stepKey})
+	UpdateProjectStep(ctx context.Context, request UpdateProjectStepRequestObject) (UpdateProjectStepResponseObject, error)
+	// ApproveProjectStep Approve the step as a supervisor
+	// (POST /projects/{projectId}/steps/{stepKey}/approve)
+	ApproveProjectStep(ctx context.Context, request ApproveProjectStepRequestObject) (ApproveProjectStepResponseObject, error)
+	// CheckProjectStep Ask the AI what to strengthen
+	// (POST /projects/{projectId}/steps/{stepKey}/check)
+	CheckProjectStep(ctx context.Context, request CheckProjectStepRequestObject) (CheckProjectStepResponseObject, error)
+	// CompleteProjectStep Mark the step done
+	// (POST /projects/{projectId}/steps/{stepKey}/complete)
+	CompleteProjectStep(ctx context.Context, request CompleteProjectStepRequestObject) (CompleteProjectStepResponseObject, error)
+	// GetMentorConversation The conversation with the AI mentor about the step
+	// (GET /projects/{projectId}/steps/{stepKey}/mentor)
+	GetMentorConversation(ctx context.Context, request GetMentorConversationRequestObject) (GetMentorConversationResponseObject, error)
+	// SendMentorMessage Ask the mentor and stream the answer
+	// (POST /projects/{projectId}/steps/{stepKey}/mentor)
+	SendMentorMessage(ctx context.Context, request SendMentorMessageRequestObject) (SendMentorMessageResponseObject, error)
+	// ListStepRevisions History of the step's fields
+	// (GET /projects/{projectId}/steps/{stepKey}/revisions)
+	ListStepRevisions(ctx context.Context, request ListStepRevisionsRequestObject) (ListStepRevisionsResponseObject, error)
+	// RestoreStepRevision Put an earlier value back
+	// (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
+	RestoreStepRevision(ctx context.Context, request RestoreStepRevisionRequestObject) (RestoreStepRevisionResponseObject, error)
 	// ListStudyGroups Study groups
 	// (GET /study-groups)
 	ListStudyGroups(ctx context.Context, request ListStudyGroupsRequestObject) (ListStudyGroupsResponseObject, error)
@@ -6385,6 +10461,30 @@ func (sh *strictHandler) GetFileContent(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GetIncubatorTemplate operation middleware
+func (sh *strictHandler) GetIncubatorTemplate(w http.ResponseWriter, r *http.Request) {
+	var request GetIncubatorTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncubatorTemplate(ctx, request.(GetIncubatorTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncubatorTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncubatorTemplateResponseObject); ok {
+		if err := validResponse.VisitGetIncubatorTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -6581,6 +10681,32 @@ func (sh *strictHandler) GetMeta(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SearchPeople operation middleware
+func (sh *strictHandler) SearchPeople(w http.ResponseWriter, r *http.Request, params SearchPeopleParams) {
+	var request SearchPeopleRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchPeople(ctx, request.(SearchPeopleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchPeople")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchPeopleResponseObject); ok {
+		if err := validResponse.VisitSearchPeopleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetPublicProfile operation middleware
 func (sh *strictHandler) GetPublicProfile(w http.ResponseWriter, r *http.Request, slug string) {
 	var request GetPublicProfileRequestObject
@@ -6600,6 +10726,809 @@ func (sh *strictHandler) GetPublicProfile(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetPublicProfileResponseObject); ok {
 		if err := validResponse.VisitGetPublicProfileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjects operation middleware
+func (sh *strictHandler) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	var request ListProjectsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjects(ctx, request.(ListProjectsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjects")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectsResponseObject); ok {
+		if err := validResponse.VisitListProjectsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProject operation middleware
+func (sh *strictHandler) CreateProject(w http.ResponseWriter, r *http.Request, params CreateProjectParams) {
+	var request CreateProjectRequestObject
+
+	request.Params = params
+
+	var body CreateProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProject(ctx, request.(CreateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectResponseObject); ok {
+		if err := validResponse.VisitCreateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveProject operation middleware
+func (sh *strictHandler) ArchiveProject(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request ArchiveProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveProject(ctx, request.(ArchiveProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveProjectResponseObject); ok {
+		if err := validResponse.VisitArchiveProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProject operation middleware
+func (sh *strictHandler) GetProject(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request GetProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProject(ctx, request.(GetProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectResponseObject); ok {
+		if err := validResponse.VisitGetProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProject operation middleware
+func (sh *strictHandler) UpdateProject(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateProjectParams) {
+	var request UpdateProjectRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	var body UpdateProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProject(ctx, request.(UpdateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectActivity operation middleware
+func (sh *strictHandler) ListProjectActivity(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectActivityParams) {
+	var request ListProjectActivityRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectActivity(ctx, request.(ListProjectActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectActivityResponseObject); ok {
+		if err := validResponse.VisitListProjectActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectComments operation middleware
+func (sh *strictHandler) ListProjectComments(w http.ResponseWriter, r *http.Request, projectId ProjectId, params ListProjectCommentsParams) {
+	var request ListProjectCommentsRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectComments(ctx, request.(ListProjectCommentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectComments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectCommentsResponseObject); ok {
+		if err := validResponse.VisitListProjectCommentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProjectComment operation middleware
+func (sh *strictHandler) CreateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectCommentParams) {
+	var request CreateProjectCommentRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	var body CreateProjectCommentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProjectComment(ctx, request.(CreateProjectCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProjectComment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectCommentResponseObject); ok {
+		if err := validResponse.VisitCreateProjectCommentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteProjectComment operation middleware
+func (sh *strictHandler) DeleteProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId) {
+	var request DeleteProjectCommentRequestObject
+
+	request.ProjectId = projectId
+	request.CommentId = commentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteProjectComment(ctx, request.(DeleteProjectCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteProjectComment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteProjectCommentResponseObject); ok {
+		if err := validResponse.VisitDeleteProjectCommentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectComment operation middleware
+func (sh *strictHandler) UpdateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId) {
+	var request UpdateProjectCommentRequestObject
+
+	request.ProjectId = projectId
+	request.CommentId = commentId
+
+	var body UpdateProjectCommentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectComment(ctx, request.(UpdateProjectCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectComment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectCommentResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectCommentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectMaterials operation middleware
+func (sh *strictHandler) ListProjectMaterials(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request ListProjectMaterialsRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectMaterials(ctx, request.(ListProjectMaterialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectMaterials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectMaterialsResponseObject); ok {
+		if err := validResponse.VisitListProjectMaterialsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProjectMaterial operation middleware
+func (sh *strictHandler) CreateProjectMaterial(w http.ResponseWriter, r *http.Request, projectId ProjectId, params CreateProjectMaterialParams) {
+	var request CreateProjectMaterialRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	var body CreateProjectMaterialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProjectMaterial(ctx, request.(CreateProjectMaterialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProjectMaterial")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectMaterialResponseObject); ok {
+		if err := validResponse.VisitCreateProjectMaterialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectMaterialContent operation middleware
+func (sh *strictHandler) GetProjectMaterialContent(w http.ResponseWriter, r *http.Request, projectId ProjectId, materialId MaterialId) {
+	var request GetProjectMaterialContentRequestObject
+
+	request.ProjectId = projectId
+	request.MaterialId = materialId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectMaterialContent(ctx, request.(GetProjectMaterialContentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectMaterialContent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectMaterialContentResponseObject); ok {
+		if err := validResponse.VisitGetProjectMaterialContentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddProjectMember operation middleware
+func (sh *strictHandler) AddProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request AddProjectMemberRequestObject
+
+	request.ProjectId = projectId
+
+	var body AddProjectMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddProjectMember(ctx, request.(AddProjectMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddProjectMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddProjectMemberResponseObject); ok {
+		if err := validResponse.VisitAddProjectMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveProjectMember operation middleware
+func (sh *strictHandler) RemoveProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId) {
+	var request RemoveProjectMemberRequestObject
+
+	request.ProjectId = projectId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveProjectMember(ctx, request.(RemoveProjectMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveProjectMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveProjectMemberResponseObject); ok {
+		if err := validResponse.VisitRemoveProjectMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectMember operation middleware
+func (sh *strictHandler) UpdateProjectMember(w http.ResponseWriter, r *http.Request, projectId ProjectId, userId UserId) {
+	var request UpdateProjectMemberRequestObject
+
+	request.ProjectId = projectId
+	request.UserId = userId
+
+	var body UpdateProjectMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectMember(ctx, request.(UpdateProjectMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectMemberResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectPresence operation middleware
+func (sh *strictHandler) UpdateProjectPresence(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request UpdateProjectPresenceRequestObject
+
+	request.ProjectId = projectId
+
+	var body UpdateProjectPresenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectPresence(ctx, request.(UpdateProjectPresenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectPresence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectPresenceResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectPresenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectSteps operation middleware
+func (sh *strictHandler) ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request ListProjectStepsRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectSteps(ctx, request.(ListProjectStepsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectSteps")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectStepsResponseObject); ok {
+		if err := validResponse.VisitListProjectStepsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectStep operation middleware
+func (sh *strictHandler) GetProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	var request GetProjectStepRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProjectStep(ctx, request.(GetProjectStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectStepResponseObject); ok {
+		if err := validResponse.VisitGetProjectStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectStep operation middleware
+func (sh *strictHandler) UpdateProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params UpdateProjectStepParams) {
+	var request UpdateProjectStepRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+	request.Params = params
+
+	var body UpdateProjectStepJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectStep(ctx, request.(UpdateProjectStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectStepResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveProjectStep operation middleware
+func (sh *strictHandler) ApproveProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	var request ApproveProjectStepRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+
+	var body ApproveProjectStepJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveProjectStep(ctx, request.(ApproveProjectStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveProjectStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveProjectStepResponseObject); ok {
+		if err := validResponse.VisitApproveProjectStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CheckProjectStep operation middleware
+func (sh *strictHandler) CheckProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	var request CheckProjectStepRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckProjectStep(ctx, request.(CheckProjectStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckProjectStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckProjectStepResponseObject); ok {
+		if err := validResponse.VisitCheckProjectStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteProjectStep operation middleware
+func (sh *strictHandler) CompleteProjectStep(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	var request CompleteProjectStepRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteProjectStep(ctx, request.(CompleteProjectStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteProjectStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteProjectStepResponseObject); ok {
+		if err := validResponse.VisitCompleteProjectStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorConversation operation middleware
+func (sh *strictHandler) GetMentorConversation(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params GetMentorConversationParams) {
+	var request GetMentorConversationRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorConversation(ctx, request.(GetMentorConversationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorConversation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorConversationResponseObject); ok {
+		if err := validResponse.VisitGetMentorConversationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SendMentorMessage operation middleware
+func (sh *strictHandler) SendMentorMessage(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey) {
+	var request SendMentorMessageRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+
+	var body SendMentorMessageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SendMentorMessage(ctx, request.(SendMentorMessageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SendMentorMessage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SendMentorMessageResponseObject); ok {
+		if err := validResponse.VisitSendMentorMessageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStepRevisions operation middleware
+func (sh *strictHandler) ListStepRevisions(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, params ListStepRevisionsParams) {
+	var request ListStepRevisionsRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStepRevisions(ctx, request.(ListStepRevisionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStepRevisions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStepRevisionsResponseObject); ok {
+		if err := validResponse.VisitListStepRevisionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RestoreStepRevision operation middleware
+func (sh *strictHandler) RestoreStepRevision(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, revisionId RevisionId, params RestoreStepRevisionParams) {
+	var request RestoreStepRevisionRequestObject
+
+	request.ProjectId = projectId
+	request.StepKey = stepKey
+	request.RevisionId = revisionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RestoreStepRevision(ctx, request.(RestoreStepRevisionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RestoreStepRevision")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RestoreStepRevisionResponseObject); ok {
+		if err := validResponse.VisitRestoreStepRevisionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6841,171 +11770,266 @@ func (sh *strictHandler) GetCurrentTenant(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -136,7 +136,7 @@ func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, err
 }
 
 const getTenantSettings = `-- name: GetTenantSettings :one
-SELECT tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_text, contact_moderation, updated_at FROM tenant_settings WHERE tenant_id = $1
+SELECT tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_text, contact_moderation, updated_at, ip_policy_version FROM tenant_settings WHERE tenant_id = $1
 `
 
 func (q *Queries) GetTenantSettings(ctx context.Context, tenantID uuid.UUID) (TenantSetting, error) {
@@ -151,6 +151,7 @@ func (q *Queries) GetTenantSettings(ctx context.Context, tenantID uuid.UUID) (Te
 		&i.IpPolicyText,
 		&i.ContactModeration,
 		&i.UpdatedAt,
+		&i.IpPolicyVersion,
 	)
 	return i, err
 }
@@ -249,23 +250,25 @@ func (q *Queries) UpsertTenantDomain(ctx context.Context, arg UpsertTenantDomain
 }
 
 const upsertTenantSettings = `-- name: UpsertTenantSettings :exec
-INSERT INTO tenant_settings (tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_text)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO tenant_settings (tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_version, ip_policy_text)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (tenant_id) DO UPDATE
    SET self_signup = EXCLUDED.self_signup,
        email_domains = EXCLUDED.email_domains,
        consent_version = EXCLUDED.consent_version,
        consent_text = EXCLUDED.consent_text,
+       ip_policy_version = EXCLUDED.ip_policy_version,
        ip_policy_text = EXCLUDED.ip_policy_text
 `
 
 type UpsertTenantSettingsParams struct {
-	TenantID       uuid.UUID
-	SelfSignup     bool
-	EmailDomains   []string
-	ConsentVersion string
-	ConsentText    json.RawMessage
-	IpPolicyText   json.RawMessage
+	TenantID        uuid.UUID
+	SelfSignup      bool
+	EmailDomains    []string
+	ConsentVersion  string
+	ConsentText     json.RawMessage
+	IpPolicyVersion string
+	IpPolicyText    json.RawMessage
 }
 
 func (q *Queries) UpsertTenantSettings(ctx context.Context, arg UpsertTenantSettingsParams) error {
@@ -275,6 +278,7 @@ func (q *Queries) UpsertTenantSettings(ctx context.Context, arg UpsertTenantSett
 		arg.EmailDomains,
 		arg.ConsentVersion,
 		arg.ConsentText,
+		arg.IpPolicyVersion,
 		arg.IpPolicyText,
 	)
 	return err

@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/auth"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/imports"
+	"github.com/yelnurq/startify/backend/internal/incubator"
 	"github.com/yelnurq/startify/backend/internal/knowledge"
 	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/org"
@@ -34,6 +36,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
 	"github.com/yelnurq/startify/backend/internal/platform/telemetry"
+	"github.com/yelnurq/startify/backend/internal/project"
 	"github.com/yelnurq/startify/backend/internal/system"
 	"github.com/yelnurq/startify/backend/internal/team"
 	"github.com/yelnurq/startify/backend/internal/tenant"
@@ -72,6 +75,8 @@ type (
 	importsHandler   = imports.Handler
 	aiHandler        = ai.Handler
 	knowledgeHandler = knowledge.Handler
+	projectHandler   = project.Handler
+	incubatorHandler = incubator.Handler
 )
 
 // server composes the module handlers into the generated strict interface.
@@ -87,6 +92,8 @@ type server struct {
 	*importsHandler
 	*aiHandler
 	*knowledgeHandler
+	*projectHandler
+	*incubatorHandler
 }
 
 var _ apigen.StrictServerInterface = (*server)(nil)
@@ -102,6 +109,8 @@ type Services struct {
 	Imports   *imports.Service
 	AI        *ai.Gateway
 	Knowledge *knowledge.Service
+	Projects  *project.Service
+	Incubator *incubator.Service
 }
 
 func (a *API) services(ctx context.Context) (*Services, error) {
@@ -138,6 +147,8 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,
 	})
+	// The mock provider answers incubator prompts like a mentor would.
+	incubator.RegisterMock()
 	providers := a.Providers
 	if providers == nil {
 		providers = ai.ConfiguredProviders(cfg.AI, 25*time.Millisecond)
@@ -146,9 +157,21 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
+	zone, err := time.LoadLocation(cfg.AI.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	knowledgeSvc := knowledge.NewService(a.DB, gateway, fileSvc, a.Queue, auditLog)
+	projects := project.NewService(a.DB, users, orgs, tenants, auditLog)
+	incubatorSvc := incubator.NewService(incubator.Deps{
+		DB: a.DB, Projects: projects, Users: users, Tenants: tenants, Gateway: gateway, Knowledge: knowledgeSvc,
+		Files: fileSvc, Queue: a.Queue, Audit: auditLog, Limiter: limiter, Cache: a.Cache, Zone: zone,
+	})
 	return &Services{
 		AI:        gateway,
-		Knowledge: knowledge.NewService(a.DB, gateway, fileSvc, a.Queue, auditLog),
+		Knowledge: knowledgeSvc,
+		Projects:  projects,
+		Incubator: incubatorSvc,
 		Tenants:   tenants,
 		Auth:      authSvc,
 		Users:     users,
@@ -213,6 +236,8 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 			return s.Name.Best(locale)
 		}),
 		knowledgeHandler: knowledge.NewHandler(svc.Knowledge),
+		projectHandler:   project.NewHandler(svc.Projects),
+		incubatorHandler: incubator.NewHandler(svc.Incubator),
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -236,6 +261,11 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 		apigen.HandlerWithOptions(strict, apigen.ChiServerOptions{
 			BaseRouter: api,
 			ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				var missing *apigen.RequiredHeaderError
+				if errors.As(err, &missing) && missing.ParamName == "If-Match" {
+					httpx.WriteError(w, r, apperr.PreconditionRequired("precondition.required", "send If-Match with the version you edit"))
+					return
+				}
 				httpx.WriteError(w, r, apperr.BadRequest("request.invalid_parameter", err.Error()))
 			},
 		})

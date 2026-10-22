@@ -183,6 +183,11 @@ type Settings struct {
 	ConsentText    apiconv.Text
 	Name           apiconv.Text
 	ShortName      apiconv.Text
+	// IPPolicyVersion is empty when the university has no intellectual
+	// property policy to accept.
+	IPPolicyVersion string
+	IPPolicyText    apiconv.Text
+	PrimaryColor    string
 }
 
 // CurrentSettings loads the sign-up rules of the request's tenant.
@@ -209,6 +214,10 @@ func (s *Service) CurrentSettings(ctx context.Context) (Settings, error) {
 			ConsentText:    apiconv.ParseText(settings.ConsentText),
 			Name:           apiconv.ParseText(row.Name),
 			ShortName:      apiconv.ParseText(row.ShortName),
+			PrimaryColor:   row.PrimaryColor,
+		}
+		if text := apiconv.ParseText(settings.IpPolicyText); len(text) > 0 && settings.IpPolicyVersion != "" {
+			out.IPPolicyVersion, out.IPPolicyText = settings.IpPolicyVersion, text
 		}
 		return nil
 	})
@@ -266,6 +275,9 @@ func (h *Handler) GetCurrentTenant(ctx context.Context, _ apigen.GetCurrentTenan
 				Version: settings.ConsentVersion,
 				Text:    apiconv.ParseText(settings.ConsentText).API(),
 			},
+		}
+		if text := apiconv.ParseText(settings.IpPolicyText); len(text) > 0 && settings.IpPolicyVersion != "" {
+			out.IpPolicy = &apigen.IpPolicy{Version: settings.IpPolicyVersion, Text: text.API()}
 		}
 		return nil
 	})

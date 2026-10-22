@@ -114,3 +114,14 @@ SELECT p.*, u.full_name, u.avatar_file_id, u.id AS owner_id
   FROM user_profiles p
   JOIN users u ON u.id = p.user_id
  WHERE p.public_slug = @public_slug AND p.is_public AND u.status = 'active';
+
+-- name: SearchPeople :many
+SELECT u.id, u.full_name, u.avatar_file_id, m.roles, m.faculty_id, p.public_slug, coalesce(p.is_public, false)::boolean AS is_public
+  FROM memberships m
+  JOIN users u ON u.id = m.user_id
+  LEFT JOIN user_profiles p ON p.user_id = u.id
+ WHERE m.tenant_id = app_current_tenant() AND m.status = 'active'
+   AND (sqlc.narg('q')::text IS NULL OR u.full_name ILIKE '%' || sqlc.narg('q')::text || '%')
+   AND (sqlc.narg('role')::text IS NULL OR sqlc.narg('role')::text = ANY(m.roles))
+ ORDER BY u.full_name, u.id
+ LIMIT @row_limit;

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "style" .}}
+<style>
+  @page { size: 338.67mm 190.5mm; margin: 0; }
+  .slide { width: 338.67mm; height: 190.5mm; padding: 24mm 26mm 18mm; position: relative; overflow: hidden;
+           page-break-after: always; break-after: page; display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .bar { position: absolute; inset: 0 0 auto 0; height: 4.8mm; background: var(--accent); }
+  .bar.thin { height: 2.4mm; }
+  .title-slide { justify-content: center; gap: 7mm; }
+  .title-slide h1 { font-size: 48pt; line-height: 1.05; font-weight: 700; letter-spacing: -.015em; max-width: 280mm; }
+  .title-slide .lead { font-size: 20pt; color: var(--muted); max-width: 260mm; }
+  h2 { font-size: 30pt; font-weight: 700; margin-bottom: 10mm; letter-spacing: -.01em; }
+  ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6mm; max-width: 270mm; }
+  li { font-size: 19pt; line-height: 1.35; padding-left: 9mm; position: relative; }
+  li::before { content: ""; position: absolute; left: 0; top: .55em; width: 3.2mm; height: 3.2mm; border-radius: 50%; background: var(--accent); }
+  .slide-foot { position: absolute; left: 26mm; right: 26mm; bottom: 9mm; font-size: 9pt; color: var(--faint);
+                display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<section class="slide title-slide">
+  <div class="bar"></div>
+  <h1>{{.Title}}</h1>
+  <div class="rule"></div>
+  {{if .Tagline}}<p class="lead">{{.Tagline}}</p>{{end}}
+  <div class="slide-foot"><span>{{.Brand.University}} · Qadam</span><span>1</span></div>
+</section>
+{{$n := 1}}
+{{range $i, $s := .Slides}}{{if or $i (ne $s.Title $.Title)}}{{$n = inc $n}}
+<section class="slide">
+  <div class="bar thin"></div>
+  <h2>{{$s.Title}}</h2>
+  <ul>{{range $s.Bullets}}<li>{{.}}</li>{{end}}</ul>
+  <div class="slide-foot"><span>{{$.Brand.University}} · Qadam</span><span>{{$n}}</span></div>
+</section>
+{{end}}{{end}}
+</body>
+</html>

@@ -10,10 +10,12 @@ import (
 	"github.com/yelnurq/startify/backend/internal/ai/llm"
 	"github.com/yelnurq/startify/backend/internal/auth"
 	"github.com/yelnurq/startify/backend/internal/files"
+	"github.com/yelnurq/startify/backend/internal/incubator"
 	"github.com/yelnurq/startify/backend/internal/knowledge"
 	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/gotenberg"
 	"github.com/yelnurq/startify/backend/internal/platform/jobs"
 	"github.com/yelnurq/startify/backend/internal/platform/maintenance"
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
@@ -48,10 +50,12 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 	if w.Providers == nil {
 		w.Providers = ai.ConfiguredProviders(w.Config.AI, 0)
 	}
+	incubator.RegisterMock()
 	gateway, err := ai.NewGateway(w.DB, w.Providers, w.Config.AI, w.Log)
 	if err != nil {
 		return nil, err
 	}
+	fileSvc := files.NewService(w.DB, w.Storage, w.Config.Files, w.Log)
 	queue, err := jobs.NewQueue(w.DB)
 	if err != nil {
 		return nil, err
@@ -59,6 +63,9 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &knowledge.IndexWorker{DB: w.DB, Gateway: gateway})
 	river.AddWorker(workers, &knowledge.ReindexWorker{DB: w.DB, Gateway: gateway, Queue: queue})
+	river.AddWorker(workers, &incubator.MaterialWorker{
+		DB: w.DB, Gateway: gateway, Files: fileSvc, Gotenberg: gotenberg.New(w.Config.Gotenberg.URL, w.Config.Gotenberg.Timeout),
+	})
 	river.AddWorker(workers, &maintenance.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &auth.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &files.PurgeWorker{DB: w.DB, Store: w.Storage})

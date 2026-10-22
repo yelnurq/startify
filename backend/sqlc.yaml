@@ -174,3 +174,25 @@ sql:
         emit_empty_slices: true
         emit_pointers_for_null_types: true
         omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/project
+    gen:
+      go:
+        package: projectdb
+        out: internal/project/projectdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/incubator
+    gen:
+      go:
+        package: incubatordb
+        out: internal/incubator/incubatordb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true

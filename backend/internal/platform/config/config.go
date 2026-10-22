@@ -46,6 +46,15 @@ type Config struct {
 	S3       S3       `koanf:"s3"`
 	Files    Files    `koanf:"files"`
 	AI       AI       `koanf:"ai"`
+	// Gotenberg renders HTML into PDF (pitch materials, reports).
+	Gotenberg Gotenberg `koanf:"gotenberg"`
+}
+
+// Gotenberg is the document conversion service; without a URL documents
+// cannot be generated and requests for them fail with a clear error.
+type Gotenberg struct {
+	URL     string        `koanf:"url"`
+	Timeout time.Duration `koanf:"timeout"`
 }
 
 // AI configures language-model providers. Which provider and model serve a
@@ -223,6 +232,7 @@ func defaults() map[string]any {
 		"s3.bucket":                     "qadam",
 		"s3.region":                     "us-east-1",
 		"files.scan":                    "optional",
+		"gotenberg.timeout":             "90s",
 		"files.max_bytes":               25 << 20,
 		"ai.default":                    "mock",
 		"ai.routes":                     "",
@@ -417,6 +427,14 @@ func (c *Config) Validate() error {
 	}
 	if c.Env == EnvProduction && c.Files.Scan != "required" {
 		fail("QADAM_FILES_SCAN must be required in production")
+	}
+	if c.Gotenberg.URL != "" {
+		if u, err := url.Parse(c.Gotenberg.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			fail("QADAM_GOTENBERG_URL must be an http(s) URL, got %q", c.Gotenberg.URL)
+		}
+	}
+	if c.Gotenberg.Timeout < 5*time.Second || c.Gotenberg.Timeout > 10*time.Minute {
+		fail("QADAM_GOTENBERG_TIMEOUT must be between 5s and 10m")
 	}
 	if c.Files.MaxBytes < 1<<20 || c.Files.MaxBytes > 200<<20 {
 		fail("QADAM_FILES_MAX_BYTES must be within [1 MiB, 200 MiB]")

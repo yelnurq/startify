@@ -38,6 +38,7 @@ const (
 	PurposeTenantLogo = "tenant_logo"
 	PurposeAttachment = "attachment"
 	PurposeKnowledge  = "knowledge"
+	PurposeGenerated  = "generated"
 )
 
 // Visibilities of files.
@@ -161,6 +162,24 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("files: delete: %w", err)
 	}
 	return nil
+}
+
+// Load returns a file without checking who asks: the calling module has
+// already authorised access (e.g. to a project's materials).
+func (s *Service) Load(ctx context.Context, id uuid.UUID) (filesdb.File, error) {
+	var f filesdb.File
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		f, err = filesdb.New(s.db.Conn(ctx)).GetFile(ctx, id)
+		return err
+	})
+	if db.IsNoRows(err) {
+		return f, errNotFound
+	}
+	if err != nil {
+		return f, fmt.Errorf("files: get: %w", err)
+	}
+	return f, nil
 }
 
 // Metadata returns a file the principal of ctx may read.

@@ -39,13 +39,14 @@ ON CONFLICT (domain) DO UPDATE
    SET tenant_id = EXCLUDED.tenant_id, is_primary = EXCLUDED.is_primary;
 
 -- name: UpsertTenantSettings :exec
-INSERT INTO tenant_settings (tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_text)
-VALUES (@tenant_id, @self_signup, @email_domains, @consent_version, @consent_text, @ip_policy_text)
+INSERT INTO tenant_settings (tenant_id, self_signup, email_domains, consent_version, consent_text, ip_policy_version, ip_policy_text)
+VALUES (@tenant_id, @self_signup, @email_domains, @consent_version, @consent_text, @ip_policy_version, @ip_policy_text)
 ON CONFLICT (tenant_id) DO UPDATE
    SET self_signup = EXCLUDED.self_signup,
        email_domains = EXCLUDED.email_domains,
        consent_version = EXCLUDED.consent_version,
        consent_text = EXCLUDED.consent_text,
+       ip_policy_version = EXCLUDED.ip_policy_version,
        ip_policy_text = EXCLUDED.ip_policy_text;
 
 -- name: CreateOidcProvider :one

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Qadam API
-  version: 0.3.0
+  version: 0.4.0
   summary: AI-платформа инновационной и проектной деятельности университета.
   description: |
     Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
@@ -50,6 +50,10 @@ tags:
     description: Language models - status, university settings, usage, connection check.
   - name: knowledge
     description: The university knowledge base the AI mentor cites.
+  - name: projects
+    description: Projects, their teams, activity and presence.
+  - name: incubator
+    description: Steps of the incubator, history, comments, the AI mentor and pitch materials.
 paths:
   /meta:
     get:
@@ -1176,6 +1180,675 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /people:
+    get:
+      operationId: searchPeople
+      tags: [profiles]
+      summary: Find members of the university
+      description: |
+        Members by name for adding to a team or mentioning in a comment. Returns
+        active members only, at most `limit`.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Matching members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /incubator/template:
+    get:
+      operationId: getIncubatorTemplate
+      tags: [incubator]
+      summary: Stages, steps and fields of the incubator
+      description: Texts come in all three languages; the client picks the current one.
+      responses:
+        "200":
+          description: The template.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncubatorTemplate"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: Projects
+      description: |
+        `scope=mine` (default) lists the projects the member takes part in. `scope=all` lists
+        every project of the university and requires `innovation_manager`, `tenant_admin`
+        or `leadership`.
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [mine, all]
+            default: mine
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Projects, the most recently changed first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Start a project
+      description: |
+        The creator becomes the owner. When the university has an intellectual property
+        policy, `ip_policy_version` must name its current version (`project.ip_policy_required`).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: The project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: One project
+      responses:
+        "200":
+          description: The project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Edit the project card
+      description: Team members (owner, member) may edit.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: The updated project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: archiveProject
+      tags: [projects]
+      summary: Archive the project
+      description: The owner or an `innovation_manager` may archive; archived projects are read-only.
+      responses:
+        "204":
+          description: Archived.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/members:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: addProjectMember
+      tags: [projects]
+      summary: Add a member or a supervisor
+      description: |
+        The owner adds members of the university. A supervisor must have the `supervisor`
+        role and may also be assigned by an `innovation_manager`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberAdd"
+      responses:
+        "201":
+          description: The member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/UserId"
+    patch:
+      operationId: updateProjectMember
+      tags: [projects]
+      summary: Change a member's title or hand over ownership
+      description: |
+        Members edit their own title; the owner edits anyone's and may make another member
+        the owner (`role: owner`), becoming a member.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberUpdate"
+      responses:
+        "200":
+          description: The member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: removeProjectMember
+      tags: [projects]
+      summary: Remove a member or leave the project
+      description: The owner removes others; anyone but the owner may leave.
+      responses:
+        "204":
+          description: Removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/activity:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectActivity
+      tags: [projects]
+      summary: Recent changes, comments and completed steps
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Activity, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/presence:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: updateProjectPresence
+      tags: [projects]
+      summary: Report being in the project and see who else is
+      description: |
+        Clients call it every 15 seconds while the project is open. The answer lists the
+        members seen in the last 45 seconds and the current version of every step, so a
+        client notices changes made by others.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresenceUpdate"
+      responses:
+        "200":
+          description: Who is here.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Presence"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectSteps
+      tags: [incubator]
+      summary: The state of every step and the progress of the project
+      responses:
+        "200":
+          description: Steps in template order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StepList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: getProjectStep
+      tags: [incubator]
+      summary: The answers of a step
+      responses:
+        "200":
+          description: The step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateProjectStep
+      tags: [incubator]
+      summary: Save answers
+      description: |
+        Saves the given fields (others keep their values). `If-Match` is required
+        (428 `precondition.required`); a stale version fails with 412 `precondition.failed`,
+        and the client merges its edits into the current version. Drafts are saved as typed:
+        only types, lengths and options are checked here, the minimum is checked on completion.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepUpdate"
+      responses:
+        "200":
+          description: The saved step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/check:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: checkProjectStep
+      tags: [incubator]
+      summary: Ask the AI what to strengthen
+      description: Reviews the step against its criteria; the review is kept with the step.
+      responses:
+        "200":
+          description: The step with the review.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/complete:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: completeProjectStep
+      tags: [incubator]
+      summary: Mark the step done
+      description: |
+        Fails with 422 `incubator.step_incomplete` (field errors list what is missing) unless
+        the minimum requirements are met. A completed step stays editable; when an edit
+        breaks the minimum it returns to `in_progress`.
+      responses:
+        "200":
+          description: The completed step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/approve:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: approveProjectStep
+      tags: [incubator]
+      summary: Approve the step as a supervisor
+      description: |
+        The project's supervisor or an `innovation_manager` approves a step, also one that
+        does not meet the minimum, with a comment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepApprove"
+      responses:
+        "200":
+          description: The approved step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/revisions:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: listStepRevisions
+      tags: [incubator]
+      summary: History of the step's fields
+      parameters:
+        - name: field
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Revisions, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+      - $ref: "#/components/parameters/RevisionId"
+    post:
+      operationId: restoreStepRevision
+      tags: [incubator]
+      summary: Put an earlier value back
+      description: The restored value becomes a new revision; nothing is lost.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
+      responses:
+        "200":
+          description: The step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/mentor:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: getMentorConversation
+      tags: [incubator]
+      summary: The conversation with the AI mentor about the step
+      description: Messages oldest first; `cursor` loads earlier ones.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Messages and the mentor's options.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorConversation"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: sendMentorMessage
+      tags: [incubator]
+      summary: Ask the mentor and stream the answer
+      description: |
+        Team members ask; the answer streams as server-sent events: `message` (the saved
+        question, MentorMessage), `delta` (`{"text": "..."}`) for each piece, then `done`
+        (the saved answer, MentorMessage) or `error` (Problem). Closing the connection stops
+        the model; the partial answer is kept as `cancelled`.
+
+        A suggested wording for a field is wrapped in
+        `<suggestion field="<field key>">…</suggestion>`; the client shows it with an
+        "Apply to the field" button.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorMessageCreate"
+      responses:
+        "200":
+          description: An event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/comments:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectComments
+      tags: [incubator]
+      summary: Comments
+      parameters:
+        - name: step_key
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Comments, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProjectComment
+      tags: [incubator]
+      summary: Comment on a step or a field
+      description: The team, the supervisor and innovation managers may comment and @mention each other.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreate"
+      responses:
+        "201":
+          description: The comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/comments/{commentId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/CommentId"
+    patch:
+      operationId: updateProjectComment
+      tags: [incubator]
+      summary: Edit or resolve a comment
+      description: The author edits the text; anyone who can comment resolves or reopens a thread.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdate"
+      responses:
+        "200":
+          description: The comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteProjectComment
+      tags: [incubator]
+      summary: Delete a comment
+      description: The author or an innovation manager.
+      responses:
+        "204":
+          description: Deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/materials:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectMaterials
+      tags: [incubator]
+      summary: Generated one-pagers, pitch decks and startup passports
+      responses:
+        "200":
+          description: Materials, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProjectMaterial
+      tags: [incubator]
+      summary: Generate a material from the project data
+      description: |
+        Generation runs in the background (AI texts, then PDF or PPTX); poll the list until
+        the status is `ready`. Pitch decks come as PDF or PPTX, the others as PDF.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialCreate"
+      responses:
+        "202":
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/materials/{materialId}/content:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/MaterialId"
+    get:
+      operationId: getProjectMaterialContent
+      tags: [incubator]
+      summary: Download a material
+      responses:
+        "200":
+          description: The file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1195,6 +1868,56 @@ components:
       schema:
         type: string
   parameters:
+    IfMatchRequired:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag of the version being edited; the update fails with 412 if it is stale.
+      schema:
+        type: string
+        maxLength: 128
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StepKey:
+      name: stepKey
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 64
+    RevisionId:
+      name: revisionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MaterialId:
+      name: materialId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     IfMatch:
       name: If-Match
       in: header
@@ -1610,6 +2333,7 @@ components:
         - email_domains
         - sso_providers
         - consent
+        - ip_policy
       properties:
         id:
           type: string
@@ -1642,6 +2366,10 @@ components:
             $ref: "#/components/schemas/SsoProvider"
         consent:
           $ref: "#/components/schemas/ConsentPolicy"
+        ip_policy:
+          anyOf:
+            - $ref: "#/components/schemas/IpPolicy"
+            - type: "null"
     ConsentPolicy:
       type: object
       description: Personal data processing consent shown at sign-up (Law of the RK "On personal data").
@@ -2463,3 +3191,888 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FieldError"
+
+    Person:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, avatar_url, faculty, roles, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        slug:
+          type: [string, "null"]
+          description: Address of the public profile, when it is public.
+    PersonList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Person"
+    IpPolicy:
+      type: object
+      description: Intellectual property policy a team accepts when it starts a project.
+      additionalProperties: false
+      required: [version, text]
+      properties:
+        version:
+          type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+
+    FieldType:
+      type: string
+      enum: [text, textarea, number, select, list, table, url]
+    FieldUnit:
+      type: string
+      enum: [kzt, count]
+    TemplateOption:
+      type: object
+      additionalProperties: false
+      required: [value, label]
+      properties:
+        value:
+          type: string
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+    TemplateField:
+      type: object
+      additionalProperties: false
+      required: [key, type, required, label]
+      properties:
+        key:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        required:
+          type: boolean
+          description: Needed to complete the step (with min_length or min_items).
+        min_length:
+          type: integer
+        max_length:
+          type: integer
+        min_items:
+          type: integer
+        max_items:
+          type: integer
+        unit:
+          $ref: "#/components/schemas/FieldUnit"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        hint:
+          $ref: "#/components/schemas/LocalizedText"
+        placeholder:
+          $ref: "#/components/schemas/LocalizedText"
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateOption"
+        columns:
+          type: array
+          description: Columns of a table.
+          items:
+            $ref: "#/components/schemas/TemplateField"
+    TemplateCriterion:
+      type: object
+      additionalProperties: false
+      required: [fields, text]
+      properties:
+        fields:
+          type: array
+          items:
+            type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+    TemplateStep:
+      type: object
+      additionalProperties: false
+      required: [key, number, stage, title, goal, method, criteria, fields]
+      properties:
+        key:
+          type: string
+          examples: [problem]
+        number:
+          type: integer
+          minimum: 1
+        stage:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        goal:
+          $ref: "#/components/schemas/LocalizedText"
+        method:
+          $ref: "#/components/schemas/LocalizedText"
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateCriterion"
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateField"
+    TemplateStage:
+      type: object
+      additionalProperties: false
+      required: [key, title, steps]
+      properties:
+        key:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateStep"
+    IncubatorTemplate:
+      type: object
+      additionalProperties: false
+      required: [version, stages]
+      properties:
+        version:
+          type: integer
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateStage"
+
+    Industry:
+      type: string
+      enum:
+        - agritech
+        - edtech
+        - fintech
+        - healthtech
+        - logistics
+        - cleantech
+        - govtech
+        - foodtech
+        - fashion
+        - ecommerce
+        - manufacturing
+        - energy
+        - tourism
+        - social
+        - other
+    ProjectRole:
+      type: string
+      enum: [owner, member, supervisor]
+    ProjectAccess:
+      type: string
+      description: |
+        How the signed-in member relates to the project: a team role, or `manager` for
+        innovation managers, administrators and leadership who see every project.
+      enum: [owner, member, supervisor, manager]
+    StepStatus:
+      type: string
+      enum: [not_started, in_progress, completed, approved]
+    Badge:
+      type: string
+      description: Milestones of the project.
+      enum: [idea_stage, market_stage, product_stage, launch_stage, first_review, materials_ready, team_of_three]
+    StageProgress:
+      type: object
+      additionalProperties: false
+      required: [key, completed, total]
+      properties:
+        key:
+          type: string
+        completed:
+          type: integer
+        total:
+          type: integer
+    ProjectProgress:
+      type: object
+      additionalProperties: false
+      required: [completed_steps, total_steps, percent, current_step, stages, streak_days, badges]
+      properties:
+        completed_steps:
+          type: integer
+        total_steps:
+          type: integer
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        current_step:
+          type: string
+          description: The first step that is not done yet (the last one when all are).
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/StageProgress"
+        streak_days:
+          type: integer
+          description: Consecutive days, up to today or yesterday, with changes by the team.
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/Badge"
+    ProjectMember:
+      type: object
+      additionalProperties: false
+      required: [user, role, title, joined_at]
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        title:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+    Project:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - title
+        - tagline
+        - industry
+        - visibility
+        - hide_sensitive
+        - faculty
+        - members
+        - access
+        - archived
+        - progress
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        visibility:
+          type: string
+          enum: [private, university, public]
+        hide_sensitive:
+          type: boolean
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMember"
+        access:
+          $ref: "#/components/schemas/ProjectAccess"
+        archived:
+          type: boolean
+        progress:
+          $ref: "#/components/schemas/ProjectProgress"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProjectSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title, tagline, industry, team, access, archived, completed_steps, total_steps, current_step, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberBrief"
+        access:
+          $ref: "#/components/schemas/ProjectAccess"
+        archived:
+          type: boolean
+        completed_steps:
+          type: integer
+        total_steps:
+          type: integer
+        current_step:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    ProjectPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectSummary"
+        next_cursor:
+          type: [string, "null"]
+    ProjectCreate:
+      type: object
+      additionalProperties: false
+      required: [title, industry]
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        industry:
+          $ref: "#/components/schemas/Industry"
+        ip_policy_version:
+          type: string
+          maxLength: 64
+    ProjectUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        industry:
+          $ref: "#/components/schemas/Industry"
+        hide_sensitive:
+          type: boolean
+    ProjectMemberAdd:
+      type: object
+      additionalProperties: false
+      required: [user_id, role]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [member, supervisor]
+        title:
+          type: string
+          maxLength: 60
+    ProjectMemberUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 60
+        role:
+          type: string
+          enum: [owner]
+          description: Hand the project over to this member.
+
+    ActivityKind:
+      type: string
+      enum: [edit, comment, step_completed, step_approved, member_joined]
+    Activity:
+      type: object
+      additionalProperties: false
+      required: [kind, actor, step_key, field_key, at]
+      properties:
+        kind:
+          $ref: "#/components/schemas/ActivityKind"
+        actor:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        step_key:
+          type: [string, "null"]
+        field_key:
+          type: [string, "null"]
+        at:
+          type: string
+          format: date-time
+    ActivityList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+    PresenceUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        step_key:
+          type: string
+          maxLength: 64
+    Viewer:
+      type: object
+      additionalProperties: false
+      required: [user, step_key, seen_at]
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        step_key:
+          type: [string, "null"]
+        seen_at:
+          type: string
+          format: date-time
+    Presence:
+      type: object
+      additionalProperties: false
+      required: [viewers, versions]
+      properties:
+        viewers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Viewer"
+        versions:
+          type: object
+          description: Current version of every saved step, by step key.
+          additionalProperties:
+            type: integer
+
+    StepValues:
+      type: object
+      description: |
+        Answers by field key: a string (text, textarea, select, url), a number or null
+        (number), an array of strings (list) or an array of objects keyed by column (table).
+      additionalProperties: true
+    StepGap:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+          enum: [required, minLength, minItems]
+        count:
+          type: integer
+    CheckStatus:
+      type: string
+      enum: [ok, weak, missing]
+    StepCheckItem:
+      type: object
+      additionalProperties: false
+      required: [criterion, status, advice]
+      properties:
+        criterion:
+          type: string
+        status:
+          $ref: "#/components/schemas/CheckStatus"
+        advice:
+          type: string
+    StepCheck:
+      type: object
+      description: An AI review of the step. It is a recommendation, not a grade.
+      additionalProperties: false
+      required: [ready, summary, items, model, prompt_version, checked_at, version]
+      properties:
+        ready:
+          type: boolean
+        summary:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepCheckItem"
+        model:
+          type: string
+        prompt_version:
+          type: string
+        checked_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          description: Version of the step the review was made for.
+    StepSummary:
+      type: object
+      additionalProperties: false
+      required: [key, status, version, filled, total, open_comments, updated_at, updated_by]
+      properties:
+        key:
+          type: string
+        status:
+          $ref: "#/components/schemas/StepStatus"
+        version:
+          type: integer
+        filled:
+          type: integer
+          description: Fields with an answer.
+        total:
+          type: integer
+        open_comments:
+          type: integer
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+        updated_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+    StepList:
+      type: object
+      additionalProperties: false
+      required: [items, progress]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepSummary"
+        progress:
+          $ref: "#/components/schemas/ProjectProgress"
+    Step:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - status
+        - version
+        - values
+        - missing
+        - check
+        - completed_at
+        - approved_by
+        - approval_comment
+        - updated_at
+        - updated_by
+      properties:
+        key:
+          type: string
+        status:
+          $ref: "#/components/schemas/StepStatus"
+        version:
+          type: integer
+        values:
+          $ref: "#/components/schemas/StepValues"
+        missing:
+          type: array
+          description: What the step lacks to be completed.
+          items:
+            $ref: "#/components/schemas/StepGap"
+        check:
+          anyOf:
+            - $ref: "#/components/schemas/StepCheck"
+            - type: "null"
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+        approved_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        approval_comment:
+          type: [string, "null"]
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+        updated_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+    StepUpdate:
+      type: object
+      additionalProperties: false
+      required: [values]
+      properties:
+        values:
+          $ref: "#/components/schemas/StepValues"
+        source:
+          type: string
+          enum: [edit, mentor]
+          default: edit
+          description: "`mentor` when the text comes from an applied mentor suggestion."
+    StepApprove:
+      type: object
+      additionalProperties: false
+      required: [comment]
+      properties:
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RevisionSource:
+      type: string
+      enum: [edit, mentor, restore]
+    Revision:
+      type: object
+      additionalProperties: false
+      required: [id, field, value, version, author, source, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        field:
+          type: string
+        value:
+          description: The field's value after the change.
+        version:
+          type: integer
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        source:
+          $ref: "#/components/schemas/RevisionSource"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    RevisionPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Revision"
+        next_cursor:
+          type: [string, "null"]
+
+    Comment:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - step_key
+        - field_key
+        - parent_id
+        - author
+        - body
+        - mentions
+        - resolved
+        - created_at
+        - updated_at
+        - editable
+      properties:
+        id:
+          type: string
+          format: uuid
+        step_key:
+          type: string
+        field_key:
+          type: [string, "null"]
+        parent_id:
+          type: [string, "null"]
+          format: uuid
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        body:
+          type: string
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberBrief"
+        resolved:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        editable:
+          type: boolean
+          description: The signed-in member wrote it and may edit it.
+    CommentPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        next_cursor:
+          type: [string, "null"]
+    CommentCreate:
+      type: object
+      additionalProperties: false
+      required: [step_key, body]
+      properties:
+        step_key:
+          type: string
+          maxLength: 64
+        field_key:
+          type: string
+          maxLength: 64
+        parent_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        mentions:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: uuid
+    CommentUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        resolved:
+          type: boolean
+
+    MentorSource:
+      type: object
+      additionalProperties: false
+      required: [document_id, title]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+    MentorMessage:
+      type: object
+      additionalProperties: false
+      required: [id, role, author, content, status, sources, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        content:
+          type: string
+        status:
+          type: string
+          enum: [ok, cancelled, error]
+        sources:
+          type: array
+          description: Knowledge base documents the answer could draw on.
+          items:
+            $ref: "#/components/schemas/MentorSource"
+        created_at:
+          type: string
+          format: date-time
+    MentorConversation:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, modes, external, can_ask]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentorMessage"
+        next_cursor:
+          type: [string, "null"]
+          description: Loads earlier messages.
+        modes:
+          type: array
+          description: Modes the university allows; the first is the default.
+          items:
+            $ref: "#/components/schemas/MentorMode"
+        external:
+          type: boolean
+          description: The mentor runs on a provider outside the university.
+        can_ask:
+          type: boolean
+          description: The signed-in member may ask (team members only).
+    MentorMessageCreate:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        mode:
+          $ref: "#/components/schemas/MentorMode"
+
+    MaterialKind:
+      type: string
+      enum: [one_pager, pitch_deck, passport]
+    MaterialFormat:
+      type: string
+      enum: [pdf, pptx]
+    MaterialStatus:
+      type: string
+      enum: [pending, ready, failed]
+    Material:
+      type: object
+      additionalProperties: false
+      required: [id, kind, format, locale, status, error, download_url, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/MaterialKind"
+        format:
+          $ref: "#/components/schemas/MaterialFormat"
+        locale:
+          $ref: "#/components/schemas/Locale"
+        status:
+          $ref: "#/components/schemas/MaterialStatus"
+        error:
+          type: [string, "null"]
+        download_url:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MaterialList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Material"
+    MaterialCreate:
+      type: object
+      additionalProperties: false
+      required: [kind, format]
+      properties:
+        kind:
+          $ref: "#/components/schemas/MaterialKind"
+        format:
+          $ref: "#/components/schemas/MaterialFormat"
+        locale:
+          $ref: "#/components/schemas/Locale"

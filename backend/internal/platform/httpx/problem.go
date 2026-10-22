@@ -50,6 +50,8 @@ func StatusFor(kind apperr.Kind) int {
 		return http.StatusConflict
 	case apperr.KindPreconditionFailed:
 		return http.StatusPreconditionFailed
+	case apperr.KindPreconditionRequired:
+		return http.StatusPreconditionRequired
 	case apperr.KindTooLarge:
 		return http.StatusRequestEntityTooLarge
 	case apperr.KindRateLimited:

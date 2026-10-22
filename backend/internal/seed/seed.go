@@ -34,6 +34,9 @@ type TenantSpec struct {
 	EmailDomains   []string
 	ConsentVersion string
 	ConsentText    apiconv.Text
+	// The intellectual property policy teams accept with a new project.
+	IPPolicyVersion string
+	IPPolicyText    apiconv.Text
 }
 
 // Tenant creates or updates a university with its settings.
@@ -60,13 +63,21 @@ func Tenant(ctx context.Context, database *db.DB, spec TenantSpec) (tenantdb.Ten
 		}
 		return q.UpsertTenantSettings(ctx, tenantdb.UpsertTenantSettingsParams{
 			TenantID: t.ID, SelfSignup: spec.SelfSignup, EmailDomains: domains,
-			ConsentVersion: spec.ConsentVersion, ConsentText: spec.ConsentText.JSON(), IpPolicyText: json.RawMessage("{}"),
+			ConsentVersion: spec.ConsentVersion, ConsentText: spec.ConsentText.JSON(),
+			IpPolicyVersion: spec.IPPolicyVersion, IpPolicyText: ipPolicy(spec.IPPolicyText),
 		})
 	})
 	if err != nil {
 		return t, fmt.Errorf("seed: tenant %s: %w", spec.Slug, err)
 	}
 	return t, nil
+}
+
+func ipPolicy(t apiconv.Text) json.RawMessage {
+	if len(t) == 0 {
+		return json.RawMessage("{}")
+	}
+	return t.JSON()
 }
 
 // Member describes a demo account.

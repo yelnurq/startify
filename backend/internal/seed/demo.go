@@ -3,6 +3,7 @@ package seed
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -27,10 +28,16 @@ var KazUTB = TenantSpec{
 		"ru": "Казахский университет технологии и бизнеса имени К. Кулажанова",
 		"en": "Kazakh University of Technology and Business named after K. Kulazhanov",
 	},
-	ShortName:      apiconv.Text{"kk": "ҚазТБУ", "ru": "КазУТБ", "en": "KazUTB"},
-	Locale:         "kk",
-	Color:          "#00A3C4",
-	SelfSignup:     true,
+	ShortName:       apiconv.Text{"kk": "ҚазТБУ", "ru": "КазУТБ", "en": "KazUTB"},
+	Locale:          "kk",
+	Color:           "#00A3C4",
+	SelfSignup:      true,
+	IPPolicyVersion: "2026-09",
+	IPPolicyText: apiconv.Text{
+		"kk": "Жоба нәтижелеріне құқық оның авторларына — команда мүшелеріне тиесілі. Егер жоба университет грантын алса немесе оның жабдығын оқу сабақтарынан тыс пайдаланса, грант төленгенге дейін тараптар құқықтар туралы келісімге қол қояды; әдепкі бойынша университет оқу және ғылыми мақсаттар үшін өтеусіз ерекше емес лицензия алады. Жоба материалдарының қайсысы платформаның басқа пайдаланушыларына көрінетінін команда өзі шешеді. Менторлар мен қазылар жоба материалдарын оны сүйемелдеу мен бағалаудан тыс пайдаланбауға міндеттенеді.",
+		"ru": "Права на результаты проекта принадлежат его авторам — участникам команды. Если проект получает грант университета или использует его оборудование сверх учебных занятий, до выплаты гранта стороны подписывают соглашение о правах; по умолчанию университет получает безвозмездную неисключительную лицензию для учебных и научных целей. Команда сама решает, какие материалы проекта видны другим пользователям платформы. Менторы и жюри обязуются не использовать материалы проекта вне его сопровождения и оценки.",
+		"en": "The rights to a project's results belong to its authors, the members of the team. When a project receives a university grant or uses university equipment beyond regular classes, the parties sign an agreement on rights before the grant is paid; by default the university receives a free non-exclusive licence for teaching and research. The team decides which project materials other users of the platform can see. Mentors and jury members undertake not to use project materials outside mentoring and evaluating the project.",
+	},
 	ConsentVersion: ConsentVersion,
 	ConsentText: apiconv.Text{
 		"kk": "Мен Қ. Құлажанов атындағы ҚазТБУ-ға «Дербес деректер және оларды қорғау туралы» Қазақстан Республикасының Заңына сәйкес Qadam платформасында университеттің инновациялық және жобалық қызметіне қатысу мақсатында дербес деректерімді (аты-жөні, электрондық пошта, оқу туралы мәліметтер, жоба материалдары) жинауға және өңдеуге келісім беремін.",
@@ -211,7 +218,8 @@ func AllKazUTBMembers() []Member {
 }
 
 // Demo creates the demonstration installation: KazUTB with structure,
-// accounts, team requests and knowledge base, and the sandbox university.
+// accounts, team requests, knowledge base and student projects at every
+// stage of the incubator, and the sandbox university.
 func Demo(ctx context.Context, database *db.DB) error {
 	kazutb, err := Tenant(ctx, database, KazUTB)
 	if err != nil {
@@ -243,6 +251,9 @@ func Demo(ctx context.Context, database *db.DB) error {
 		return err
 	}
 	if err := KnowledgeDocuments(ctx, database, queue, kazutb.ID, KazUTBKnowledge); err != nil {
+		return err
+	}
+	if err := Projects(ctx, database, kazutb.ID, authors, KazUTBProjects, time.Now()); err != nil {
 		return err
 	}
 
