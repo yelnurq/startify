@@ -218,3 +218,16 @@ func TestRenderBoot(t *testing.T) {
 		t.Errorf("project with a cover:\n%s", out)
 	}
 }
+
+// The browser tab of a university's page shows its seal instead of the
+// platform's icon.
+func TestRenderPutsTheSealInTheTab(t *testing.T) {
+	shell := []byte(`<html lang="kk"><head><link rel="icon" type="image/svg+xml" href="/favicon.svg" /><title>Qadam</title></head><body><div id="root"></div></body></html>`)
+	page := string(render(shell, meta{Lang: "ru", Title: "Витрина", Icon: "/api/v1/files/seal/content"}))
+	if strings.Contains(page, "favicon.svg") || strings.Count(page, `href="/api/v1/files/seal/content"`) != 2 {
+		t.Fatalf("icons: %s", page)
+	}
+	if page = string(render(shell, meta{Lang: "ru", Title: "Витрина"})); !strings.Contains(page, "favicon.svg") {
+		t.Fatalf("without a seal the platform icon stays: %s", page)
+	}
+}

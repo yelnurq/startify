@@ -144,10 +144,13 @@ type meta struct {
 	Body string
 	// Boot is the first screen drawn before the web client loads.
 	Boot string
+	// Icon is the university's seal for the browser tab.
+	Icon string
 }
 
 var (
 	langAttr = regexp.MustCompile(`(<html[^>]*\slang=")[^"]*(")`)
+	iconTag  = regexp.MustCompile(`(?i)<link\s+rel="(?:icon|apple-touch-icon)"[^>]*>\s*`)
 	titleTag = regexp.MustCompile(`(?s)<title>.*?</title>`)
 	descTag  = regexp.MustCompile(`(?i)<meta\s+name="description"[^>]*>\s*`)
 )
@@ -204,6 +207,10 @@ func render(shell []byte, m meta) []byte {
 	out := string(shell)
 	out = langAttr.ReplaceAllString(out, "${1}"+esc(m.Lang)+"${2}")
 	out = descTag.ReplaceAllLiteralString(out, "")
+	if m.Icon != "" {
+		out = iconTag.ReplaceAllLiteralString(out, "")
+		fmt.Fprintf(&head, "    <link rel=\"icon\" href=\"%s\" />\n    <link rel=\"apple-touch-icon\" href=\"%s\" />\n", esc(m.Icon), esc(m.Icon))
+	}
 	out = titleTag.ReplaceAllLiteralString(out, "<title>"+esc(m.Title)+"</title>")
 	out = strings.Replace(out, "</head>", head.String()+"  </head>", 1)
 	if m.Boot != "" {
@@ -301,6 +308,7 @@ func (s *Service) landingPage(w http.ResponseWriter, r *http.Request) {
 		"description": m.Description, "inLanguage": m.Lang,
 		"publisher": map[string]any{"@type": "CollegeOrUniversity", "name": full},
 	}
+	m.Icon = bootLogo(u.Brief)
 	boot := landingBoot(u, bootLocale(r))
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
@@ -352,6 +360,7 @@ func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
 		"url": m.Canonical, "inLanguage": m.Lang, "isPartOf": map[string]any{"@type": "WebSite", "name": siteName, "url": origin + "/"},
 		"mainEntity": map[string]any{"@type": "ItemList", "numberOfItems": len(items), "itemListElement": items},
 	}
+	m.Icon = bootLogo(u.Brief)
 	boot := catalogBoot(u.Brief, bootLocale(r), national)
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
@@ -382,6 +391,7 @@ func (s *Service) projectPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := projectMeta(&row, t.Locale, u.Origin, name)
+	m.Icon = bootLogo(u.Brief)
 	boot := projectBoot(&row, u.Brief, bootLocale(r))
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
