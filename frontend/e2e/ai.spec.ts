@@ -173,7 +173,7 @@ test.describe('AI administration', () => {
       test.skip(testInfo.project.name !== 'desktop', 'checked once per theme on desktop');
       for (const theme of ['light', 'dark']) {
         await page.addInitScript((t) => {
-          localStorage.setItem('qadam.theme', t);
+          localStorage.setItem('qadam.color-theme', t);
         }, theme);
         await page.goto(url);
         await page.waitForLoadState('networkidle');

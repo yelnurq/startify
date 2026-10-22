@@ -5,11 +5,13 @@
 // and detectLocale in src/shared/i18n (storage keys, order, default).
 (function () {
   var root = document.documentElement;
-  var preference = 'system';
+  // Light by default, as the university's site; dark or the system's theme
+  // only when chosen.
+  var preference = 'light';
   try {
-    preference = localStorage.getItem('qadam.theme') || 'system';
+    preference = localStorage.getItem('qadam.color-theme') || 'light';
   } catch (e) {
-    // Storage may be unavailable (private mode); fall back to the system theme.
+    // Storage may be unavailable (private mode): the default applies.
   }
   var dark =
     preference === 'dark' ||

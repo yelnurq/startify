@@ -61,7 +61,7 @@ for (const theme of ['light', 'dark']) {
       reducedMotion: 'reduce',
     });
     await context.addInitScript((t) => {
-      localStorage.setItem('qadam.theme', t);
+      localStorage.setItem('qadam.color-theme', t);
       localStorage.setItem('qadam.locale', 'ru');
     }, theme);
     const page = await context.newPage();

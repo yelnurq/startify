@@ -4,7 +4,9 @@ export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
 // Keep in sync with public/theme-init.js, which applies the theme before paint.
-const STORAGE_KEY = 'qadam.theme';
+// The key was renamed when the light theme of the university's site became
+// the default (D-049): earlier choices are asked again once.
+const STORAGE_KEY = 'qadam.color-theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 function systemTheme(): ResolvedTheme {
@@ -16,9 +18,10 @@ function readPreference(): ThemePreference {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
   } catch {
-    // Storage unavailable: follow the system.
+    // Storage unavailable: the default applies.
   }
-  return 'system';
+  // Light, as the university's site; dark or the system's theme on request.
+  return 'light';
 }
 
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {

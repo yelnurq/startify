@@ -18,7 +18,7 @@ test.describe('design system', () => {
   for (const theme of ['light', 'dark'] as const) {
     test(`/design has no serious accessibility violations (${theme})`, async ({ page }) => {
       await page.addInitScript((t) => {
-        localStorage.setItem('qadam.theme', t);
+        localStorage.setItem('qadam.color-theme', t);
       }, theme);
       await page.goto('/design');
       await page.waitForLoadState('networkidle');
@@ -33,6 +33,15 @@ test.describe('design system', () => {
       ).toEqual([]);
     });
   }
+
+  test.describe('with a dark system theme', () => {
+    test.use({ colorScheme: 'dark' });
+
+    test('the site stays light until the dark theme is chosen', async ({ page }) => {
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    });
+  });
 
   test('the theme switches and is remembered', async ({ page }) => {
     await page.goto('/design');

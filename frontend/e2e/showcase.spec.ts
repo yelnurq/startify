@@ -195,7 +195,7 @@ test.describe('public showcase', () => {
   for (const theme of ['light', 'dark'] as const) {
     test(`catalogue and project page pass axe in the ${theme} theme`, async ({ page }) => {
       await page.addInitScript((t) => {
-        localStorage.setItem('qadam.theme', t);
+        localStorage.setItem('qadam.color-theme', t);
       }, theme);
       for (const url of ['/showcase', '/showcase/agroscan', '/']) {
         await page.goto(url);
