@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<title>{{.Title}} · {{.L.title}}</title>
+<style>
+  :root { --accent: {{.Color}}; --ink: #101828; --muted: #475467; --faint: #98a2b3; --line: #e4e7ec; --soft: #f5f7fa;
+          --red: #b42318; --amber: #b54708; --gray: #475467; }
+  @page { size: A4; margin: 14mm 0 14mm 0; }
+  @page :first { margin-top: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; color: var(--ink);
+         font-size: 10pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  .page { padding: 16mm 16mm 0; display: flex; flex-direction: column; gap: 7mm; }
+  .eyebrow { font-size: 8.5pt; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h1 { font-size: 24pt; line-height: 1.1; font-weight: 700; margin-top: 2mm; }
+  h2 { font-size: 9pt; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); margin-bottom: 2.5mm; }
+  .hero { display: flex; gap: 8mm; align-items: center; padding: 6mm; border-radius: 3mm; background: var(--soft); }
+  .score { font-size: 40pt; font-weight: 700; line-height: 1; color: var(--accent); }
+  .score small { font-size: 14pt; color: var(--muted); font-weight: 600; }
+  .meta { display: flex; flex-direction: column; gap: 1.5mm; }
+  .level { font-size: 13pt; font-weight: 700; }
+  .muted { color: var(--muted); }
+  .criterion { break-inside: avoid; padding: 3mm 0; border-bottom: 1px solid var(--line); }
+  .crit-head { display: flex; justify-content: space-between; gap: 6mm; font-weight: 600; }
+  .bar { height: 2mm; border-radius: 99px; background: var(--line); margin: 1.6mm 0 1.6mm; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .tag { display: inline-block; font-size: 7.5pt; padding: .4mm 2mm; border-radius: 99px; background: #fef0c7; color: var(--amber); margin-left: 2mm; }
+  .flag { break-inside: avoid; padding: 2.5mm 3.5mm; border-left: 1.2mm solid var(--gray); background: var(--soft); border-radius: 1mm; margin-bottom: 2mm; }
+  .flag.high { border-color: var(--red); } .flag.medium { border-color: var(--amber); }
+  .flag b { display: block; }
+  ul, ol { padding-left: 5mm; } li { margin-bottom: 1.2mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th, td { text-align: left; vertical-align: top; padding: 2mm 2mm 2mm 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 7.5pt; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  tr { break-inside: avoid; }
+  .foot { padding-top: 4mm; border-top: 1px solid var(--line); font-size: 7.5pt; color: var(--faint); }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="eyebrow">{{.University}} · {{.L.title}}</div>
+    <h1>{{.Title}}</h1>
+  </header>
+  <section class="hero">
+    <div class="score">{{.Total}}<small> / 100</small></div>
+    <div class="meta">
+      <div class="muted">{{.L.level}}</div>
+      <div class="level">{{.Level}}</div>
+      {{if .PreviousTotal}}<div class="muted">{{.L.previous}}: {{.PreviousTotal}} ({{.Delta}})</div>{{end}}
+    </div>
+  </section>
+  {{if .Summary}}<section><h2>{{.L.summary}}</h2><p>{{.Summary}}</p></section>{{end}}
+  <section>
+    <h2>{{.L.criteria}}</h2>
+    {{range .Criteria}}<div class="criterion">
+      <div class="crit-head"><span>{{.Title}} <span class="muted">· {{$.L.weight}} {{.Weight}}</span>{{if .Overridden}}<span class="tag">{{$.L.expert}} · {{$.L.ai}} {{.AIScore}}</span>{{end}}</span><span>{{.Score}} / 10</span></div>
+      <div class="bar"><span style="width: {{pct .Score}}%"></span></div>
+      <p class="muted">{{.Justification}}</p>
+    </div>{{end}}
+  </section>
+  {{if .RedFlags}}<section><h2>{{.L.red_flags}}</h2>
+    {{range .RedFlags}}<div class="flag {{.Severity}}"><b>{{.Title}}</b>{{.Detail}}</div>{{end}}
+  </section>{{end}}
+  {{if .Hypotheses}}<section><h2>{{.L.hypotheses}}</h2><ol>{{range .Hypotheses}}<li>{{.}}</li>{{end}}</ol></section>{{end}}
+  {{if .Experiments}}<section><h2>{{.L.experiments}}</h2>
+    <table>
+      <tr><th>{{.L.day}}</th><th></th><th>{{.L.how}}</th><th>{{.L.metric}}</th><th>{{.L.success}}</th></tr>
+      {{range .Experiments}}<tr><td>{{.Day}}</td><td><b>{{.Title}}</b></td><td>{{.How}}</td><td>{{.Metric}}</td><td>{{.Success}}</td></tr>{{end}}
+    </table>
+  </section>{{end}}
+  {{if .Recommends}}<section><h2>{{.L.recommendations}}</h2><ol>{{range .Recommends}}<li>{{.}}</li>{{end}}</ol></section>{{end}}
+  <footer class="foot">{{.Disclaimer}}</footer>
+</main>
+</body>
+</html>

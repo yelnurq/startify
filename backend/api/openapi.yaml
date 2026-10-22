@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Qadam API
-  version: 0.4.0
+  version: 0.5.0
   summary: AI-платформа инновационной и проектной деятельности университета.
   description: |
     Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
@@ -54,6 +54,8 @@ tags:
     description: Projects, their teams, activity and presence.
   - name: incubator
     description: Steps of the incubator, history, comments, the AI mentor and pitch materials.
+  - name: evaluation
+    description: AI evaluation of projects by the university's rubric, expert corrections, reports.
 paths:
   /meta:
     get:
@@ -1849,6 +1851,156 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /projects/{projectId}/evaluations:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listEvaluations
+      tags: [evaluation]
+      summary: Evaluation history of a project
+      responses:
+        "200":
+          description: Evaluations, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: requestEvaluation
+      tags: [evaluation]
+      summary: Ask the AI to evaluate the project
+      description: |
+        The team, the supervisor or an innovation manager requests an evaluation; it runs in
+        the background with the university's rubric. Poll the evaluation until `status` is
+        `ready` or `failed`. Limited to a few per project a day (`evaluation.too_many_requests`).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    get:
+      operationId: getEvaluation
+      tags: [evaluation]
+      summary: One evaluation with the comparison to the previous one
+      responses:
+        "200":
+          description: The evaluation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}/overrides:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    post:
+      operationId: overrideEvaluationScore
+      tags: [evaluation]
+      summary: Correct a criterion score as an expert
+      description: |
+        The project's supervisor or an innovation manager changes the score of a criterion with
+        a mandatory comment. The AI score stays visible next to it and the change is recorded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreOverride"
+      responses:
+        "200":
+          description: The evaluation with the new total.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}/report:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    get:
+      operationId: getEvaluationReport
+      tags: [evaluation]
+      summary: The evaluation report as PDF
+      parameters:
+        - name: locale
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Locale"
+      responses:
+        "200":
+          description: The report.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/rubric:
+    get:
+      operationId: getRubric
+      tags: [evaluation]
+      summary: The evaluation rubric of the university
+      description: Requires `tenant_admin` or `innovation_manager`.
+      responses:
+        "200":
+          description: Criteria with weights.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rubric"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateRubric
+      tags: [evaluation]
+      summary: Change the weights of the rubric
+      description: Weights are whole numbers adding up to 100. New evaluations use them.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RubricUpdate"
+      responses:
+        "200":
+          description: The rubric.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rubric"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1868,6 +2020,13 @@ components:
       schema:
         type: string
   parameters:
+    EvaluationId:
+      name: evaluationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     IfMatchRequired:
       name: If-Match
       in: header
@@ -3451,6 +3610,7 @@ components:
         - access
         - archived
         - progress
+        - evaluation
         - created_at
         - updated_at
       properties:
@@ -3482,6 +3642,10 @@ components:
           type: boolean
         progress:
           $ref: "#/components/schemas/ProjectProgress"
+        evaluation:
+          anyOf:
+            - $ref: "#/components/schemas/EvaluationBrief"
+            - type: "null"
         created_at:
           type: string
           format: date-time
@@ -3491,7 +3655,7 @@ components:
     ProjectSummary:
       type: object
       additionalProperties: false
-      required: [id, title, tagline, industry, team, access, archived, completed_steps, total_steps, current_step, updated_at]
+      required: [id, title, tagline, industry, team, access, archived, completed_steps, total_steps, current_step, evaluation, updated_at]
       properties:
         id:
           type: string
@@ -3516,6 +3680,10 @@ components:
           type: integer
         current_step:
           type: string
+        evaluation:
+          anyOf:
+            - $ref: "#/components/schemas/EvaluationBrief"
+            - type: "null"
         updated_at:
           type: string
           format: date-time
@@ -4076,3 +4244,285 @@ components:
           $ref: "#/components/schemas/MaterialFormat"
         locale:
           $ref: "#/components/schemas/Locale"
+
+    ReadinessLevel:
+      type: string
+      description: |
+        Readiness by total score: `idea` below 35, `validated_problem` from 35, `mvp_ready`
+        from 55, `investment_ready` from 75.
+      enum: [idea, validated_problem, mvp_ready, investment_ready]
+    EvaluationStatus:
+      type: string
+      enum: [pending, running, ready, failed]
+    RubricCriterion:
+      type: object
+      additionalProperties: false
+      required: [key, title, weight]
+      properties:
+        key:
+          type: string
+          examples: [problem]
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 100
+    Rubric:
+      type: object
+      additionalProperties: false
+      required: [criteria, customized]
+      properties:
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/RubricCriterion"
+        customized:
+          type: boolean
+          description: The university changed the default weights.
+    RubricUpdate:
+      type: object
+      additionalProperties: false
+      required: [weights]
+      properties:
+        weights:
+          type: object
+          description: Weight by criterion key; every criterion, adding up to 100.
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 100
+    CriterionScore:
+      type: object
+      additionalProperties: false
+      required: [key, title, weight, score, ai_score, justification, overridden, previous]
+      properties:
+        key:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        weight:
+          type: integer
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        ai_score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        justification:
+          type: string
+        overridden:
+          type: boolean
+        previous:
+          type: [integer, "null"]
+          description: The score in the previous ready evaluation, for the dynamics.
+    RedFlagSeverity:
+      type: string
+      enum: [low, medium, high]
+    RedFlag:
+      type: object
+      additionalProperties: false
+      required: [title, detail, severity]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        severity:
+          $ref: "#/components/schemas/RedFlagSeverity"
+    Experiment:
+      type: object
+      additionalProperties: false
+      required: [title, how, metric, success, day]
+      properties:
+        title:
+          type: string
+        how:
+          type: string
+        metric:
+          type: string
+        success:
+          type: string
+        day:
+          type: integer
+          minimum: 1
+          maximum: 7
+    ScoreOverrideRecord:
+      type: object
+      additionalProperties: false
+      required: [criterion, from, to, comment, author, created_at]
+      properties:
+        criterion:
+          type: string
+        from:
+          type: integer
+        to:
+          type: integer
+        comment:
+          type: string
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+    Evaluation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - total
+        - ai_total
+        - level
+        - criteria
+        - red_flags
+        - hypotheses
+        - experiments
+        - recommendations
+        - summary
+        - overrides
+        - previous_total
+        - provider
+        - model
+        - prompt_version
+        - locale
+        - error
+        - requested_by
+        - created_at
+        - completed_at
+        - can_override
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/EvaluationStatus"
+        total:
+          type: [integer, "null"]
+          description: Weighted score 0–100 after expert corrections.
+        ai_total:
+          type: [integer, "null"]
+          description: The score the AI gave.
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/CriterionScore"
+        red_flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/RedFlag"
+        hypotheses:
+          type: array
+          items:
+            type: string
+        experiments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experiment"
+        recommendations:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreOverrideRecord"
+        previous_total:
+          type: [integer, "null"]
+        provider:
+          type: [string, "null"]
+        model:
+          type: [string, "null"]
+        prompt_version:
+          type: [string, "null"]
+        locale:
+          $ref: "#/components/schemas/Locale"
+        error:
+          type: [string, "null"]
+        requested_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+        can_override:
+          type: boolean
+    EvaluationSummary:
+      type: object
+      additionalProperties: false
+      required: [id, status, total, level, overridden, created_at, completed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/EvaluationStatus"
+        total:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        overridden:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+    EvaluationList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationSummary"
+    ScoreOverride:
+      type: object
+      additionalProperties: false
+      required: [criterion, score, comment]
+      properties:
+        criterion:
+          type: string
+          maxLength: 64
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        comment:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    EvaluationBrief:
+      type: object
+      description: The latest ready evaluation of a project.
+      additionalProperties: false
+      required: [id, total, level, completed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        total:
+          type: integer
+        level:
+          $ref: "#/components/schemas/ReadinessLevel"
+        completed_at:
+          type: string
+          format: date-time

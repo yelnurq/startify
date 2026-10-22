@@ -33,6 +33,7 @@ var tenantTables = []string{
 	"tenant_ai_settings", "ai_usage", "knowledge_documents", "knowledge_chunks",
 	"projects", "project_members", "project_step_data", "project_revisions", "project_comments",
 	"ai_conversations", "ai_messages", "project_materials",
+	"evaluation_rubrics", "evaluations", "evaluation_criteria_scores", "evaluation_overrides",
 }
 
 // counter counts the rows a data scope can see.
@@ -115,6 +116,23 @@ func TestDemoIsIdempotentAndIsolated(t *testing.T) {
 	}
 	if completed != done || completedRows != done {
 		t.Fatalf("completed steps: %d in projects, %d step rows, want %d", completed, completedRows, done)
+	}
+	evaluated := 0
+	for i := range KazUTBProjects {
+		if KazUTBProjects[i].Done >= evaluatedFrom {
+			evaluated++
+		}
+	}
+	if n := c.rows(k, "evaluations"); n != 2*evaluated || c.rows(k, "evaluation_overrides") != 1 {
+		t.Fatalf("evaluations after two runs: %d, want %d", n, 2*evaluated)
+	}
+	var changed int
+	err = database.App.ReadTx(k, func(ctx context.Context) error {
+		return database.App.Conn(ctx).QueryRow(ctx,
+			"SELECT count(*) FROM evaluation_criteria_scores WHERE score <> ai_score").Scan(&changed)
+	})
+	if err != nil || changed != 1 {
+		t.Fatalf("the expert correction must change a score: %d %v", changed, err)
 	}
 
 	// Every tenant table shows only the rows of the scope; without a scope, none.

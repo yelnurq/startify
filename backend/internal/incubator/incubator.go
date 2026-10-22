@@ -219,14 +219,8 @@ func (s *Service) updateProgress(ctx context.Context, projectID uuid.UUID) error
 // locale is the language of AI answers: the interface language of the
 // request, else the university's.
 func locale(ctx context.Context) string {
-	if r, ok := httpx.RequestFrom(ctx); ok {
-		for _, part := range strings.Split(r.Header.Get("Accept-Language"), ",") {
-			tag := strings.ToLower(strings.TrimSpace(strings.SplitN(part, ";", 2)[0]))
-			tag = strings.SplitN(tag, "-", 2)[0]
-			if tag == "kk" || tag == "ru" || tag == "en" {
-				return tag
-			}
-		}
+	if l := httpx.Locale(ctx); l != "" {
+		return l
 	}
 	if t, ok := tenancy.FromContext(ctx); ok && t.Locale != "" {
 		return t.Locale

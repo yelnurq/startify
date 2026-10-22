@@ -97,14 +97,20 @@ type ProgressSource interface {
 	FirstStep() string
 }
 
+// EvaluationSource gives the latest evaluation of projects (the evaluation module).
+type EvaluationSource interface {
+	Latest(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.UUID]apigen.EvaluationBrief, error)
+}
+
 // Service manages projects and teams.
 type Service struct {
-	db       *db.DB
-	users    *user.Service
-	org      *org.Service
-	tenants  *tenant.Service
-	audit    *audit.Logger
-	progress ProgressSource
+	db          *db.DB
+	users       *user.Service
+	org         *org.Service
+	tenants     *tenant.Service
+	audit       *audit.Logger
+	progress    ProgressSource
+	evaluations EvaluationSource
 }
 
 // NewService returns the project service; UseProgress must be called before use.
@@ -114,6 +120,16 @@ func NewService(database *db.DB, users *user.Service, orgs *org.Service, tenants
 
 // UseProgress connects the incubator.
 func (s *Service) UseProgress(p ProgressSource) { s.progress = p }
+
+// UseEvaluations connects the evaluation module.
+func (s *Service) UseEvaluations(e EvaluationSource) { s.evaluations = e }
+
+func (s *Service) latest(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]apigen.EvaluationBrief, error) {
+	if s.evaluations == nil {
+		return map[uuid.UUID]apigen.EvaluationBrief{}, nil
+	}
+	return s.evaluations.Latest(ctx, ids)
+}
 
 func (s *Service) q(ctx context.Context) *projectdb.Queries { return projectdb.New(s.db.Conn(ctx)) }
 
@@ -235,11 +251,18 @@ func (s *Service) view(ctx context.Context, a Access) (apigen.Project, error) {
 	if err != nil {
 		return apigen.Project{}, err
 	}
+	latest, err := s.latest(ctx, []uuid.UUID{a.Project.ID})
+	if err != nil {
+		return apigen.Project{}, err
+	}
 	out := apigen.Project{
 		Id: a.Project.ID, Title: a.Project.Title, Tagline: a.Project.Tagline, Industry: apigen.Industry(a.Project.Industry),
 		Visibility: apigen.ProjectVisibility(a.Project.Visibility), HideSensitive: a.Project.HideSensitive,
 		Members: members, Access: apigen.ProjectAccess(a.Role), Archived: a.Archived(), Progress: progress,
 		CreatedAt: a.Project.CreatedAt, UpdatedAt: a.Project.UpdatedAt,
+	}
+	if e, ok := latest[a.Project.ID]; ok {
+		out.Evaluation = &e
 	}
 	if a.Project.FacultyID != nil {
 		err := s.db.ReadTx(ctx, func(ctx context.Context) error {
@@ -455,6 +478,14 @@ func (s *Service) List(ctx context.Context, params apigen.ListProjectsParams) (a
 	if err != nil {
 		return page, err
 	}
+	ids := make([]uuid.UUID, len(rows))
+	for i := range rows {
+		ids[i] = rows[i].ID
+	}
+	latest, err := s.latest(ctx, ids)
+	if err != nil {
+		return page, err
+	}
 	for i := range rows {
 		r := &rows[i]
 		access := RoleManager
@@ -473,6 +504,9 @@ func (s *Service) List(ctx context.Context, params apigen.ListProjectsParams) (a
 			Access: apigen.ProjectAccess(access), Archived: r.ArchivedAt != nil, CompletedSteps: int(r.CompletedSteps),
 			TotalSteps: s.progress.TotalSteps(), CurrentStep: r.CurrentStep, UpdatedAt: r.UpdatedAt,
 		})
+		if e, ok := latest[r.ID]; ok {
+			page.Items[len(page.Items)-1].Evaluation = &e
+		}
 	}
 	return page, nil
 }

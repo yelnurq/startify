@@ -82,7 +82,7 @@ gen-web:
 	cd frontend && npm run gen:api
 
 # ── Quality ────────────────────────────────────────────────────────────────
-.PHONY: lint lint-backend lint-frontend test test-backend test-unit test-frontend e2e
+.PHONY: lint lint-backend lint-frontend test test-backend test-unit test-frontend e2e ai-eval
 lint: lint-backend lint-frontend ## Run every linter and type check
 
 lint-backend:
@@ -102,6 +102,9 @@ test-unit: ## Run only fast unit tests
 
 test-frontend:
 	cd frontend && npm test
+
+ai-eval: ## Check the evaluation prompt on golden projects (QADAM_AI_* chooses the model; mock by default)
+	cd backend && go run ./cmd/ai-eval
 
 e2e: ## Run Playwright end-to-end tests against the running stack
 	cd frontend && E2E_BASE_URL=http://localhost:$(WEB_PORT) npx playwright test

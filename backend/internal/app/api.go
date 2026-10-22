@@ -18,6 +18,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/audit"
 	"github.com/yelnurq/startify/backend/internal/auth"
+	"github.com/yelnurq/startify/backend/internal/evaluation"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/imports"
 	"github.com/yelnurq/startify/backend/internal/incubator"
@@ -28,6 +29,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/gotenberg"
 	"github.com/yelnurq/startify/backend/internal/platform/health"
 	"github.com/yelnurq/startify/backend/internal/platform/httpx"
 	"github.com/yelnurq/startify/backend/internal/platform/idempotency"
@@ -65,18 +67,19 @@ type API struct {
 // Every module names its handler Handler; aliases give the embedded fields
 // distinct names.
 type (
-	systemHandler    = system.Handler
-	tenantHandler    = tenant.Handler
-	authHandler      = auth.Handler
-	userHandler      = user.Handler
-	orgHandler       = org.Handler
-	filesHandler     = files.Handler
-	teamHandler      = team.Handler
-	importsHandler   = imports.Handler
-	aiHandler        = ai.Handler
-	knowledgeHandler = knowledge.Handler
-	projectHandler   = project.Handler
-	incubatorHandler = incubator.Handler
+	systemHandler     = system.Handler
+	tenantHandler     = tenant.Handler
+	authHandler       = auth.Handler
+	userHandler       = user.Handler
+	orgHandler        = org.Handler
+	filesHandler      = files.Handler
+	teamHandler       = team.Handler
+	importsHandler    = imports.Handler
+	aiHandler         = ai.Handler
+	knowledgeHandler  = knowledge.Handler
+	projectHandler    = project.Handler
+	incubatorHandler  = incubator.Handler
+	evaluationHandler = evaluation.Handler
 )
 
 // server composes the module handlers into the generated strict interface.
@@ -94,23 +97,25 @@ type server struct {
 	*knowledgeHandler
 	*projectHandler
 	*incubatorHandler
+	*evaluationHandler
 }
 
 var _ apigen.StrictServerInterface = (*server)(nil)
 
 // Services are the module services, exposed for tests and tools.
 type Services struct {
-	Tenants   *tenant.Service
-	Auth      *auth.Service
-	Users     *user.Service
-	Org       *org.Service
-	Files     *files.Service
-	Team      *team.Service
-	Imports   *imports.Service
-	AI        *ai.Gateway
-	Knowledge *knowledge.Service
-	Projects  *project.Service
-	Incubator *incubator.Service
+	Tenants     *tenant.Service
+	Auth        *auth.Service
+	Users       *user.Service
+	Org         *org.Service
+	Files       *files.Service
+	Team        *team.Service
+	Imports     *imports.Service
+	AI          *ai.Gateway
+	Knowledge   *knowledge.Service
+	Projects    *project.Service
+	Incubator   *incubator.Service
+	Evaluations *evaluation.Service
 }
 
 func (a *API) services(ctx context.Context) (*Services, error) {
@@ -147,8 +152,10 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,
 	})
-	// The mock provider answers incubator prompts like a mentor would.
+	// The mock provider answers incubator and evaluation prompts like a
+	// mentor and a reviewer would.
 	incubator.RegisterMock()
+	evaluation.RegisterMock()
 	providers := a.Providers
 	if providers == nil {
 		providers = ai.ConfiguredProviders(cfg.AI, 25*time.Millisecond)
@@ -167,18 +174,23 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		DB: a.DB, Projects: projects, Users: users, Tenants: tenants, Gateway: gateway, Knowledge: knowledgeSvc,
 		Files: fileSvc, Queue: a.Queue, Audit: auditLog, Limiter: limiter, Cache: a.Cache, Zone: zone,
 	})
+	evaluations := evaluation.NewService(evaluation.Deps{
+		DB: a.DB, Projects: projects, Users: users, Tenants: tenants, Queue: a.Queue, Audit: auditLog, Limiter: limiter,
+		Gotenberg: gotenberg.New(cfg.Gotenberg.URL, cfg.Gotenberg.Timeout),
+	})
 	return &Services{
-		AI:        gateway,
-		Knowledge: knowledgeSvc,
-		Projects:  projects,
-		Incubator: incubatorSvc,
-		Tenants:   tenants,
-		Auth:      authSvc,
-		Users:     users,
-		Org:       orgs,
-		Files:     fileSvc,
-		Team:      team.NewService(a.DB, users, mailer, limiter, auditLog),
-		Imports:   imports.NewService(a.DB, orgs, users, authSvc, auditLog),
+		AI:          gateway,
+		Knowledge:   knowledgeSvc,
+		Projects:    projects,
+		Incubator:   incubatorSvc,
+		Evaluations: evaluations,
+		Tenants:     tenants,
+		Auth:        authSvc,
+		Users:       users,
+		Org:         orgs,
+		Files:       fileSvc,
+		Team:        team.NewService(a.DB, users, mailer, limiter, auditLog),
+		Imports:     imports.NewService(a.DB, orgs, users, authSvc, auditLog),
 	}, nil
 }
 
@@ -235,9 +247,10 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 			}
 			return s.Name.Best(locale)
 		}),
-		knowledgeHandler: knowledge.NewHandler(svc.Knowledge),
-		projectHandler:   project.NewHandler(svc.Projects),
-		incubatorHandler: incubator.NewHandler(svc.Incubator),
+		knowledgeHandler:  knowledge.NewHandler(svc.Knowledge),
+		projectHandler:    project.NewHandler(svc.Projects),
+		incubatorHandler:  incubator.NewHandler(svc.Incubator),
+		evaluationHandler: evaluation.NewHandler(svc.Evaluations),
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {

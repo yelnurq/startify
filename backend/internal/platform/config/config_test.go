@@ -160,3 +160,13 @@ func TestAIConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestAIFromEnviron(t *testing.T) {
+	ai, err := AIFromEnviron([]string{"QADAM_AI_DEFAULT=mock", "QADAM_DATABASE_URL=ignored", "PATH=/bin"})
+	if err != nil || ai.Default != "mock" || ai.Timezone != "Asia/Almaty" {
+		t.Fatalf("%+v %v", ai, err)
+	}
+	if _, err := AIFromEnviron([]string{"QADAM_AI_DEFAULT=anthropic"}); err == nil {
+		t.Fatal("anthropic without a key must fail")
+	}
+}

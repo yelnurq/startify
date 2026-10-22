@@ -473,3 +473,24 @@ func (c *Config) Validate() error {
 
 // IsProduction reports whether the process runs in production.
 func (c *Config) IsProduction() bool { return c.Env == EnvProduction }
+
+// AIFromEnviron reads only the language-model settings (QADAM_AI_*) for tools
+// that run without the rest of the platform, such as the evaluation harness.
+func AIFromEnviron(environ []string) (AI, error) {
+	// Placeholders satisfy the settings the tool does not use.
+	env := []string{
+		"QADAM_DATABASE_URL=postgres://unused@localhost/unused",
+		"QADAM_AUTH_SECRET_KEY=" + strings.Repeat("q", 48),
+		"QADAM_S3_ENDPOINT=unused:9000", "QADAM_S3_ACCESS_KEY=unused", "QADAM_S3_SECRET_KEY=unused",
+	}
+	for _, kv := range environ {
+		if strings.HasPrefix(kv, envPrefix+"AI_") {
+			env = append(env, kv)
+		}
+	}
+	cfg, err := FromEnviron(env)
+	if err != nil {
+		return AI{}, err
+	}
+	return cfg.AI, nil
+}

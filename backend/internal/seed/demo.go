@@ -256,6 +256,9 @@ func Demo(ctx context.Context, database *db.DB) error {
 	if err := Projects(ctx, database, kazutb.ID, authors, KazUTBProjects, time.Now()); err != nil {
 		return err
 	}
+	if err := Evaluations(ctx, database, kazutb.ID, authors, KazUTBProjects, time.Now()); err != nil {
+		return err
+	}
 
 	sandbox, err := Tenant(ctx, database, Sandbox)
 	if err != nil {

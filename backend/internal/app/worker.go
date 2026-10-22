@@ -9,6 +9,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/ai"
 	"github.com/yelnurq/startify/backend/internal/ai/llm"
 	"github.com/yelnurq/startify/backend/internal/auth"
+	"github.com/yelnurq/startify/backend/internal/evaluation"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/incubator"
 	"github.com/yelnurq/startify/backend/internal/knowledge"
@@ -51,6 +52,7 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 		w.Providers = ai.ConfiguredProviders(w.Config.AI, 0)
 	}
 	incubator.RegisterMock()
+	evaluation.RegisterMock()
 	gateway, err := ai.NewGateway(w.DB, w.Providers, w.Config.AI, w.Log)
 	if err != nil {
 		return nil, err
@@ -63,6 +65,7 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &knowledge.IndexWorker{DB: w.DB, Gateway: gateway})
 	river.AddWorker(workers, &knowledge.ReindexWorker{DB: w.DB, Gateway: gateway, Queue: queue})
+	river.AddWorker(workers, &evaluation.RunWorker{DB: w.DB, Gateway: gateway})
 	river.AddWorker(workers, &incubator.MaterialWorker{
 		DB: w.DB, Gateway: gateway, Files: fileSvc, Gotenberg: gotenberg.New(w.Config.Gotenberg.URL, w.Config.Gotenberg.Timeout),
 	})

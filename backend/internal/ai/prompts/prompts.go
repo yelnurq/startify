@@ -137,6 +137,8 @@ type Criterion struct {
 	Key    string
 	Title  string
 	Weight int
+	// Guide tells the model what to look at.
+	Guide string
 }
 
 // Evaluation is the data of the evaluation prompt.

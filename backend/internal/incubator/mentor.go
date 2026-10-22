@@ -16,6 +16,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/incubator/incubatordb"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
+	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/httpx"
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
@@ -376,4 +377,26 @@ func (m *MentorStream) VisitSendMentorMessageResponse(w http.ResponseWriter) err
 	}
 	_ = sse.Event("done", out[0])
 	return nil
+}
+
+// ProjectContext is the JSON other modules give models about a project: the
+// card and every answered field, with the version of each answered step.
+func ProjectContext(ctx context.Context, database *db.DB, projectID uuid.UUID, card ProjectCard) (string, map[string]int, error) {
+	var rows []incubatordb.ProjectStepDatum
+	err := database.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		rows, err = incubatordb.New(database.Conn(ctx)).ListSteps(ctx, projectID)
+		return err
+	})
+	if err != nil {
+		return "", nil, fmt.Errorf("incubator: project context: %w", err)
+	}
+	versions := map[string]int{}
+	for i := range rows {
+		if len(decodeValues(rows[i].Data)) > 0 {
+			versions[rows[i].StepKey] = int(rows[i].Version)
+		}
+	}
+	data, _, err := contextJSON(card.Title, card.Tagline, card.Industry, "", rows)
+	return data, versions, err
 }
