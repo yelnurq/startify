@@ -38,6 +38,7 @@ import { findStep } from '@/features/incubator/template';
 import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
 import { useLocalized } from '@/shared/i18n/localized';
+import { EvaluationChip } from '@/features/evaluation/score-chip';
 
 import {
   INDUSTRIES,
@@ -232,6 +233,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
               {t(`projects.access.${project.access}`)}
             </Badge>
           )}
+          <EvaluationChip evaluation={project.evaluation} />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <TruncatedText as="h2" lines={2} className="font-display text-lg font-semibold text-fg">

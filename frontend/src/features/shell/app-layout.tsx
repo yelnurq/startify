@@ -3,6 +3,7 @@ import { getRouteApi, Link, Outlet, useMatches, useNavigate } from '@tanstack/re
 import {
   BarChart3,
   BookOpenText,
+  Scale,
   ChevronsUpDown,
   FileUp,
   Home,
@@ -112,6 +113,11 @@ function AppNav({ session }: { session: Session }) {
           {(admin || manager) && (
             <NavLink to="/app/admin/knowledge" icon={<BookOpenText />}>
               {t('nav.knowledge')}
+            </NavLink>
+          )}
+          {(admin || manager) && (
+            <NavLink to="/app/admin/rubric" icon={<Scale />}>
+              {t('nav.rubric')}
             </NavLink>
           )}
           {admin && (
@@ -283,6 +289,13 @@ function useAppCommands(session: Session) {
         label: t('app:nav.knowledge'),
         icon: <BookOpenText />,
         perform: () => void navigate({ to: '/app/admin/knowledge' }),
+      });
+      items.push({
+        id: 'app.rubric',
+        group,
+        label: t('app:nav.rubric'),
+        icon: <Scale />,
+        perform: () => void navigate({ to: '/app/admin/rubric' }),
       });
     }
     if (admin) {

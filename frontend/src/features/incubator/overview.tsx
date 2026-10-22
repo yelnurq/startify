@@ -37,6 +37,7 @@ import {
   type Badge as BadgeName,
   type Project,
 } from '@/features/projects/api';
+import { EvaluationTeaser } from '@/features/evaluation/evaluation-page';
 import { errorMessage } from '@/shared/api/errors';
 import { useFormatters } from '@/shared/i18n/format';
 import { useLocalized } from '@/shared/i18n/localized';
@@ -187,9 +188,12 @@ function ActivityRow({
 export function ProjectOverview({
   project,
   template,
+  manages,
 }: {
   project: Project;
   template: IncubatorTemplate;
+  /** The member manages projects (innovation manager, administrator). */
+  manages: boolean;
 }) {
   const { t } = useTranslation('incubator');
   const text = useLocalized();
@@ -250,6 +254,8 @@ export function ProjectOverview({
           <StageTrack stages={stages} label={t('overview.stages')} />
         </div>
       </Card>
+
+      <EvaluationTeaser project={project} manages={manages} />
 
       <section aria-labelledby="badges" className="flex flex-col gap-3">
         <h2 id="badges" className="font-display text-lg font-semibold text-fg">

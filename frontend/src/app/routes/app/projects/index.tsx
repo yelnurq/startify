@@ -11,6 +11,6 @@ export const Route = createFileRoute('/app/projects/')({
       scope: search.scope === 'all' ? ('all' as const) : undefined,
       new: optionalFlag(search.new),
     }),
-  loader: () => loadNamespaces('incubator'),
+  loader: () => loadNamespaces('incubator', 'evaluation'),
   component: ProjectsRoute,
 });

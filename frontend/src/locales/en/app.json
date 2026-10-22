@@ -11,7 +11,8 @@
     "security": "Security",
     "knowledge": "Knowledge base",
     "ai": "AI settings",
-    "aiUsage": "AI usage"
+    "aiUsage": "AI usage",
+    "rubric": "Evaluation rubric"
   },
   "titles": {
     "home": "Home",
@@ -23,7 +24,8 @@
     "knowledge": "Knowledge base",
     "ai": "AI settings",
     "aiUsage": "AI usage",
-    "projects": "Projects"
+    "projects": "Projects",
+    "rubric": "Evaluation rubric"
   },
   "user": {
     "menu": "User menu"

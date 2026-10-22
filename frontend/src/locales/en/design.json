@@ -390,6 +390,22 @@
       "humanities": "Humanities",
       "food": "Food Technology",
       "economics": "Economics and Business"
+    },
+    "radar": {
+      "title": "Criteria radar",
+      "label": "Project scores by criterion out of 10: now and in the previous evaluation",
+      "now": "Now",
+      "before": "Previous evaluation",
+      "axes": {
+        "problem": "Problem",
+        "market": "Market",
+        "solution": "Solution",
+        "business": "Business model",
+        "team": "Team",
+        "validation": "Validation",
+        "feasibility": "Feasibility",
+        "impact": "Social impact"
+      }
     }
   },
   "empty": {

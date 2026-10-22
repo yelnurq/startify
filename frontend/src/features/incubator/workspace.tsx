@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { Activity, Settings2, Sparkles } from 'lucide-react';
+import { Activity, History, Settings2, Sparkles } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,7 @@ import {
   TruncatedText,
 } from '@/design-system';
 import { hasRole } from '@/features/auth/api';
+import { EvaluationHistory, EvaluationSection } from '@/features/evaluation/evaluation-page';
 import { ProjectSettingsSheet } from '@/features/projects/settings-sheet';
 import { projectQuery } from '@/features/projects/api';
 import { ApiError } from '@/shared/api/client';
@@ -35,9 +36,18 @@ import { findStep } from './template';
 
 const appRoute = getRouteApi('/app');
 
-/** The project workspace: steps on the left, the overview or a step, the mentor. */
-export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?: string }) {
+interface WorkspaceProps {
+  projectId: string;
+  stepKey?: string;
+  /** The AI evaluation instead of the overview; a specific one with `evaluationId`. */
+  view?: 'evaluation';
+  evaluationId?: string;
+}
+
+/** The project workspace: steps on the left, the overview, a step or the evaluation, the mentor. */
+export function Workspace({ projectId, stepKey, view, evaluationId }: WorkspaceProps) {
   const { t } = useTranslation('incubator');
+  const { t: te } = useTranslation('evaluation');
   const text = useLocalized();
   const { session } = appRoute.useRouteContext();
   const template = useQuery(templateQuery);
@@ -99,6 +109,8 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
   const step = stepKey ? findStep(template.data, stepKey) : undefined;
   const viewers = (presence?.viewers ?? []).filter((v) => v.user.id !== session.user.id);
   const innovationManager = hasRole(session, 'innovation_manager');
+  const manages = innovationManager || hasRole(session, 'tenant_admin');
+  const evaluating = view === 'evaluation';
 
   return (
     <>
@@ -107,7 +119,7 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
           <div className="flex items-center justify-between gap-3 sm:gap-4">
             {/* Phones show only where the member is (BACKLOG B-004). */}
             <TruncatedText className="min-w-0 flex-1 text-sm font-medium text-fg sm:hidden">
-              {step ? text(step.title) : data.title}
+              {step ? text(step.title) : evaluating ? te('title') : data.title}
             </TruncatedText>
             <Breadcrumbs
               className="hidden min-w-0 sm:block"
@@ -118,15 +130,17 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
                 },
                 {
                   label: data.title,
-                  render: step
-                    ? (c) => (
-                        <Link to="/app/projects/$projectId" params={{ projectId }}>
-                          {c}
-                        </Link>
-                      )
-                    : undefined,
+                  render:
+                    step || evaluating
+                      ? (c) => (
+                          <Link to="/app/projects/$projectId" params={{ projectId }}>
+                            {c}
+                          </Link>
+                        )
+                      : undefined,
                 },
                 ...(step ? [{ label: text(step.title) }] : []),
+                ...(evaluating ? [{ label: te('title') }] : []),
               ]}
             />
             <div className="flex shrink-0 items-center gap-3">
@@ -162,6 +176,8 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
             template={template.data}
             steps={steps.data}
             activeKey={stepKey}
+            activeView={evaluating ? 'evaluation' : stepKey ? 'step' : 'overview'}
+            evaluation={data.evaluation}
           />
         }
         navTitle={t('nav.steps')}
@@ -173,14 +189,18 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
               step={step}
               onApply={bridge ? bridge.apply : null}
             />
+          ) : evaluating ? (
+            <EvaluationHistory projectId={projectId} activeId={evaluationId} />
           ) : (
             <div className="h-full overflow-y-auto p-3">
               <ActivityFeed projectId={projectId} template={template.data} limit={20} compact />
             </div>
           )
         }
-        asideTitle={step ? t('mentor.title') : t('overview.activity')}
-        asideIcon={step ? <Sparkles /> : <Activity />}
+        asideTitle={
+          step ? t('mentor.title') : evaluating ? te('history.title') : t('overview.activity')
+        }
+        asideIcon={step ? <Sparkles /> : evaluating ? <History /> : <Activity />}
       >
         {stepKey ? (
           <StepPage
@@ -195,8 +215,10 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
             onStatus={onStatus}
             onBridge={onBridge}
           />
+        ) : evaluating ? (
+          <EvaluationSection project={data} evaluationId={evaluationId} manages={manages} />
         ) : (
-          <ProjectOverview project={data} template={template.data} />
+          <ProjectOverview project={data} template={template.data} manages={manages} />
         )}
       </WorkspaceLayout>
       <ProjectSettingsSheet
@@ -212,6 +234,8 @@ export function Workspace({ projectId, stepKey }: { projectId: string; stepKey?:
 }
 
 const overviewRoute = getRouteApi('/app/projects/$projectId/');
+const evaluationRoute = getRouteApi('/app/projects/$projectId/evaluation');
+const evaluationHistoryRoute = getRouteApi('/app/projects/$projectId/evaluations/$evaluationId');
 const stepRoute = getRouteApi('/app/projects/$projectId/steps/$stepKey');
 
 export function ProjectOverviewRoute() {
@@ -222,4 +246,14 @@ export function ProjectOverviewRoute() {
 export function ProjectStepRoute() {
   const { projectId, stepKey } = stepRoute.useParams();
   return <Workspace projectId={projectId} stepKey={stepKey} />;
+}
+
+export function ProjectEvaluationRoute() {
+  const { projectId } = evaluationRoute.useParams();
+  return <Workspace projectId={projectId} view="evaluation" />;
+}
+
+export function ProjectEvaluationHistoryRoute() {
+  const { projectId, evaluationId } = evaluationHistoryRoute.useParams();
+  return <Workspace projectId={projectId} view="evaluation" evaluationId={evaluationId} />;
 }

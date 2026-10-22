@@ -29,6 +29,7 @@ import { Route as USlugRouteImport } from './app/routes/u/$slug'
 import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
 import { Route as AppAdminKnowledgeRouteImport } from './app/routes/app/admin/knowledge'
 import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
+import { Route as AppAdminRubricRouteImport } from './app/routes/app/admin/rubric'
 import { Route as AppProjectsIndexRouteImport } from './app/routes/app/projects/index'
 import { Route as AppSettingsSecurityRouteImport } from './app/routes/app/settings/security'
 import { Route as AppTeamIndexRouteImport } from './app/routes/app/team/index'
@@ -36,6 +37,8 @@ import { Route as AppTeamRequestIdRouteImport } from './app/routes/app/team/$req
 import { Route as AppAdminAiIndexRouteImport } from './app/routes/app/admin/ai/index'
 import { Route as AppAdminAiUsageRouteImport } from './app/routes/app/admin/ai/usage'
 import { Route as AppProjectsProjectIdIndexRouteImport } from './app/routes/app/projects/$projectId/index'
+import { Route as AppProjectsProjectIdEvaluationRouteImport } from './app/routes/app/projects/$projectId/evaluation'
+import { Route as AppProjectsProjectIdEvaluationsEvaluationIdRouteImport } from './app/routes/app/projects/$projectId/evaluations/$evaluationId'
 import { Route as AppProjectsProjectIdStepsStepKeyRouteImport } from './app/routes/app/projects/$projectId/steps/$stepKey'
 
 const IndexRoute = IndexRouteImport.update({
@@ -138,6 +141,11 @@ const AppAdminMembersRoute = AppAdminMembersRouteImport.update({
   path: '/admin/members',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRubricRoute = AppAdminRubricRouteImport.update({
+  id: '/admin/rubric',
+  path: '/admin/rubric',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -174,6 +182,18 @@ const AppProjectsProjectIdIndexRoute =
     path: '/projects/$projectId/',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProjectsProjectIdEvaluationRoute =
+  AppProjectsProjectIdEvaluationRouteImport.update({
+    id: '/projects/$projectId/evaluation',
+    path: '/projects/$projectId/evaluation',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppProjectsProjectIdEvaluationsEvaluationIdRoute =
+  AppProjectsProjectIdEvaluationsEvaluationIdRouteImport.update({
+    id: '/projects/$projectId/evaluations/$evaluationId',
+    path: '/projects/$projectId/evaluations/$evaluationId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProjectsProjectIdStepsStepKeyRoute =
   AppProjectsProjectIdStepsStepKeyRouteImport.update({
     id: '/projects/$projectId/steps/$stepKey',
@@ -202,13 +222,16 @@ export interface FileRoutesByFullPath {
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/admin/rubric': typeof AppAdminRubricRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
   '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRoutesByTo {
@@ -231,13 +254,16 @@ export interface FileRoutesByTo {
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/admin/rubric': typeof AppAdminRubricRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects': typeof AppProjectsIndexRoute
   '/app/team': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
   '/app/admin/ai': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
   '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRoutesById {
@@ -262,13 +288,16 @@ export interface FileRoutesById {
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
+  '/app/admin/rubric': typeof AppAdminRubricRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
+  '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
+  '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
   '/app/projects/$projectId/steps/$stepKey': typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 export interface FileRouteTypes {
@@ -294,13 +323,16 @@ export interface FileRouteTypes {
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
+    | '/app/admin/rubric'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
+    | '/app/projects/$projectId/evaluation'
     | '/app/admin/ai/'
     | '/app/projects/$projectId/'
+    | '/app/projects/$projectId/evaluations/$evaluationId'
     | '/app/projects/$projectId/steps/$stepKey'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -323,13 +355,16 @@ export interface FileRouteTypes {
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
+    | '/app/admin/rubric'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects'
     | '/app/team'
     | '/app/admin/ai/usage'
+    | '/app/projects/$projectId/evaluation'
     | '/app/admin/ai'
     | '/app/projects/$projectId'
+    | '/app/projects/$projectId/evaluations/$evaluationId'
     | '/app/projects/$projectId/steps/$stepKey'
   id:
     | '__root__'
@@ -353,13 +388,16 @@ export interface FileRouteTypes {
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
+    | '/app/admin/rubric'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
+    | '/app/projects/$projectId/evaluation'
     | '/app/admin/ai/'
     | '/app/projects/$projectId/'
+    | '/app/projects/$projectId/evaluations/$evaluationId'
     | '/app/projects/$projectId/steps/$stepKey'
   fileRoutesById: FileRoutesById
 }
@@ -523,6 +561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminMembersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/rubric': {
+      id: '/app/admin/rubric'
+      path: '/admin/rubric'
+      fullPath: '/app/admin/rubric'
+      preLoaderRoute: typeof AppAdminRubricRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/projects/': {
       id: '/app/projects/'
       path: '/projects'
@@ -572,6 +617,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsProjectIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects/$projectId/evaluation': {
+      id: '/app/projects/$projectId/evaluation'
+      path: '/projects/$projectId/evaluation'
+      fullPath: '/app/projects/$projectId/evaluation'
+      preLoaderRoute: typeof AppProjectsProjectIdEvaluationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/projects/$projectId/evaluations/$evaluationId': {
+      id: '/app/projects/$projectId/evaluations/$evaluationId'
+      path: '/projects/$projectId/evaluations/$evaluationId'
+      fullPath: '/app/projects/$projectId/evaluations/$evaluationId'
+      preLoaderRoute: typeof AppProjectsProjectIdEvaluationsEvaluationIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/projects/$projectId/steps/$stepKey': {
       id: '/app/projects/$projectId/steps/$stepKey'
       path: '/projects/$projectId/steps/$stepKey'
@@ -588,13 +647,16 @@ interface AppRouteChildren {
   AppAdminImportRoute: typeof AppAdminImportRoute
   AppAdminKnowledgeRoute: typeof AppAdminKnowledgeRoute
   AppAdminMembersRoute: typeof AppAdminMembersRoute
+  AppAdminRubricRoute: typeof AppAdminRubricRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppTeamRequestIdRoute: typeof AppTeamRequestIdRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppAdminAiUsageRoute: typeof AppAdminAiUsageRoute
+  AppProjectsProjectIdEvaluationRoute: typeof AppProjectsProjectIdEvaluationRoute
   AppAdminAiIndexRoute: typeof AppAdminAiIndexRoute
   AppProjectsProjectIdIndexRoute: typeof AppProjectsProjectIdIndexRoute
+  AppProjectsProjectIdEvaluationsEvaluationIdRoute: typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
   AppProjectsProjectIdStepsStepKeyRoute: typeof AppProjectsProjectIdStepsStepKeyRoute
 }
 
@@ -604,13 +666,17 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminImportRoute: AppAdminImportRoute,
   AppAdminKnowledgeRoute: AppAdminKnowledgeRoute,
   AppAdminMembersRoute: AppAdminMembersRoute,
+  AppAdminRubricRoute: AppAdminRubricRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppTeamRequestIdRoute: AppTeamRequestIdRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppAdminAiUsageRoute: AppAdminAiUsageRoute,
+  AppProjectsProjectIdEvaluationRoute: AppProjectsProjectIdEvaluationRoute,
   AppAdminAiIndexRoute: AppAdminAiIndexRoute,
   AppProjectsProjectIdIndexRoute: AppProjectsProjectIdIndexRoute,
+  AppProjectsProjectIdEvaluationsEvaluationIdRoute:
+    AppProjectsProjectIdEvaluationsEvaluationIdRoute,
   AppProjectsProjectIdStepsStepKeyRoute: AppProjectsProjectIdStepsStepKeyRoute,
 }
 

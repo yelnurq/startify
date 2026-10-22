@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Flame, LayoutDashboard, MessageSquare } from 'lucide-react';
+import { Flame, Gauge, LayoutDashboard, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -13,6 +13,8 @@ import {
   Stepper,
   type StepItem,
 } from '@/design-system';
+import type { EvaluationBrief } from '@/features/evaluation/api';
+import { levelTone } from '@/features/evaluation/logic';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import type { IncubatorTemplate, StepList, StepSummary } from './api';
@@ -29,13 +31,26 @@ interface StepNavProps {
   template: IncubatorTemplate;
   steps: StepList | undefined;
   activeKey: string | undefined;
+  /** Which page of the project is open. */
+  activeView?: 'overview' | 'step' | 'evaluation';
+  /** The latest evaluation, shown on its entry. */
+  evaluation?: EvaluationBrief | null;
   /** Called after navigating, e.g. to close the sheet on phones. */
   onNavigate?: () => void;
 }
 
 /** Stages with their steps, progress and open comments (left column). */
-export function StepNav({ projectId, template, steps, activeKey, onNavigate }: StepNavProps) {
+export function StepNav({
+  projectId,
+  template,
+  steps,
+  activeKey,
+  activeView = activeKey === undefined ? 'overview' : 'step',
+  evaluation,
+  onNavigate,
+}: StepNavProps) {
   const { t } = useTranslation('incubator');
+  const { t: te } = useTranslation('evaluation');
   const text = useLocalized();
   const navigate = useNavigate();
   const byKey = new Map(steps?.items.map((s) => [s.key, s]));
@@ -54,7 +69,7 @@ export function StepNav({ projectId, template, steps, activeKey, onNavigate }: S
         onClick={onNavigate}
         className={cn(
           'flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-surface-raised',
-          activeKey === undefined && 'border-primary-border bg-primary-soft',
+          activeView === 'overview' && 'border-primary-border bg-primary-soft',
         )}
       >
         <ProgressRing value={progress?.percent ?? 0} size={48} label={t('nav.progress')}>
@@ -76,6 +91,44 @@ export function StepNav({ projectId, template, steps, activeKey, onNavigate }: S
               <Flame className="size-3.5" aria-hidden />
               {t('nav.streak', { count: progress.streak_days })}
             </span>
+          )}
+        </span>
+      </Link>
+
+      <Link
+        to="/app/projects/$projectId/evaluation"
+        params={{ projectId }}
+        onClick={onNavigate}
+        aria-current={activeView === 'evaluation' ? 'page' : undefined}
+        className={cn(
+          'flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-surface-raised',
+          activeView === 'evaluation' && 'border-primary-border bg-primary-soft',
+        )}
+      >
+        <span
+          className={cn(
+            'grid size-12 shrink-0 place-items-center rounded-full font-display text-base font-semibold tabular-nums',
+            evaluation ? 'bg-surface-sunken text-fg' : 'bg-surface-sunken text-fg-subtle',
+          )}
+        >
+          {evaluation ? evaluation.total : <Gauge className="size-5" aria-hidden />}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-sm font-semibold text-fg">{te('title')}</span>
+          {evaluation ? (
+            <span
+              className={cn(
+                'text-xs font-medium',
+                levelTone(evaluation.level) === 'success'
+                  ? 'text-success-soft-fg'
+                  : 'text-fg-muted',
+              )}
+            >
+              <span className="sr-only">{te('nav.score', { score: evaluation.total })} · </span>
+              {te(`levels.${evaluation.level}`)}
+            </span>
+          ) : (
+            <span className="text-xs text-fg-muted">{te('nav.none')}</span>
           )}
         </span>
       </Link>

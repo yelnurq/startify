@@ -229,6 +229,17 @@
       "too_many_materials": "Too many materials in a short time. Please wait a little",
       "documents_unavailable": "The document service is unavailable. Try again later",
       "material_failed": "The material could not be built. Please try again"
+    },
+    "evaluation": {
+      "not_found": "The evaluation was not found",
+      "not_ready": "The evaluation is not ready yet",
+      "in_progress": "The project is already being evaluated — opening it",
+      "project_empty": "Answer at least the first step of the incubator to get an evaluation",
+      "too_many_requests": "Enough evaluations for today. Try again in {{retry_after_seconds}} s",
+      "failed": "The evaluation could not be produced. Please try again"
+    },
+    "documents": {
+      "unavailable": "The document service is unavailable right now — the PDF cannot be downloaded"
     }
   },
   "roles": {
@@ -270,7 +281,8 @@
     "passwordsMismatch": "The passwords do not match",
     "choose": "Choose a value",
     "duplicate": "This value is repeated",
-    "external_not_allowed": "External providers are switched off: “Local models only” is on"
+    "external_not_allowed": "External providers are switched off: “Local models only” is on",
+    "sum": "The total must be {{expected}}; now {{actual}}"
   },
   "tags": {
     "add": "Add",

@@ -40,7 +40,8 @@ declare module '@tanstack/react-router' {
       | 'ai'
       | 'aiUsage'
       | 'knowledge'
-      | 'projects';
+      | 'projects'
+      | 'rubric';
     /** The page brings its own columns: no content padding (project workspace). */
     bleed?: boolean;
   }

@@ -30,6 +30,7 @@ import {
   SkeletonText,
   toast,
 } from '@/design-system';
+import { EvaluationTeaser } from '@/features/evaluation/evaluation-page';
 import { canApprove, canEdit, type Project } from '@/features/projects/api';
 import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
@@ -394,6 +395,7 @@ function StepEditorView({
           <MaterialsPanel projectId={projectId} canCreate={editable} />
         </section>
       )}
+      {stepKey === 'pitch' && <EvaluationTeaser project={project} manages={innovationManager} />}
 
       {saved.check && <CheckCard check={saved.check} stale={checkStale} />}
 

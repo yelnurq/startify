@@ -5,6 +5,6 @@ import { loadNamespaces } from '@/shared/i18n';
 
 export const Route = createFileRoute('/app/projects/$projectId/steps/$stepKey')({
   staticData: { titleKey: 'projects', bleed: true },
-  loader: () => loadNamespaces('incubator', 'ai'),
+  loader: () => loadNamespaces('incubator', 'ai', 'evaluation'),
   component: ProjectStepRoute,
 });

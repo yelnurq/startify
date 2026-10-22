@@ -22,6 +22,7 @@ import { ActivityFeed } from '@/features/incubator/overview';
 import { findStep } from '@/features/incubator/template';
 import { errorMessage } from '@/shared/api/errors';
 import { useLocalized } from '@/shared/i18n/localized';
+import { EvaluationChip } from '@/features/evaluation/score-chip';
 
 import { latestProjectQuery, projectQuery } from './api';
 
@@ -98,6 +99,7 @@ function ProjectCard({ projectId }: { projectId: string }) {
                   {t('nav.streak', { count: progress.streak_days })}
                 </Badge>
               )}
+              <EvaluationChip evaluation={data.evaluation} size="md" />
             </div>
             <TruncatedText as="h2" lines={2} className="font-display text-xl font-semibold text-fg">
               {data.title}

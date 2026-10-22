@@ -1308,6 +1308,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{projectId}/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** Evaluation history of a project */
+        get: operations["listEvaluations"];
+        put?: never;
+        /**
+         * Ask the AI to evaluate the project
+         * @description The team, the supervisor or an innovation manager requests an evaluation; it runs in
+         *     the background with the university's rubric. Poll the evaluation until `status` is
+         *     `ready` or `failed`. Limited to a few per project a day (`evaluation.too_many_requests`).
+         */
+        post: operations["requestEvaluation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/evaluations/{evaluationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        /** One evaluation with the comparison to the previous one */
+        get: operations["getEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/evaluations/{evaluationId}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct a criterion score as an expert
+         * @description The project's supervisor or an innovation manager changes the score of a criterion with
+         *     a mandatory comment. The AI score stays visible next to it and the change is recorded.
+         */
+        post: operations["overrideEvaluationScore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/evaluations/{evaluationId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        /** The evaluation report as PDF */
+        get: operations["getEvaluationReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rubric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The evaluation rubric of the university
+         * @description Requires `tenant_admin` or `innovation_manager`.
+         */
+        get: operations["getRubric"];
+        /**
+         * Change the weights of the rubric
+         * @description Weights are whole numbers adding up to 100. New evaluations use them.
+         */
+        put: operations["updateRubric"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1979,6 +2092,7 @@ export interface components {
             access: components["schemas"]["ProjectAccess"];
             archived: boolean;
             progress: components["schemas"]["ProjectProgress"];
+            evaluation: components["schemas"]["EvaluationBrief"] | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -1996,6 +2110,7 @@ export interface components {
             completed_steps: number;
             total_steps: number;
             current_step: string;
+            evaluation: components["schemas"]["EvaluationBrief"] | null;
             /** Format: date-time */
             updated_at: string;
         };
@@ -2251,6 +2366,123 @@ export interface components {
             format: components["schemas"]["MaterialFormat"];
             locale?: components["schemas"]["Locale"];
         };
+        /**
+         * @description Readiness by total score: `idea` below 35, `validated_problem` from 35, `mvp_ready`
+         *     from 55, `investment_ready` from 75.
+         * @enum {string}
+         */
+        ReadinessLevel: "idea" | "validated_problem" | "mvp_ready" | "investment_ready";
+        /** @enum {string} */
+        EvaluationStatus: "pending" | "running" | "ready" | "failed";
+        RubricCriterion: {
+            /** @example problem */
+            key: string;
+            title: components["schemas"]["LocalizedText"];
+            weight: number;
+        };
+        Rubric: {
+            criteria: components["schemas"]["RubricCriterion"][];
+            /** @description The university changed the default weights. */
+            customized: boolean;
+        };
+        RubricUpdate: {
+            /** @description Weight by criterion key; every criterion, adding up to 100. */
+            weights: {
+                [key: string]: number;
+            };
+        };
+        CriterionScore: {
+            key: string;
+            title: components["schemas"]["LocalizedText"];
+            weight: number;
+            score: number;
+            ai_score: number;
+            justification: string;
+            overridden: boolean;
+            /** @description The score in the previous ready evaluation, for the dynamics. */
+            previous: number | null;
+        };
+        /** @enum {string} */
+        RedFlagSeverity: "low" | "medium" | "high";
+        RedFlag: {
+            title: string;
+            detail: string;
+            severity: components["schemas"]["RedFlagSeverity"];
+        };
+        Experiment: {
+            title: string;
+            how: string;
+            metric: string;
+            success: string;
+            day: number;
+        };
+        ScoreOverrideRecord: {
+            criterion: string;
+            from: number;
+            to: number;
+            comment: string;
+            author: components["schemas"]["MemberBrief"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        Evaluation: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["EvaluationStatus"];
+            /** @description Weighted score 0–100 after expert corrections. */
+            total: number | null;
+            /** @description The score the AI gave. */
+            ai_total: number | null;
+            level: components["schemas"]["ReadinessLevel"] | null;
+            criteria: components["schemas"]["CriterionScore"][];
+            red_flags: components["schemas"]["RedFlag"][];
+            hypotheses: string[];
+            experiments: components["schemas"]["Experiment"][];
+            recommendations: string[];
+            summary: string;
+            overrides: components["schemas"]["ScoreOverrideRecord"][];
+            previous_total: number | null;
+            provider: string | null;
+            model: string | null;
+            prompt_version: string | null;
+            locale: components["schemas"]["Locale"];
+            error: string | null;
+            requested_by: components["schemas"]["MemberBrief"] | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            can_override: boolean;
+        };
+        EvaluationSummary: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["EvaluationStatus"];
+            total: number | null;
+            level: components["schemas"]["ReadinessLevel"] | null;
+            overridden: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+        };
+        EvaluationList: {
+            items: components["schemas"]["EvaluationSummary"][];
+        };
+        ScoreOverride: {
+            criterion: string;
+            score: number;
+            comment: string;
+        };
+        /** @description The latest ready evaluation of a project. */
+        EvaluationBrief: {
+            /** Format: uuid */
+            id: string;
+            total: number;
+            level: components["schemas"]["ReadinessLevel"];
+            /** Format: date-time */
+            completed_at: string;
+        };
     };
     responses: {
         /** @description Error described in RFC 9457 Problem Details format. */
@@ -2264,6 +2496,7 @@ export interface components {
         };
     };
     parameters: {
+        EvaluationId: string;
         /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
         IfMatchRequired: string;
         ProjectId: string;
@@ -4270,6 +4503,184 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listEvaluations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evaluations, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    requestEvaluation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated unique key that makes a creating request safe to retry. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scheduled. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evaluation"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getEvaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The evaluation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evaluation"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    overrideEvaluationScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreOverride"];
+            };
+        };
+        responses: {
+            /** @description The evaluation with the new total. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evaluation"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getEvaluationReport: {
+        parameters: {
+            query?: {
+                locale?: components["schemas"]["Locale"];
+            };
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getRubric: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Criteria with weights. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rubric"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRubric: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RubricUpdate"];
+            };
+        };
+        responses: {
+            /** @description The rubric. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rubric"];
                 };
             };
             default: components["responses"]["Problem"];

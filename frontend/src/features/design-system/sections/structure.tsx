@@ -40,6 +40,7 @@ import {
   TabsTrigger,
   type IllustrationName,
   type StepItem,
+  RadarChart,
 } from '@/design-system';
 import { useFormatters } from '@/shared/i18n/format';
 
@@ -165,6 +166,17 @@ export function NavigationSection({ index }: { index: number }) {
   );
 }
 
+const RADAR_AXES = [
+  'problem',
+  'market',
+  'solution',
+  'business',
+  'team',
+  'validation',
+  'feasibility',
+  'impact',
+] as const;
+
 export function DataSection({ index }: { index: number }) {
   const { t } = useTranslation('design');
   const format = useFormatters();
@@ -212,12 +224,30 @@ export function DataSection({ index }: { index: number }) {
           footnote={t('data.kpi.vsMonth')}
         />
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="items-center justify-center gap-3 p-6">
           <p className="self-start text-sm font-medium text-fg-muted">{t('data.gauge')}</p>
           <GaugeSpecimen />
           <Badge tone="primary">{t('data.gaugeDelta')}</Badge>
         </Card>
+        <Card className="gap-3 p-6">
+          <p className="text-sm font-medium text-fg-muted">{t('data.radar.title')}</p>
+          <RadarChart
+            label={t('data.radar.label')}
+            axes={RADAR_AXES.map((key) => ({ key, label: t(`data.radar.axes.${key}`) }))}
+            series={[
+              { key: 'now', label: t('data.radar.now'), values: [8, 6, 7, 5, 8, 4, 6, 7] },
+              {
+                key: 'before',
+                label: t('data.radar.before'),
+                values: [5, 4, 6, 3, 7, 2, 5, 6],
+                tone: 'muted',
+              },
+            ]}
+          />
+        </Card>
+      </div>
+      <div className="grid grid-cols-1 gap-4">
         <Table label={t('data.table')}>
           <caption className="sr-only">{t('data.table')}</caption>
           <TableHeader>
