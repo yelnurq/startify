@@ -205,11 +205,6 @@ function Numbers() {
       className="relative overflow-x-clip border-b border-border bg-surface"
     >
       <EdgeIllustration
-        name="calendar"
-        placement="top-right"
-        className="z-10 hidden w-48 -translate-y-1/3 rotate-12 lg:block"
-      />
-      <EdgeIllustration
         name="growth"
         placement="bottom-left"
         className="z-10 hidden w-56 translate-y-3/5 -rotate-6 lg:block"
@@ -258,16 +253,6 @@ function HowItWorks() {
       aria-labelledby="how-title"
       className="relative scroll-mt-20 overflow-x-clip lg:scroll-mt-24"
     >
-      <EdgeIllustration
-        name="megaphone"
-        placement="free"
-        className="top-1/4 right-0 hidden w-56 translate-x-1/3 -rotate-6 min-[1760px]:w-64 min-[1760px]:translate-x-1/4 2xl:block"
-      />
-      <EdgeIllustration
-        name="trophy"
-        placement="free"
-        className="top-2/3 left-0 hidden w-56 -translate-x-1/3 rotate-6 min-[1760px]:w-64 min-[1760px]:-translate-x-1/4 2xl:block"
-      />
       <EdgeIllustration
         name="pitch"
         placement="bottom-right"
@@ -393,11 +378,6 @@ function Featured() {
       className="relative overflow-x-clip border-y border-border bg-surface"
     >
       <EdgeIllustration
-        name="funding"
-        placement="free"
-        className="top-1/3 left-0 hidden w-52 -translate-x-1/3 rotate-12 min-[1760px]:w-60 min-[1760px]:-translate-x-1/4 2xl:block"
-      />
-      <EdgeIllustration
         name="route"
         placement="bottom-left"
         className="z-10 hidden w-80 translate-y-1/2 -rotate-6 lg:block"
@@ -466,11 +446,6 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
         name="puzzle"
         placement="free"
         className="top-20 right-0 hidden w-72 translate-x-1/4 rotate-12 xl:block"
-      />
-      <EdgeIllustration
-        name="rocket"
-        placement="bottom-right"
-        className="z-10 hidden w-52 translate-y-1/2 -rotate-6 lg:block"
       />
       <div className="mx-auto flex max-w-page flex-col gap-10 px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
