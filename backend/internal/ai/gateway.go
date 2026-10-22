@@ -174,8 +174,12 @@ func settingsOf(row aidb.TenantAiSetting) Settings {
 	return s
 }
 
-// ETag is the version of the settings for optimistic locking.
+// ETag is the version of the settings for optimistic locking; "0" before the
+// university saved any.
 func (s Settings) ETag() string {
+	if s.UpdatedAt.IsZero() {
+		return `"0"`
+	}
 	return `"` + strconv.FormatInt(s.UpdatedAt.UnixNano(), 36) + `"`
 }
 
@@ -210,11 +214,15 @@ func (g *Gateway) SaveSettings(ctx context.Context, s Settings, ifMatch *string)
 	err = g.db.Tx(ctx, func(ctx context.Context) error {
 		q := aidb.New(g.db.Conn(ctx))
 		if ifMatch != nil {
-			current, err := q.GetSettings(ctx)
+			row, err := q.GetSettings(ctx)
 			if err != nil && !db.IsNoRows(err) {
 				return err
 			}
-			if err == nil && strings.TrimPrefix(*ifMatch, "W/") != settingsOf(current).ETag() {
+			current := Settings{}
+			if err == nil {
+				current = settingsOf(row)
+			}
+			if strings.TrimPrefix(*ifMatch, "W/") != current.ETag() {
 				return apperr.PreconditionFailed("precondition.failed", "the settings were changed since they were loaded")
 			}
 		}

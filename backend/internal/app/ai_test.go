@@ -64,7 +64,7 @@ func TestAISettingsCheckAndUsage(t *testing.T) {
 	h.validate(t, http.MethodGet, "/api/v1/admin/ai/settings", rec)
 	settings := decode[apigen.AiSettings](t, rec)
 	etag := rec.Header().Get("ETag")
-	if len(settings.Providers) == 0 || settings.Providers[0].Name != "mock" || settings.DefaultRoutes["mentor"][0].Provider != "mock" || etag == "" {
+	if len(settings.Providers) == 0 || settings.Providers[0].Name != "mock" || settings.DefaultRoutes["mentor"][0].Provider != "mock" || etag != `"0"` {
 		t.Fatalf("settings %+v %q", settings, etag)
 	}
 
@@ -74,6 +74,8 @@ func TestAISettingsCheckAndUsage(t *testing.T) {
 		DailyUserTokens: 50000, DailyTenantTokens: 5_000_000, MentorMode: apigen.MentorModeCoauthor,
 	}
 	ifMatch := func(v string) func(*http.Request) { return func(r *http.Request) { r.Header.Set("If-Match", v) } }
+	expectProblem(t, admin.do(http.MethodPut, "/api/v1/admin/ai/settings", update, ifMatch(`"1"`)),
+		http.StatusPreconditionFailed, "precondition.failed")
 	rec = admin.do(http.MethodPut, "/api/v1/admin/ai/settings", update, ifMatch(etag))
 	expect(t, rec, http.StatusOK)
 	h.validate(t, http.MethodPut, "/api/v1/admin/ai/settings", rec)

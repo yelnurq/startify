@@ -231,11 +231,18 @@ func Vector(text string) []float32 {
 		}
 		v[(sum>>1)%dims] += sign * weight
 	}
-	for i, w := range words {
-		add(stem(w), 1)
-		if i > 0 {
-			add(stem(words[i-1])+" "+stem(w), 0.5)
+	prev := ""
+	for _, w := range words {
+		// Short words ("до", "на", "и") carry no topic and only add noise.
+		if utf8.RuneCountInString(w) < 3 {
+			continue
 		}
+		s := stem(w)
+		add(s, 1)
+		if prev != "" {
+			add(prev+" "+s, 0.5)
+		}
+		prev = s
 	}
 	var norm float64
 	for _, x := range v {

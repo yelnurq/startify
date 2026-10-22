@@ -162,6 +162,8 @@ func TestDemoKnowledgeAnswersQuestions(t *testing.T) {
 	svc := knowledge.NewService(database.App, gateway, nil, nil, nil)
 	for question, answer := range map[string]string{
 		"До какого числа принимаются заявки на конкурс стартап-проектов?": "1 декабря 2026",
+		"До какого числа принимаются заявки на конкурс?":                  "1 декабря 2026",
+		"Какие призы получат победители?":                                 "3 000 000 тенге",
 		"Грант мөлшері қанша және ол қалай аударылады?":                   "1 500 000",
 		"Who owns the result of a student project?":                       "belong to the authors",
 		"Сколько интервью с пользователями нужно провести?":               "пяти",
