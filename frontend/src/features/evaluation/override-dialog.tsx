@@ -139,7 +139,7 @@ export function OverrideDialog({
                 />
                 <output
                   aria-live="polite"
-                  className="w-10 text-center font-display text-2xl font-semibold text-fg tabular-nums"
+                  className="w-10 text-center font-figures text-2xl font-bold text-ink tabular-nums"
                 >
                   {score}
                 </output>

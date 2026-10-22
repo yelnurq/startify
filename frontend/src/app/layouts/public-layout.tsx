@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { IconButton } from '@/design-system/components/icon-button';
+import { cn } from '@/design-system/lib/cn';
 import { LanguageSwitcher, ThemeToggle } from '@/design-system/components/preferences';
 import { Sheet, SheetContent, SheetTitle } from '@/design-system/components/sheet';
 
@@ -30,6 +31,8 @@ export function PublicLayout({
 }: PublicLayoutProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Without a menu the theme switch stays in the header on phones too.
+  const hasMenu = Boolean(nav ?? actions);
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <a
@@ -38,24 +41,26 @@ export function PublicLayout({
       >
         {t('actions.skipToContent')}
       </a>
-      <header className="sticky top-0 z-40 border-b border-border/70 surface-glass">
-        <div className="mx-auto flex h-16 max-w-page items-center gap-6 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-border bg-surface">
+        <div className="mx-auto flex h-16 max-w-page items-center gap-3 px-4 sm:gap-8 sm:px-6 lg:h-20">
           {logo}
           {nav && (
-            <nav aria-label={t('nav.main')} className="hidden items-center gap-1 md:flex">
+            <nav aria-label={t('nav.main')} className="ml-auto hidden items-center gap-7 lg:flex">
               {nav}
             </nav>
           )}
-          <div className="ml-auto flex items-center gap-1">
+          <div className={cn('flex items-center gap-1', nav ? 'ml-auto lg:ml-0' : 'ml-auto')}>
             <LanguageSwitcher />
-            <ThemeToggle />
+            <div className={hasMenu ? 'hidden sm:flex' : 'flex'}>
+              <ThemeToggle />
+            </div>
             <div className="ml-2 hidden items-center gap-2 sm:flex">{actions}</div>
             {mobileAction && <div className="ml-1 flex items-center sm:hidden">{mobileAction}</div>}
-            {(nav ?? actions) && (
+            {hasMenu && (
               <IconButton
                 label={t('actions.openMenu')}
                 icon={<Menu />}
-                className={nav ? 'md:hidden' : 'sm:hidden'}
+                className={nav ? 'lg:hidden' : 'sm:hidden'}
                 onClick={() => {
                   setMenuOpen(true);
                 }}
@@ -79,6 +84,9 @@ export function PublicLayout({
               {nav}
             </nav>
           )}
+          <div className="flex items-center gap-1 border-t border-border px-4 py-2 sm:hidden">
+            <ThemeToggle />
+          </div>
           <div
             className="mt-auto flex flex-col gap-2 border-t border-border p-4"
             onClick={(event) => {

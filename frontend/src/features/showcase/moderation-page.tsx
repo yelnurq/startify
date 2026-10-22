@@ -49,7 +49,7 @@ export function ModerationPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('moderation.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('moderation.title')}</h1>
         <p className="text-fg-muted">{t('moderation.subtitle')}</p>
       </header>
       <Tabs
@@ -150,7 +150,7 @@ function ReviewCard({ entry }: { entry: ShowcaseEntry }) {
           )}
         </div>
         <div className="flex flex-col gap-1">
-          <h2 className="font-display text-lg font-semibold text-fg">{entry.title}</h2>
+          <h2 className="font-display text-lg font-bold text-ink">{entry.title}</h2>
           {entry.tagline && (
             <TruncatedText as="p" lines={2} className="text-sm text-fg-muted">
               {entry.tagline}

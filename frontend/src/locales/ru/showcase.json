@@ -9,7 +9,9 @@
     "apiChecking": "Проверяем API…",
     "apiOffline": "API недоступен",
     "api": "API",
-    "rights": "© {{year}} Qadam"
+    "rights": "© {{year}} Qadam",
+    "footerPlatform": "Платформа",
+    "footerResources": "Ресурсы"
   },
   "meta": {
     "catalogTitle": "Витрина проектов — {{university}}",
@@ -107,6 +109,10 @@
     "count_few": "{{count, number}} проекта",
     "count_many": "{{count, number}} проектов",
     "count_other": "{{count, number}} проекта",
+    "inCatalog_one": "проект на витрине",
+    "inCatalog_few": "проекта на витрине",
+    "inCatalog_many": "проектов на витрине",
+    "inCatalog_other": "проекта на витрине",
     "scope": {
       "label": "Где искать",
       "university": "Вуз",
@@ -241,6 +247,7 @@
       "in_review": "Страница уже видна в университете. Инновационный офис проверит её перед публикацией для всех.",
       "published": "Страница на витрине — изменения видны сразу после сохранения.",
       "publishedReview": "Изменения публичной страницы сначала проверит инновационный офис.",
+      "rejectedTitle": "Отклонена модератором",
       "rejected": "Страница видна только внутри университета. Исправьте замечания и отправьте её снова.",
       "comment": "Комментарий модератора",
       "open": "Открыть страницу"

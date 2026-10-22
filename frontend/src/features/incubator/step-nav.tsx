@@ -109,7 +109,7 @@ export function StepNav({
       >
         <span
           className={cn(
-            'grid size-12 shrink-0 place-items-center rounded-full font-display text-base font-semibold tabular-nums',
+            'grid size-12 shrink-0 place-items-center rounded-full font-figures text-base font-bold tabular-nums',
             evaluation ? 'bg-surface-sunken text-fg' : 'bg-surface-sunken text-fg-subtle',
           )}
         >

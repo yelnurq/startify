@@ -81,7 +81,7 @@ export function TeamBoardPage({ search, onSearchChange }: TeamBoardPageProps) {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex max-w-2xl flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold text-fg">{t('board.title')}</h1>
+          <h1 className="font-display text-3xl font-bold text-ink">{t('board.title')}</h1>
           <p className="text-fg-muted">{t('board.subtitle')}</p>
         </div>
         <Button

@@ -146,7 +146,7 @@ export function DemoBrand() {
   const { t } = useTranslation(['common', 'design']);
   return (
     <span className="flex min-w-0 flex-col leading-tight">
-      <span className="font-display text-base font-semibold text-fg">{t('common:app.name')}</span>
+      <span className="font-display text-base font-bold text-ink">{t('common:app.name')}</span>
       <span className="truncate text-xs text-fg-subtle">{t('design:demo.tenant')}</span>
     </span>
   );
@@ -191,7 +191,7 @@ export function ShellDemo() {
             <p className="text-sm text-fg-subtle">
               {format.dateTime(new Date(), { dateStyle: 'full' })}
             </p>
-            <h1 className="font-display text-3xl font-semibold text-fg">
+            <h1 className="font-display text-3xl font-bold text-ink">
               {t('demo.greeting', { name: 'Айгерім' })}
             </h1>
           </div>
@@ -209,7 +209,7 @@ export function ShellDemo() {
                   <Badge className="self-start border-white/30 bg-white/15 text-white">
                     {t('demo.currentProject')}
                   </Badge>
-                  <h2 className="font-display text-2xl font-semibold">{CURRENT_PROJECT}</h2>
+                  <h2 className="font-display text-2xl font-bold">{CURRENT_PROJECT}</h2>
                   <p className="max-w-md text-sm text-white/80">
                     {t('cards.projects.agro.tagline')}
                   </p>

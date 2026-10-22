@@ -40,9 +40,7 @@ export function CurrentProject() {
             <Badge tone="gold" icon={<Rocket />}>
               {t('dashboard.badge')}
             </Badge>
-            <h2 className="font-display text-xl font-semibold text-fg">
-              {t('dashboard.startTitle')}
-            </h2>
+            <h2 className="font-display text-xl font-bold text-ink">{t('dashboard.startTitle')}</h2>
             <p className="max-w-lg text-sm leading-relaxed text-fg-muted">
               {t('dashboard.startText')}
             </p>
@@ -101,7 +99,7 @@ function ProjectCard({ projectId }: { projectId: string }) {
               )}
               <EvaluationChip evaluation={data.evaluation} size="md" />
             </div>
-            <TruncatedText as="h2" lines={2} className="font-display text-xl font-semibold text-fg">
+            <TruncatedText as="h2" lines={2} className="font-display text-xl font-bold text-ink">
               {data.title}
             </TruncatedText>
             {data.tagline && <p className="text-sm text-fg-muted">{data.tagline}</p>}

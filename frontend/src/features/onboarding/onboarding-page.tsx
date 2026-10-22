@@ -265,7 +265,7 @@ export function OnboardingPage({ session }: { session: Session }) {
                           ref={(element) => {
                             if (element && moved.current) element.focus();
                           }}
-                          className="font-display text-2xl font-semibold text-fg outline-none sm:text-3xl"
+                          className="font-display text-2xl font-bold text-ink outline-none sm:text-3xl"
                         >
                           {key === 'language'
                             ? t('language.title', { name: session.user.full_name })

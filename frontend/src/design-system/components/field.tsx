@@ -81,7 +81,10 @@ export function Field({
     >
       <div className={cn('flex flex-col gap-1.5', className)}>
         <div className="flex items-baseline justify-between gap-3">
-          <label htmlFor={controlId} className="text-sm font-medium text-fg">
+          <label
+            htmlFor={controlId}
+            className="text-2xs font-bold tracking-label text-ink uppercase"
+          >
             {label}
             {required && (
               <span aria-hidden className="ml-0.5 text-danger">
@@ -89,7 +92,9 @@ export function Field({
               </span>
             )}
             {optional && (
-              <span className="ml-1.5 font-normal text-fg-subtle">{t('field.optional')}</span>
+              <span className="ml-1.5 text-xs font-normal tracking-normal text-fg-subtle normal-case">
+                {t('field.optional')}
+              </span>
             )}
           </label>
           {(counter ?? actions) && (
@@ -161,7 +166,7 @@ export function FieldSet({
       className={cn('flex min-w-0 flex-col gap-1.5', className)}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <legend className="float-left text-sm font-medium text-fg">
+        <legend className="float-left text-2xs font-bold tracking-label text-ink uppercase">
           {legend}
           {required && (
             <span aria-hidden className="ml-0.5 text-danger">
@@ -169,7 +174,9 @@ export function FieldSet({
             </span>
           )}
           {optional && (
-            <span className="ml-1.5 font-normal text-fg-subtle">{t('field.optional')}</span>
+            <span className="ml-1.5 text-xs font-normal tracking-normal text-fg-subtle normal-case">
+              {t('field.optional')}
+            </span>
           )}
         </legend>
         {actions && <span className="flex shrink-0 items-center gap-1">{actions}</span>}

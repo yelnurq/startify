@@ -27,6 +27,7 @@ import {
   FieldSet,
   IconButton,
   Input,
+  Kicker,
   modKey,
   Radio,
   RadioGroup,
@@ -48,6 +49,7 @@ export function ButtonsSection({ index }: { index: number }) {
     <Section id="buttons" index={index} title={t('buttons.title')} lead={t('buttons.lead')}>
       <Specimen label={t('buttons.variants')} bodyClassName="flex flex-wrap items-center gap-3">
         <Button leftIcon={<Plus />}>{t('buttons.primary')}</Button>
+        <Button variant="ink">{t('buttons.ink')}</Button>
         <Button variant="secondary">{t('buttons.secondary')}</Button>
         <Button variant="soft" leftIcon={<Sparkles />}>
           {t('buttons.soft')}
@@ -61,6 +63,16 @@ export function ButtonsSection({ index }: { index: number }) {
           {t('buttons.gold')}
         </Button>
         <Button variant="link">{t('buttons.link')}</Button>
+      </Specimen>
+      <Specimen
+        label={t('buttons.onDark')}
+        bodyClassName="flex flex-col items-start gap-5 rounded-card p-6 panel-ink"
+      >
+        <Kicker tone="light">{t('buttons.kicker')}</Kicker>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button rightIcon={<ArrowRight />}>{t('buttons.primary')}</Button>
+          <Button variant="light">{t('buttons.light')}</Button>
+        </div>
       </Specimen>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Specimen label={t('buttons.sizes')} bodyClassName="flex flex-wrap items-center gap-3">

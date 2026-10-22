@@ -1,13 +1,13 @@
 import { Link } from '@tanstack/react-router';
-import { Check, Eye, EyeOff, KeyRound, Mail, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AuthLayout } from '@/app/layouts/auth-layout';
-import { Button, Field, Input, Logo, Separator } from '@/design-system';
+import { Button, Field, Input, Kicker, Logo, Separator } from '@/design-system';
 
 export function AuthDemo() {
-  const { t } = useTranslation('design');
+  const { t } = useTranslation(['design', 'common']);
   const [visible, setVisible] = useState(false);
   return (
     <AuthLayout
@@ -16,25 +16,29 @@ export function AuthDemo() {
           <Logo />
         </Link>
       }
+      back={
+        <Link
+          to="/design"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-primary-text"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          {t('common:actions.toHome')}
+        </Link>
+      }
       aside={
-        <div className="flex max-w-lg flex-col gap-8">
-          <div className="w-fit rounded-2xl border border-white/20 bg-white/10 p-4 shadow-lg backdrop-blur-md">
-            <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-white/80 uppercase">
-              <Sparkles className="size-3.5 text-gold-300" aria-hidden />
-              {t('demo.auth.cardEyebrow')}
-            </p>
-            <p className="mt-1 font-display text-3xl font-semibold">{t('demo.auth.cardValue')}</p>
-            <p className="text-sm text-white/75">{t('demo.auth.cardText')}</p>
+        <div className="flex h-full flex-col gap-10 text-white">
+          <Logo inverted caption={t('demo.auth.cardValue')} />
+          <div className="my-auto flex max-w-lg flex-col gap-6">
+            <Kicker tone="light">{t('demo.auth.cardEyebrow')}</Kicker>
+            <h2 className="font-display text-5xl leading-tight font-extrabold">
+              {t('demo.auth.headline')}
+            </h2>
+            <p className="text-white/75">{t('demo.auth.cardText')}</p>
           </div>
-          <h2 className="font-display text-4xl leading-tight font-semibold">
-            {t('demo.auth.headline')}
-          </h2>
-          <ul className="flex flex-col gap-3 text-white/85">
+          <ul className="flex max-w-lg flex-col gap-4 border-t border-white/15 pt-8 text-sm text-white/85">
             {(['point1', 'point2', 'point3'] as const).map((key) => (
               <li key={key} className="flex items-start gap-3">
-                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-white/20">
-                  <Check className="size-3" aria-hidden />
-                </span>
+                <Check className="mt-0.5 size-4 shrink-0 text-primary-300" aria-hidden />
                 {t(`demo.auth.${key}`)}
               </li>
             ))}
@@ -44,7 +48,7 @@ export function AuthDemo() {
     >
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl font-semibold text-fg">{t('demo.auth.title')}</h1>
+          <h1 className="font-display text-4xl font-extrabold text-ink">{t('demo.auth.title')}</h1>
           <p className="text-fg-muted">{t('demo.auth.subtitle')}</p>
         </div>
         <form

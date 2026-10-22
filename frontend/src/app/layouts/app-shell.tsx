@@ -137,7 +137,7 @@ export function AppShell({
           <Button
             variant="secondary"
             size="sm"
-            className="hidden w-56 justify-start gap-2 text-fg-subtle md:inline-flex"
+            className="hidden w-56 justify-start gap-2 text-sm font-normal tracking-normal text-fg-subtle normal-case md:inline-flex"
             onClick={() => {
               openPalette(true);
             }}

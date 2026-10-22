@@ -149,7 +149,7 @@ function NoEvaluation({ project, manages }: { project: Project; manages: boolean
       />
       {!allowed && <Callout tone="info">{t('empty.readonly')}</Callout>}
       <Card className="gap-3 p-5">
-        <h2 className="text-sm font-semibold text-fg">{t('empty.includes')}</h2>
+        <h2 className="text-sm font-semibold text-ink">{t('empty.includes')}</h2>
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {items.map((item) => (
             <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
@@ -228,7 +228,7 @@ function RunningEvaluation({ evaluation }: { evaluation: Evaluation }) {
         <Spinner className="size-8" />
       </span>
       <div className="flex max-w-md flex-col gap-2">
-        <h2 className="font-display text-xl font-semibold text-fg">{t('running.title')}</h2>
+        <h2 className="font-display text-xl font-bold text-ink">{t('running.title')}</h2>
         <p className="text-sm text-fg-muted">{t('running.text')}</p>
       </div>
       <ol className="flex w-full max-w-sm flex-col gap-3 text-left">
@@ -340,7 +340,7 @@ function Report({
             />
           </div>
           <div className="flex min-w-0 flex-col items-start gap-3">
-            <h1 className="font-display text-2xl font-semibold text-fg">{t('title')}</h1>
+            <h1 className="font-display text-2xl font-bold text-ink">{t('title')}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={levelTone(evaluation.level)} size="lg">
                 {level}
@@ -396,7 +396,7 @@ function Report({
 
       {evaluation.summary && (
         <section aria-labelledby="eval-summary" className="flex flex-col gap-2">
-          <h2 id="eval-summary" className="font-display text-lg font-semibold text-fg">
+          <h2 id="eval-summary" className="font-display text-lg font-bold text-ink">
             {t('report.summary')}
           </h2>
           <p className="leading-relaxed text-fg">{evaluation.summary}</p>
@@ -446,7 +446,7 @@ function SectionTitle({
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2
         id={id}
-        className="flex items-center gap-2 font-display text-lg font-semibold text-fg [&_svg]:size-5 [&_svg]:text-brand"
+        className="flex items-center gap-2 font-display text-lg font-bold text-ink [&_svg]:size-5 [&_svg]:text-brand"
       >
         {icon}
         {children}
@@ -524,7 +524,7 @@ function CriterionRow({ criterion }: { criterion: CriterionScore }) {
     <li className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="font-semibold text-fg">{title}</h3>
+          <h3 className="font-semibold text-ink">{title}</h3>
           <span className="text-xs text-fg-subtle">
             {t('report.weight', { value: criterion.weight })}
           </span>
@@ -538,7 +538,7 @@ function CriterionRow({ criterion }: { criterion: CriterionScore }) {
             </Badge>
           )}
           <span className="flex items-baseline gap-1">
-            <span className="font-display text-2xl font-semibold text-fg tabular-nums">
+            <span className="font-figures text-2xl font-bold text-ink tabular-nums">
               {criterion.score}
             </span>
             <span className="text-xs text-fg-subtle">{t('report.outOf')}</span>
@@ -596,7 +596,7 @@ function RedFlags({ flags }: { flags: RedFlag[] }) {
                       tone === 'info' && 'text-info-soft-fg',
                     )}
                   />
-                  <h3 className="font-semibold text-fg">{flag.title}</h3>
+                  <h3 className="font-semibold text-ink">{flag.title}</h3>
                 </div>
                 <p className="text-sm leading-relaxed text-fg-muted">{flag.detail}</p>
                 <Badge tone={tone} size="sm" className="self-start">
@@ -837,7 +837,7 @@ export function EvaluationHistory({
                   active && 'border-primary-border bg-primary-soft hover:bg-primary-soft',
                 )}
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-sunken font-display text-base font-semibold text-fg tabular-nums">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-sunken font-figures text-base font-bold text-ink tabular-nums">
                   {e.status === 'ready' ? (
                     e.total
                   ) : isRunning(e.status) ? (
@@ -874,7 +874,7 @@ export function EvaluationTeaser({ project, manages }: { project: Project; manag
   return (
     <Card className="gap-3 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-fg [&_svg]:size-5 [&_svg]:text-brand">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink [&_svg]:size-5 [&_svg]:text-brand">
           <ListChecks aria-hidden />
           {t('title')}
         </h2>

@@ -163,7 +163,7 @@ export function CardsSection({ index }: { index: number }) {
               </div>
               <CardContent className="flex flex-1 flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-display text-lg font-semibold text-fg">{project.name}</h3>
+                  <h3 className="font-display text-lg font-bold text-ink">{project.name}</h3>
                   <TruncatedText lines={2} className="text-sm text-fg-muted">
                     {t(`cards.projects.${project.id}.tagline`)}
                   </TruncatedText>

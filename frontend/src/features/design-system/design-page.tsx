@@ -83,7 +83,7 @@ function Hero() {
         <Badge tone="primary" size="lg" icon={<Sparkles />}>
           {t('hero.eyebrow')}
         </Badge>
-        <h1 className="max-w-4xl font-display text-4xl font-semibold text-fg sm:text-6xl">
+        <h1 className="max-w-4xl font-display text-4xl font-extrabold text-ink sm:text-6xl">
           {t('hero.title')}
         </h1>
         <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">{t('hero.lead')}</p>
@@ -113,7 +113,7 @@ function Hero() {
               className="flex flex-col gap-1 border-l-2 border-primary-300 pl-4 dark:border-primary-700"
             >
               <dt className="order-2 text-sm text-fg-subtle">{stat.label}</dt>
-              <dd className="order-1 font-display text-3xl font-semibold text-fg">{stat.value}</dd>
+              <dd className="order-1 font-display text-3xl font-bold text-ink">{stat.value}</dd>
             </div>
           ))}
         </dl>

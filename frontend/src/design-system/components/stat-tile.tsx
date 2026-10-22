@@ -68,7 +68,7 @@ export function StatTile({
         <AnimatedNumber
           value={value}
           format={format}
-          className="font-display text-3xl font-semibold text-fg"
+          className="font-display text-3xl font-bold text-ink"
         />
         {delta !== undefined && (
           <span

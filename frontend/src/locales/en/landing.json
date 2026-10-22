@@ -16,20 +16,18 @@
     "subtitle": "Qadam takes a student project from the first idea to Demo Day and a meeting with an investor: an AI mentor, a team, expert review and a showcase — all in one place.",
     "primary": "Start a project",
     "secondary": "Browse the showcase",
-    "note": "Sign in with your university email or SSO"
-  },
-  "route": {
-    "label": "The project route: idea, incubator, AI evaluation, showcase, Demo Day, market",
-    "idea": "Idea",
-    "incubator": "Incubator",
-    "evaluation": "AI evaluation",
-    "showcase": "Showcase",
-    "demoDay": "Demo Day",
-    "market": "Market",
-    "chips": {
-      "mentor": "AI mentor at hand",
-      "rubric": "Rubric-based scoring",
-      "voting": "Live voting"
+    "note": "Sign in with your university email or SSO",
+    "titleLead": "From idea to market —",
+    "titleAccent": "one step",
+    "searchLabel": "Search the project showcase",
+    "searchPlaceholder": "What project are you looking for?",
+    "search": "Find a project",
+    "catalog": "All showcase projects",
+    "card": {
+      "kicker": "Innovation platform",
+      "f1": "An AI mentor at every step",
+      "f2": "Evaluation by the university rubric",
+      "f3": "Showcase and Demo Day for partners"
     }
   },
   "how": {
@@ -118,7 +116,8 @@
   "cta": {
     "title": "Take your first qadam",
     "text": "Signing up takes a minute. After onboarding, the AI mentor helps you through the first step.",
-    "primary": "Start a project"
+    "primary": "Start a project",
+    "kicker": "Start today"
   },
   "counters": {
     "label": "Qadam in numbers",

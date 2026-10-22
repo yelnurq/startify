@@ -159,7 +159,7 @@ export function OverlaysSection({ index }: { index: number }) {
           <SheetContent>
             <div className={`h-40 shrink-0 bg-linear-to-br ${project?.cover ?? ''}`} />
             <div className="flex flex-col gap-3 p-6">
-              <SheetTitle className="font-display text-2xl font-semibold text-fg">
+              <SheetTitle className="font-display text-2xl font-bold text-ink">
                 {project?.name}
               </SheetTitle>
               <SheetDescription className="text-sm leading-relaxed text-fg-muted">

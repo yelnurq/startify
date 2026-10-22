@@ -88,7 +88,7 @@ export function ConflictDialog({
             return (
               <section key={key} className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-fg">{label}</h3>
+                  <h3 className="text-sm font-semibold text-ink">{label}</h3>
                   <SegmentedControl
                     size="sm"
                     label={t('conflict.choose', { field: label })}

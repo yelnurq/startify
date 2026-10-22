@@ -10,6 +10,7 @@ import {
   EmptyState,
   Field,
   Input,
+  Kicker,
   SegmentedControl,
   Select,
   SelectContent,
@@ -92,28 +93,21 @@ export function CatalogPage() {
 
   return (
     <SiteFrame>
-      <section aria-labelledby="catalog-title" className="relative overflow-hidden">
-        <div aria-hidden className="absolute inset-0 ornament-fade opacity-[0.06]" />
-        <div
-          aria-hidden
-          className="absolute -top-48 left-1/2 h-[24rem] w-[56rem] -translate-x-1/2 rounded-full bg-primary-300/30 blur-3xl dark:bg-primary-600/15"
-        />
-        <div className="relative mx-auto flex max-w-page flex-col gap-5 px-4 pt-10 pb-8 sm:px-6 lg:pt-14">
-          <p className="text-sm font-semibold text-primary-text">
-            {national ? t('catalog.eyebrow') : university || t('catalog.eyebrow')}
-          </p>
-          <h1
-            id="catalog-title"
-            className="max-w-3xl font-display text-4xl font-semibold text-balance text-fg sm:text-5xl"
-          >
-            {national ? t('catalog.titleNational') : t('catalog.title')}
-          </h1>
-          <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
-            {national
-              ? t('catalog.subtitleNational')
-              : t('catalog.subtitle', { university: university || t('catalog.eyebrow') })}
-          </p>
-          <div className="flex flex-wrap items-center gap-4">
+      <section aria-labelledby="catalog-title" className="border-b border-border bg-surface">
+        <div className="mx-auto grid max-w-page grid-cols-1 items-end gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:py-16">
+          <div className="flex flex-col gap-5">
+            <Kicker>{national ? t('catalog.eyebrow') : university || t('catalog.eyebrow')}</Kicker>
+            <h1
+              id="catalog-title"
+              className="max-w-4xl font-display text-4xl font-extrabold text-balance text-ink sm:text-6xl"
+            >
+              {national ? t('catalog.titleNational') : t('catalog.title')}
+            </h1>
+            <p className="max-w-2xl text-lg leading-relaxed text-fg-muted">
+              {national
+                ? t('catalog.subtitleNational')
+                : t('catalog.subtitle', { university: university || t('catalog.eyebrow') })}
+            </p>
             <SegmentedControl
               label={t('catalog.scope.label')}
               value={national ? 'national' : 'university'}
@@ -125,14 +119,17 @@ export function CatalogPage() {
                 { value: 'national', label: t('catalog.scope.national') },
               ]}
             />
-            <div className="text-sm text-fg-muted tabular-nums">
-              {total === undefined ? (
-                <Skeleton className="h-4 w-20" />
-              ) : (
-                t('catalog.count', { count: total })
-              )}
-            </div>
           </div>
+          <p className="flex flex-col gap-1 border-l-2 border-primary-500 py-1 pl-6">
+            {total === undefined ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
+              <span className="font-figures text-4xl font-bold text-ink">{number(total)}</span>
+            )}
+            <span className="text-sm text-fg-muted">
+              {t('catalog.inCatalog', { count: total ?? 0 })}
+            </span>
+          </p>
         </div>
       </section>
 
@@ -403,6 +400,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (value: strin
         value={draft}
         maxLength={LIMITS.search}
         placeholder={t('catalog.search.placeholder')}
+        inputSize="lg"
+        className="border-t-2 border-t-primary-500"
         leading={<Search aria-hidden />}
         trailing={
           draft ? (

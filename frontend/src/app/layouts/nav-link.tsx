@@ -19,8 +19,8 @@ function NavAnchor({ icon, badge, children, className, ...props }: NavAnchorProp
       aria-label={collapsed ? children : undefined}
       className={cn(
         'group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm font-medium text-fg-muted transition-colors',
-        'hover:bg-surface-raised hover:text-fg',
-        'data-[status=active]:bg-primary-soft data-[status=active]:text-primary-soft-fg',
+        'hover:bg-primary-soft/60 hover:text-ink',
+        'data-[status=active]:bg-primary-soft data-[status=active]:font-semibold data-[status=active]:text-primary-soft-fg',
         collapsed && 'justify-center px-0',
         className,
       )}
@@ -48,7 +48,9 @@ export function NavSection({ label, children }: { label?: string; children: Reac
   return (
     <div className="flex flex-col gap-0.5">
       {label && !collapsed && (
-        <p className="px-2.5 pt-3 pb-1.5 text-xs font-medium text-fg-subtle">{label}</p>
+        <p className="px-2.5 pt-4 pb-1.5 text-3xs font-bold tracking-label text-fg-subtle uppercase">
+          {label}
+        </p>
       )}
       {label && collapsed && <span aria-hidden className="mx-3 my-2 h-px bg-border" />}
       {children}

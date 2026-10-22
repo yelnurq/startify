@@ -3,9 +3,6 @@
     background-color: var(--qd-bg);
     color: var(--qd-fg);
     font-family: var(--font-sans);
-    font-feature-settings:
-      'cv11' 1,
-      'ss03' 1;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -17,11 +14,13 @@
     min-height: 100dvh;
   }
 
+  /* Headings are set in Literata, as on the university's site. */
   h1,
   h2,
   h3,
   h4 {
-    letter-spacing: -0.018em;
+    font-family: var(--font-display);
+    letter-spacing: -0.012em;
     text-wrap: balance;
   }
 
@@ -66,11 +65,43 @@
   }
 }
 
-/* Display typography for hero and page titles (Geologica). */
+/* Display typography for hero and page titles (Literata). */
 @utility font-display {
   font-family: var(--font-display);
-  font-feature-settings: normal;
-  letter-spacing: -0.028em;
+  letter-spacing: -0.02em;
+}
+
+/* Large figures (counters, scores) stay in the text face, as on the
+   university's site: bold, tabular and slightly tightened. */
+@utility font-figures {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Small capitals with wide tracking: buttons, field labels, table headers. */
+@utility caps {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+/* The university's dark panel: deep teal fading into the navy ink. */
+@utility panel-deep {
+  background-color: var(--color-deep-900);
+  background-image: linear-gradient(135deg, var(--color-deep-900), var(--color-deep-800));
+  color: #ffffff;
+}
+
+/* Navy band of the hero, the footer and call-to-action banners. */
+@utility panel-ink {
+  background-color: var(--color-ink-900);
+  background-image: linear-gradient(
+    120deg,
+    var(--color-ink-950) 0%,
+    var(--color-ink-800) 55%,
+    var(--color-deep-800) 100%
+  );
+  color: #ffffff;
 }
 
 /* Frosted surface for sticky bars and overlays over content. */
@@ -131,13 +162,13 @@
   [data-theme='dark'] .illustration {
     --il-ink: var(--color-neutral-300);
     --il-line: var(--color-neutral-700);
-    --il-paper: #161c28;
-    --il-tint: color-mix(in oklch, var(--color-primary-500) 20%, #111621);
-    --il-tint-soft: color-mix(in oklch, var(--color-primary-500) 10%, #111621);
+    --il-paper: #11272f;
+    --il-tint: color-mix(in oklch, var(--color-primary-500) 20%, #0c1f27);
+    --il-tint-soft: color-mix(in oklch, var(--color-primary-500) 10%, #0c1f27);
     --il-brand: var(--color-primary-400);
     --il-brand-deep: var(--color-primary-300);
-    --il-gold-soft: color-mix(in oklch, var(--color-gold-400) 22%, #111621);
-    --il-soft: #1e2533;
+    --il-gold-soft: color-mix(in oklch, var(--color-gold-400) 22%, #0c1f27);
+    --il-soft: #1b343d;
     --il-success: var(--color-success-400);
   }
 }

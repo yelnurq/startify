@@ -10,11 +10,11 @@ export function LogoMark({ className }: { className?: string }) {
     <svg viewBox="0 0 32 32" className={cn('size-8 shrink-0', className)} aria-hidden>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--color-primary-400)" />
-          <stop offset="1" stopColor="var(--color-primary-700)" />
+          <stop offset="0" stopColor="var(--color-primary-700)" />
+          <stop offset="1" stopColor="var(--color-ink-800)" />
         </linearGradient>
       </defs>
-      <rect width="32" height="32" rx="9" fill={`url(#${id})`} />
+      <rect width="32" height="32" rx="8" fill={`url(#${id})`} />
       <path
         d="M7.5 23.5h5.2v-5h5.2v-5h5.6"
         fill="none"
@@ -30,21 +30,37 @@ export function LogoMark({ className }: { className?: string }) {
 
 interface LogoProps {
   className?: string;
-  /** Short tenant name shown after the wordmark, e.g. "КазУТБ". */
-  tenant?: string;
+  /** Line of capitals under the wordmark, e.g. the university's full name. */
+  caption?: string;
+  /** White wordmark for dark panels. */
+  inverted?: boolean;
 }
 
-export function Logo({ className, tenant }: LogoProps) {
+export function Logo({ className, caption, inverted = false }: LogoProps) {
   const { t } = useTranslation();
   return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <LogoMark />
-      <span className="font-display text-xl font-semibold text-fg">{t('app.name')}</span>
-      {tenant && (
-        <span className="rounded-md border border-border bg-surface-raised px-1.5 py-0.5 text-xs font-semibold text-fg-muted">
-          {tenant}
+    <span className={cn('inline-flex items-center gap-3', className)}>
+      <LogoMark className={caption ? 'sm:size-10' : undefined} />
+      <span className="flex min-w-0 flex-col">
+        <span
+          className={cn(
+            'font-display text-xl leading-tight font-extrabold',
+            inverted ? 'text-white' : 'text-ink',
+          )}
+        >
+          {t('app.name')}
         </span>
-      )}
+        {caption && (
+          <span
+            className={cn(
+              'hidden max-w-64 text-3xs leading-snug font-bold tracking-label uppercase sm:line-clamp-2',
+              inverted ? 'text-white/70' : 'text-fg-muted',
+            )}
+          >
+            {caption}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

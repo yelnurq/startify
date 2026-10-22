@@ -13,12 +13,13 @@ import { monogram, splitVisible, type Industry } from './logic';
 
 type ReadinessLevel = components['schemas']['ReadinessLevel'];
 
-// Covers without an image get a gradient of the brand family, varied by industry.
+// Covers without an image get a gradient of the university's teal and navy,
+// varied by industry.
 const GRADIENTS = [
-  'from-primary-500 via-primary-700 to-primary-950',
-  'from-info-500 via-primary-700 to-primary-950',
-  'from-success-500 via-primary-700 to-primary-950',
-  'from-gold-400 via-primary-600 to-primary-950',
+  'from-primary-600 via-deep-800 to-deep-900',
+  'from-ink-600 via-ink-800 to-ink-950',
+  'from-primary-700 via-primary-900 to-ink-900',
+  'from-deep-800 via-ink-800 to-ink-950',
 ] as const;
 
 const INDUSTRY_GRADIENT: Record<Industry, number> = {
@@ -80,9 +81,9 @@ export function CardCover({
         className,
       )}
     >
-      <div className="absolute inset-0 ornament opacity-[0.1]" />
+      <div className="absolute inset-0 ornament opacity-[0.06] [--qd-brand:#fff]" />
       {showMonogram && (
-        <span className="relative font-display text-5xl font-semibold text-white/90">
+        <span className="relative font-display text-5xl font-extrabold text-white/90">
           {monogram(title)}
         </span>
       )}
@@ -223,7 +224,7 @@ export function ShowcaseCardView({
           <Badge size="sm">{t(`stages.${card.stage}`)}</Badge>
         </div>
         <div className="flex flex-col gap-1">
-          <h3 className="font-display text-lg leading-snug font-semibold text-fg">
+          <h3 className="font-display text-lg leading-snug font-bold text-ink">
             {linked ? (
               <ProjectLink
                 card={card}

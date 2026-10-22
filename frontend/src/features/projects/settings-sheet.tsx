@@ -216,7 +216,7 @@ function Team({
   return (
     <section aria-labelledby="team" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 id="team" className="text-sm font-semibold text-fg">
+        <h3 id="team" className="text-sm font-semibold text-ink">
           {t('settings.team')}
         </h3>
         {(owner || manageSupervisor) && !project.archived && !adding && (

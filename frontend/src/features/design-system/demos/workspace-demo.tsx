@@ -219,7 +219,7 @@ export function WorkspaceDemo() {
             <span className="text-sm font-medium text-primary-text">
               {t('demo.workspace.stepOf', { current: 2, total: 14 })}
             </span>
-            <h1 className="font-display text-3xl font-semibold text-fg">
+            <h1 className="font-display text-3xl font-bold text-ink">
               {t('navigation.steps.audience')}
             </h1>
             <p className="text-fg-muted">{t('demo.workspace.stepLead')}</p>

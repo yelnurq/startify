@@ -9,7 +9,9 @@
     "apiChecking": "Checking the API…",
     "apiOffline": "API unavailable",
     "api": "API",
-    "rights": "© {{year}} Qadam"
+    "rights": "© {{year}} Qadam",
+    "footerPlatform": "Platform",
+    "footerResources": "Resources"
   },
   "meta": {
     "catalogTitle": "Project showcase — {{university}}",
@@ -105,6 +107,8 @@
     "subtitleNational": "Public projects of every university on Qadam — from an idea to investment readiness.",
     "count_one": "{{count, number}} project",
     "count_other": "{{count, number}} projects",
+    "inCatalog_one": "project on the showcase",
+    "inCatalog_other": "projects on the showcase",
     "scope": {
       "label": "Where to search",
       "university": "University",
@@ -237,6 +241,7 @@
       "in_review": "The page is already visible inside the university. The innovation office reviews it before it is published for everyone.",
       "published": "The page is on the showcase — changes show up as soon as you save.",
       "publishedReview": "Changes to a public page are reviewed by the innovation office first.",
+      "rejectedTitle": "Rejected by the reviewer",
       "rejected": "The page is visible inside the university only. Address the comments and send it again.",
       "comment": "Reviewer's comment",
       "open": "Open the page"

@@ -49,7 +49,8 @@
     "apply": "Apply",
     "reset": "Reset",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "toHome": "Home"
   },
   "nav": {
     "main": "Main navigation",

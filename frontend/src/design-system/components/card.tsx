@@ -12,9 +12,9 @@ export function Card({ className, interactive = false, ...props }: CardProps) {
     <div
       data-slot="card"
       className={cn(
-        'relative flex flex-col rounded-xl border border-border bg-surface shadow-sm',
+        'relative flex flex-col rounded-card border border-border bg-surface',
         interactive &&
-          'transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md',
+          'transition-[box-shadow,border-color] duration-200 hover:border-primary/45 hover:shadow-lg',
         className,
       )}
       {...props}
@@ -27,9 +27,7 @@ export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
 }
 
 export function CardTitle({ className, ...props }: ComponentProps<'h3'>) {
-  return (
-    <h3 className={cn('text-base leading-tight font-semibold text-fg', className)} {...props} />
-  );
+  return <h3 className={cn('text-lg leading-tight font-bold text-ink', className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: ComponentProps<'p'>) {

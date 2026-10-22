@@ -9,8 +9,8 @@ import path from 'node:path';
 import * as fontkit from 'fontkit';
 
 const FONTS = [
-  { family: 'Inter Variable', css: '@fontsource-variable/inter/index.css' },
-  { family: 'Geologica Variable', css: '@fontsource-variable/geologica/index.css' },
+  { family: 'Google Sans Variable', css: '@fontsource-variable/google-sans/index.css' },
+  { family: 'Literata Variable', css: '@fontsource-variable/literata/index.css' },
 ];
 
 const KAZAKH_SPECIFIC = 'ӘәҒғҚқҢңӨөҰұҮүҺһІі';

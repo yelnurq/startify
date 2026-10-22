@@ -215,9 +215,7 @@ export function ProjectOverview({
           <Badge tone="primary">{t(`industries.${project.industry}`)}</Badge>
           {project.archived && <Badge tone="warning">{t('projects.archived')}</Badge>}
         </div>
-        <h1 className="font-display text-3xl font-semibold text-balance text-fg">
-          {project.title}
-        </h1>
+        <h1 className="font-display text-3xl font-bold text-balance text-ink">{project.title}</h1>
         {project.tagline && <p className="text-lg text-fg-muted">{project.tagline}</p>}
       </header>
 
@@ -258,14 +256,14 @@ export function ProjectOverview({
       <EvaluationTeaser project={project} manages={manages} />
 
       <section aria-labelledby="badges" className="flex flex-col gap-3">
-        <h2 id="badges" className="font-display text-lg font-semibold text-fg">
+        <h2 id="badges" className="font-display text-lg font-bold text-ink">
           {t('badges.title')}
         </h2>
         <BadgeList earned={progress.badges} />
       </section>
 
       <section aria-labelledby="team" className="flex flex-col gap-3">
-        <h2 id="team" className="font-display text-lg font-semibold text-fg">
+        <h2 id="team" className="font-display text-lg font-bold text-ink">
           {t('settings.team')}
         </h2>
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -289,7 +287,7 @@ export function ProjectOverview({
       </section>
 
       <section aria-labelledby="materials" className="flex flex-col gap-3">
-        <h2 id="materials" className="font-display text-lg font-semibold text-fg">
+        <h2 id="materials" className="font-display text-lg font-bold text-ink">
           {t('materials.title')}
         </h2>
         <MaterialsPanel projectId={project.id} canCreate={canEdit(project)} />

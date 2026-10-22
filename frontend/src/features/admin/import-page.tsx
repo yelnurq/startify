@@ -91,7 +91,7 @@ export function ImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('import.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('import.title')}</h1>
         <p className="max-w-3xl text-fg-muted">{t('import.subtitle')}</p>
       </header>
       {result && job ? (
@@ -303,7 +303,7 @@ function ImportPreview({
             {stats.map((stat) => (
               <div key={stat.key} className="flex flex-col gap-1 rounded-xl bg-surface-raised p-4">
                 <dt className="text-xs text-fg-subtle">{t(`import.preview.${stat.key}`)}</dt>
-                <dd className={cn('font-display text-2xl font-semibold tabular-nums', stat.tone)}>
+                <dd className={cn('font-figures text-2xl font-bold tabular-nums', stat.tone)}>
                   {format.number(stat.value)}
                 </dd>
               </div>
@@ -318,7 +318,7 @@ function ImportPreview({
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-fg">{t('import.preview.title')}</h2>
+        <h2 className="text-lg font-semibold text-ink">{t('import.preview.title')}</h2>
         {summary.invalid > 0 && (
           <label className="flex items-center gap-2 text-sm text-fg">
             <Switch checked={onlyErrors} onCheckedChange={setOnlyErrors} />

@@ -51,10 +51,7 @@ export function UnitEconomicsPanel({ values }: { values: StepValues }) {
             <div key={tile.key} className="rounded-lg bg-surface-raised p-3">
               <dt className="text-xs text-fg-subtle">{t(`unit.${tile.key}`)}</dt>
               <dd
-                className={cn(
-                  'mt-1 font-display text-xl font-semibold tabular-nums',
-                  tile.className,
-                )}
+                className={cn('mt-1 font-figures text-xl font-bold tabular-nums', tile.className)}
               >
                 {tile.value}
               </dd>
@@ -139,7 +136,7 @@ export function LeanCanvas({
   return (
     <section aria-labelledby="lean-canvas" className="@container flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h2 id="lean-canvas" className="font-display text-lg font-semibold text-fg">
+        <h2 id="lean-canvas" className="font-display text-lg font-bold text-ink">
           {t('canvas.title')}
         </h2>
         <p className="text-sm text-fg-muted">{t('canvas.text')}</p>
@@ -159,7 +156,7 @@ export function LeanCanvas({
               )}
             >
               <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-xs font-semibold tracking-wide text-fg uppercase">
+                <h3 className="text-xs font-semibold tracking-wide text-ink uppercase">
                   {t(`canvas.blocks.${block.id}`)}
                 </h3>
                 {source && !own && (

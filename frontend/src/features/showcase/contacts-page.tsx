@@ -43,7 +43,7 @@ export function ContactsPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('contacts.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('contacts.title')}</h1>
         <p className="text-fg-muted">{t('contacts.subtitle')}</p>
       </header>
       <Tabs
@@ -134,7 +134,7 @@ function ContactCard({ contact }: { contact: ContactRequest }) {
               {contact.project_title}
             </Link>
           </p>
-          <h2 className="text-base font-semibold text-fg">{contact.name}</h2>
+          <h2 className="text-base font-semibold text-ink">{contact.name}</h2>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
             <a
               href={`mailto:${contact.email}`}

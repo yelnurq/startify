@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Eye, EyeOff, Layers, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Eye, EyeOff, Layers } from 'lucide-react';
 import {
   useRef,
   useState,
@@ -12,8 +12,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AuthLayout } from '@/app/layouts/auth-layout';
-import { Callout, cn, Input, Logo } from '@/design-system';
-import { localized } from '@/shared/i18n/localized';
+import { Callout, cn, Input, Kicker, Logo } from '@/design-system';
+import { useLocalized } from '@/shared/i18n/localized';
 
 import { tenantQuery } from './api';
 import { passwordScore } from './password';
@@ -21,32 +21,44 @@ import { passwordScore } from './password';
 function AuthAside() {
   const { t } = useTranslation('auth');
   const tenant = useQuery(tenantQuery);
-  const university = tenant.data ? localized(tenant.data.short_name) : '';
+  const text = useLocalized();
   return (
-    <div className="flex max-w-lg flex-col gap-8">
-      <div className="w-fit rounded-2xl border border-white/20 bg-white/10 p-4 shadow-lg backdrop-blur-md">
-        <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-white/80 uppercase">
-          <Sparkles className="size-3.5 text-gold-300" aria-hidden />
-          {t('aside.cardEyebrow')}
-        </p>
-        <p className="mt-1 font-display text-2xl font-semibold">{university}</p>
-        <p className="flex items-center gap-1.5 text-sm text-white/75">
-          <Layers className="size-3.5" aria-hidden />
+    <div className="flex h-full flex-col gap-10 text-white">
+      <Link to="/" className="w-fit">
+        <Logo inverted caption={tenant.data ? text(tenant.data.name) : undefined} />
+      </Link>
+      <div className="my-auto flex max-w-lg flex-col gap-6">
+        <Kicker tone="light">{t('aside.cardEyebrow')}</Kicker>
+        <h2 className="font-display text-5xl leading-tight font-extrabold">
+          {t('aside.headline')}
+        </h2>
+        <p className="flex items-center gap-2 text-white/75">
+          <Layers className="size-4 shrink-0 text-primary-300" aria-hidden />
           {t('aside.cardText')}
         </p>
       </div>
-      <h2 className="font-display text-4xl leading-tight font-semibold">{t('aside.headline')}</h2>
-      <ul className="flex flex-col gap-3 text-white/85">
+      <ul className="flex max-w-lg flex-col gap-4 border-t border-white/15 pt-8 text-sm leading-relaxed text-white/85">
         {(['point1', 'point2', 'point3'] as const).map((key) => (
           <li key={key} className="flex items-start gap-3">
-            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-white/20">
-              <Check className="size-3" aria-hidden />
-            </span>
+            <Check className="mt-0.5 size-4 shrink-0 text-primary-300" aria-hidden />
             {t(`aside.${key}`)}
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function BackHome() {
+  const { t } = useTranslation();
+  return (
+    <Link
+      to="/"
+      className="inline-flex items-center gap-2 text-sm font-semibold text-ink transition-colors hover:text-primary-text"
+    >
+      <ArrowLeft className="size-4" aria-hidden />
+      {t('actions.toHome')}
+    </Link>
   );
 }
 
@@ -63,15 +75,16 @@ export function AuthPage({
   return (
     <AuthLayout
       logo={
-        <Link to="/" className="rounded-lg">
+        <Link to="/">
           <Logo />
         </Link>
       }
+      back={<BackHome />}
       aside={<AuthAside />}
     >
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl font-semibold text-fg">{title}</h1>
+          <h1 className="font-display text-4xl font-extrabold text-ink">{title}</h1>
           {subtitle && <p className="text-fg-muted">{subtitle}</p>}
         </div>
         {children}
@@ -227,7 +240,7 @@ export function CodeInput({
             e.target.select();
           }}
           className={cn(
-            'h-14 w-full min-w-0 rounded-lg border border-border bg-surface text-center font-display text-2xl font-semibold text-fg tabular-nums shadow-sm',
+            'h-14 w-full min-w-0 rounded-lg border border-border bg-surface text-center font-figures text-2xl font-bold text-ink tabular-nums shadow-sm',
             'transition-[border-color,box-shadow] focus-visible:border-primary-400 focus-visible:ring-4 focus-visible:ring-primary-500/15 focus-visible:outline-none',
             'disabled:opacity-60 aria-invalid:border-danger',
           )}

@@ -3,19 +3,31 @@ import type { ReactNode } from 'react';
 import { LanguageSwitcher, ThemeToggle } from '@/design-system/components/preferences';
 
 interface AuthLayoutProps {
+  /** Logo for the top bar on phones, where the brand panel is hidden. */
   logo: ReactNode;
-  /** Brand panel shown next to the form on large screens. */
+  /** Link back to the site above the form on large screens. */
+  back?: ReactNode;
+  /** Brand panel next to the form on large screens. */
   aside: ReactNode;
   children: ReactNode;
 }
 
-/** Sign-in, sign-up and recovery screens: the form and a brand panel. */
-export function AuthLayout({ logo, aside, children }: AuthLayoutProps) {
+/** Sign-in, sign-up and recovery screens: a navy brand panel and the form on white. */
+export function AuthLayout({ logo, back, aside, children }: AuthLayoutProps) {
   return (
-    <div className="grid min-h-dvh grid-cols-1 bg-bg lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <div className="flex flex-col px-5 py-6 sm:px-10">
-        <div className="flex items-center justify-between">
-          {logo}
+    <div className="grid min-h-dvh grid-cols-1 bg-surface lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      <aside className="relative hidden overflow-hidden panel-ink lg:block">
+        <div aria-hidden className="absolute inset-0 ornament opacity-[0.04] [--qd-brand:#fff]" />
+        <div
+          aria-hidden
+          className="absolute -right-32 -bottom-40 size-[30rem] rounded-full bg-primary-500/20 blur-3xl"
+        />
+        <div className="relative flex h-full flex-col p-10 xl:p-14">{aside}</div>
+      </aside>
+      <div className="flex min-w-0 flex-col">
+        <div className="flex h-16 items-center justify-between gap-4 border-b border-border px-5 sm:px-10 lg:h-18">
+          <div className="min-w-0 lg:hidden">{logo}</div>
+          <div className="hidden lg:block">{back}</div>
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
             <ThemeToggle />
@@ -23,23 +35,11 @@ export function AuthLayout({ logo, aside, children }: AuthLayoutProps) {
         </div>
         <main
           id="main"
-          className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10"
+          className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-12 sm:px-0"
         >
           {children}
         </main>
       </div>
-      <aside className="relative hidden overflow-hidden bg-linear-to-br from-primary-600 via-primary-700 to-primary-950 lg:block">
-        <div aria-hidden className="absolute inset-0 ornament opacity-10 [--qd-brand:#fff]" />
-        <div
-          aria-hidden
-          className="absolute -top-32 -right-24 size-[28rem] rounded-full bg-primary-300/30 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="absolute -bottom-40 -left-20 size-[26rem] rounded-full bg-gold-400/20 blur-3xl"
-        />
-        <div className="relative flex h-full flex-col justify-end p-12 text-white">{aside}</div>
-      </aside>
     </div>
   );
 }

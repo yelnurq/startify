@@ -269,7 +269,7 @@ function StepEditorView({
             stage: stage ? text(stage.title) : '',
           })}
         </p>
-        <h1 className="font-display text-3xl font-semibold text-balance text-fg">
+        <h1 className="font-display text-3xl font-bold text-balance text-ink">
           {text(step.title)}
         </h1>
         <p className="text-fg-muted">{text(step.goal)}</p>
@@ -388,7 +388,7 @@ function StepEditorView({
       )}
       {stepKey === 'pitch' && (
         <section aria-labelledby="pitch-materials" className="flex flex-col gap-3">
-          <h2 id="pitch-materials" className="font-display text-lg font-semibold text-fg">
+          <h2 id="pitch-materials" className="font-display text-lg font-bold text-ink">
             {t('materials.title')}
           </h2>
           <p className="text-sm text-fg-muted">{t('materials.text')}</p>

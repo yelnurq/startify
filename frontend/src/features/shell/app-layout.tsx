@@ -72,7 +72,7 @@ function Brand({ session }: { session: Session }) {
   const text = useLocalized();
   return (
     <Link to="/app" className="flex min-w-0 flex-col rounded-md leading-tight">
-      <span className="font-display text-base font-semibold text-fg">{t('app.name')}</span>
+      <span className="font-display text-base font-bold text-ink">{t('app.name')}</span>
       <TruncatedText className="text-xs text-fg-subtle">
         {text(session.tenant.short_name) || text(session.tenant.name)}
       </TruncatedText>

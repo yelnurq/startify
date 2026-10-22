@@ -1,5 +1,6 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/geologica';
+@import '@fontsource-variable/google-sans';
+@import '@fontsource-variable/literata';
+@import '@fontsource-variable/literata/wght-italic.css';
 @import './tokens.css';
 @import './base.css';

@@ -123,7 +123,7 @@ export function RequestCard({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 id={titleId} className="text-lg leading-snug font-semibold text-fg">
+        <h3 id={titleId} className="text-lg leading-snug font-semibold text-ink">
           {linked ? (
             <Link
               to="/app/team/$requestId"

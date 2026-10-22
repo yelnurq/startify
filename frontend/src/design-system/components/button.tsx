@@ -6,9 +6,13 @@ import { cn } from '../lib/cn';
 
 import { Spinner } from './spinner';
 
+/**
+ * The university's button: square, capitals with wide tracking, a solid or
+ * outlined frame. Filled accents turn navy on hover and navy turns teal.
+ */
 export const buttonVariants = cva(
   [
-    'relative inline-flex shrink-0 items-center justify-center gap-2 font-medium whitespace-nowrap select-none',
+    'relative inline-flex shrink-0 items-center justify-center gap-2 rounded-control font-extrabold tracking-caps whitespace-nowrap uppercase select-none',
     'transition-[background-color,border-color,color,box-shadow,transform,filter] duration-150',
     'active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-busy:cursor-progress aria-busy:opacity-85',
     '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
@@ -16,22 +20,27 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-fg shadow-button hover:bg-primary-hover',
-        secondary:
-          'border border-border bg-surface text-fg shadow-sm hover:border-border-strong hover:bg-surface-raised',
+        primary:
+          'border border-primary bg-primary text-primary-fg hover:border-primary-hover hover:bg-primary-hover',
+        ink: 'border border-ink bg-ink text-ink-fg hover:border-ink-hover hover:bg-ink-hover',
+        secondary: 'border border-border-strong bg-surface text-ink hover:border-ink',
         soft: 'bg-primary-soft text-primary-soft-fg hover:bg-primary-soft-hover',
-        outline: 'border border-primary-border text-primary-text hover:bg-primary-soft',
-        ghost: 'text-fg-muted hover:bg-surface-raised hover:text-fg',
-        danger: 'bg-danger text-danger-fg shadow-button hover:bg-danger-hover',
-        gold: 'bg-gold text-gold-fg shadow-button hover:brightness-[0.96]',
-        link: 'h-auto! px-0! text-primary-text underline-offset-4 hover:underline',
+        outline:
+          'border border-primary-text text-primary-text hover:bg-primary hover:text-primary-fg',
+        ghost: 'text-fg-muted hover:bg-surface-raised hover:text-ink',
+        danger:
+          'border border-danger bg-danger text-danger-fg hover:border-danger-hover hover:bg-danger-hover',
+        gold: 'bg-gold text-gold-fg hover:brightness-[0.96]',
+        /** Light outline for dark panels and photos. */
+        light: 'border border-white/40 text-white hover:bg-white/10',
+        link: 'h-auto! border-b border-current px-0! pb-0.5 text-primary-text hover:text-ink',
       },
       size: {
-        sm: 'h-8 rounded-lg px-3 text-sm',
-        md: 'h-10 rounded-lg px-4 text-sm',
-        lg: 'h-12 rounded-xl px-6 text-base [&_svg]:size-5',
-        icon: 'size-10 rounded-lg',
-        'icon-sm': 'size-8 rounded-lg',
+        sm: 'h-8 px-3.5 text-2xs',
+        md: 'h-10 px-5 text-xs',
+        lg: 'h-12 px-6 text-xs [&_svg]:size-4.5',
+        icon: 'size-10',
+        'icon-sm': 'size-8',
       },
       block: {
         true: 'w-full',

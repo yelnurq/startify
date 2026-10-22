@@ -14,12 +14,12 @@ export function Section({ id, index, title, lead, children }: SectionProps) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="flex scroll-mt-24 flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <span className="font-display text-sm font-semibold text-primary-text tabular-nums">
+        <span className="font-figures text-sm font-bold text-primary-text tabular-nums">
           {String(index).padStart(2, '0')}
         </span>
         <h2
           id={`${id}-title`}
-          className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl"
+          className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl"
         >
           {title}
         </h2>

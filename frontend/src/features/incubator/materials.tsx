@@ -70,7 +70,7 @@ export function MaterialsPanel({
                 <Icon className="size-5" aria-hidden />
               </span>
               <div className="flex min-w-0 flex-col gap-0.5">
-                <h3 className="text-sm font-semibold text-fg">{t(`materials.kind.${kind}`)}</h3>
+                <h3 className="text-sm font-semibold text-ink">{t(`materials.kind.${kind}`)}</h3>
                 <p className="text-xs text-fg-muted">{t(`materials.about.${kind}`)}</p>
               </div>
             </div>
@@ -96,7 +96,7 @@ export function MaterialsPanel({
       </div>
 
       <section aria-labelledby="materials-list" className="flex flex-col gap-3">
-        <h3 id="materials-list" className="text-sm font-semibold text-fg">
+        <h3 id="materials-list" className="text-sm font-semibold text-ink">
           {t('materials.list')}
         </h3>
         {query.isPending && <Skeleton className="h-24 rounded-xl" />}

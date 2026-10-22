@@ -13,28 +13,50 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @theme static {
+  /* The university's typography (mooc.kaztbu.edu.kz): Google Sans for text,
+     Literata for headings. Both are OFL and cover the Kazakh alphabet. */
   --font-sans:
-    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Geologica Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    'Google Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Literata Variable', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
 
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 0.875rem;
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
   --text-5xl: 3rem;
   --text-5xl--line-height: 1.08;
   --text-6xl: 3.75rem;
   --text-6xl--line-height: 1.04;
+  --text-7xl: 4.5rem;
+  --text-7xl--line-height: 1;
 
-  /* Sky blue of the flag: #00A3C4 ≈ 500. Text and white-label fills use 700 (5.3:1). */
-  --color-primary-50: #ebfbff;
-  --color-primary-100: #d5f6fe;
-  --color-primary-200: #b1ebfa;
-  --color-primary-300: #82daf1;
-  --color-primary-400: #4cc3e1;
-  --color-primary-500: #14a8c9;
-  --color-primary-600: #008ead;
-  --color-primary-700: #007591;
-  --color-primary-800: #005e76;
-  --color-primary-900: #004b60;
-  --color-primary-950: #003140;
+  /* Capitals: buttons and links, field labels, section kickers. */
+  --tracking-caps: 0.07em;
+  --tracking-label: 0.12em;
+  --tracking-kicker: 0.18em;
+
+  /* Teal of the university's site (#067A75 = 700, white label 5.2:1),
+     mint #83DCD5 = 300 and the bright accent #09BAB2 = 500. */
+  --color-primary-50: #f0f8f7;
+  --color-primary-100: #e3f4f2;
+  --color-primary-200: #c5e9e4;
+  --color-primary-300: #83dcd5;
+  --color-primary-400: #42c9c1;
+  --color-primary-500: #09bab2;
+  --color-primary-600: #00938c;
+  --color-primary-700: #067a75;
+  --color-primary-800: #00625e;
+  --color-primary-900: #004e4b;
+  --color-primary-950: #003330;
+
+  /* Navy ink of headings and dark buttons, and the deep teal of dark panels. */
+  --color-ink-600: #2c5a86;
+  --color-ink-800: #102945;
+  --color-ink-900: #0b2038;
+  --color-ink-950: #001e40;
+  --color-deep-800: #0e3a3f;
+  --color-deep-900: #082834;
 
   /* Gold of the flag: fills, awards and highlights only, never text on white. */
   --color-gold-50: #fbf9e5;
@@ -97,20 +119,20 @@
   --color-info-900: #203d88;
   --color-info-950: #12255f;
 
-  /* Cool neutrals around the brief's surface and text colours. */
+  /* Green-grey neutrals of the university's site. */
   --color-neutral-0: #ffffff;
-  --color-neutral-25: #fafbfc;
-  --color-neutral-50: #f4f6f9;
-  --color-neutral-100: #eef1f5;
-  --color-neutral-200: #e6e9ef;
-  --color-neutral-300: #d3d8e1;
-  --color-neutral-400: #a9b2c1;
-  --color-neutral-500: #8a94a6;
-  --color-neutral-600: #667085;
-  --color-neutral-700: #4a5568;
-  --color-neutral-800: #2b3445;
-  --color-neutral-900: #161d2b;
-  --color-neutral-950: #0b1220;
+  --color-neutral-25: #fbfdfc;
+  --color-neutral-50: #f4f7f6;
+  --color-neutral-100: #eef2f1;
+  --color-neutral-200: #dfe6e4;
+  --color-neutral-300: #c8d2d0;
+  --color-neutral-400: #a3aeac;
+  --color-neutral-500: #8a9492;
+  --color-neutral-600: #5c6866;
+  --color-neutral-700: #434e4c;
+  --color-neutral-800: #2a3332;
+  --color-neutral-900: #191c1d;
+  --color-neutral-950: #0f1720;
 
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -119,6 +141,9 @@
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-3xl: 28px;
+  /* Buttons, fields and icon buttons are square; cards and panels are rounded. */
+  --radius-control: 0px;
+  --radius-card: 14px;
 
   --container-page: 80rem;
   --container-wide: 90rem;
@@ -266,6 +291,11 @@
   --color-brand: var(--qd-brand);
   --color-ring: var(--qd-ring);
 
+  /* Headings and dark buttons. */
+  --color-ink: var(--qd-ink);
+  --color-ink-hover: var(--qd-ink-hover);
+  --color-ink-fg: var(--qd-ink-fg);
+
   --color-primary: var(--qd-primary);
   --color-primary-hover: var(--qd-primary-hover);
   --color-primary-fg: var(--qd-primary-fg);
@@ -318,30 +348,35 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --qd-bg: #fafbfc;
+  --qd-bg: #f4f7f6;
   --qd-surface: #ffffff;
-  --qd-surface-raised: #f4f6f9;
-  --qd-surface-sunken: #eef1f5;
-  --qd-border: #e6e9ef;
-  --qd-border-strong: #d3d8e1;
-  --qd-overlay: rgb(11 18 32 / 0.4);
+  --qd-surface-raised: #f8faf9;
+  --qd-surface-sunken: #eef2f1;
+  --qd-border: #dfe6e4;
+  --qd-border-strong: #c8d2d0;
+  --qd-overlay: rgb(8 40 52 / 0.45);
 
-  --qd-fg: #0b1220;
-  --qd-fg-muted: #4a5568;
-  /* #8A94A6 from the brief has 2.95:1 on the background: icons and decoration
-     only. Small text uses #667085 (4.8:1). */
-  --qd-fg-subtle: #667085;
-  --qd-fg-faint: #8a94a6;
+  --qd-fg: #191c1d;
+  --qd-fg-muted: #5c6866;
+  /* #8A9492 has 3.1:1 on white: icons and decoration only. Small text uses
+     #5F6B69 (5.1:1 on the background, 4.9:1 on sunken). */
+  --qd-fg-subtle: #5f6b69;
+  --qd-fg-faint: #8a9492;
   --qd-fg-inverse: #ffffff;
 
   --qd-brand: var(--color-primary-500);
-  --qd-ring: var(--color-primary-500);
+  --qd-ring: var(--color-primary-600);
 
+  --qd-ink: var(--color-ink-800);
+  --qd-ink-hover: var(--color-primary-700);
+  --qd-ink-fg: #ffffff;
+
+  /* Like the university's site, an accent button turns navy on hover. */
   --qd-primary: var(--color-primary-700);
-  --qd-primary-hover: var(--color-primary-800);
+  --qd-primary-hover: var(--color-ink-800);
   --qd-primary-fg: #ffffff;
-  --qd-primary-soft: var(--color-primary-50);
-  --qd-primary-soft-hover: var(--color-primary-100);
+  --qd-primary-soft: var(--color-primary-100);
+  --qd-primary-soft-hover: var(--color-primary-200);
   --qd-primary-soft-fg: var(--color-primary-800);
   --qd-primary-text: var(--color-primary-700);
   --qd-primary-border: var(--color-primary-200);
@@ -377,39 +412,40 @@
   --qd-info-soft-fg: var(--color-info-800);
   --qd-info-border: var(--color-info-200);
 
-  --qd-shadow-sm: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.05);
-  --qd-shadow-md:
-    0 1px 2px -1px rgb(16 24 40 / 0.05), 0 6px 16px -4px rgb(16 24 40 / 0.08),
-    0 12px 28px -10px rgb(0 117 145 / 0.1);
-  --qd-shadow-lg:
-    0 2px 4px -2px rgb(16 24 40 / 0.05), 0 16px 32px -8px rgb(16 24 40 / 0.12),
-    0 32px 72px -16px rgb(0 117 145 / 0.18);
-  --qd-shadow-button: 0 1px 2px 0 rgb(16 24 40 / 0.1), inset 0 1px 0 0 rgb(255 255 255 / 0.16);
+  /* Flat surfaces with soft, wide shadows only where something floats. */
+  --qd-shadow-sm: 0 1px 2px 0 rgb(25 28 29 / 0.04);
+  --qd-shadow-md: 0 1px 2px 0 rgb(25 28 29 / 0.04), 0 12px 32px 0 rgb(25 28 29 / 0.05);
+  --qd-shadow-lg: 0 2px 4px 0 rgb(25 28 29 / 0.04), 0 18px 44px 0 rgb(25 28 29 / 0.08);
+  --qd-shadow-button: none;
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --qd-bg: #0a0d14;
-  --qd-surface: #111621;
-  --qd-surface-raised: #161c28;
-  --qd-surface-sunken: #0d1119;
-  --qd-border: #1e2533;
-  --qd-border-strong: #2a3243;
-  --qd-overlay: rgb(3 5 10 / 0.66);
+  --qd-bg: #07161d;
+  --qd-surface: #0c1f27;
+  --qd-surface-raised: #11272f;
+  --qd-surface-sunken: #061218;
+  --qd-border: #1b343d;
+  --qd-border-strong: #27444e;
+  --qd-overlay: rgb(2 8 12 / 0.7);
 
-  --qd-fg: #e8ecf3;
-  --qd-fg-muted: #a3adbf;
-  --qd-fg-subtle: #7c879a;
-  --qd-fg-faint: #5a6478;
-  --qd-fg-inverse: #0b1220;
+  --qd-fg: #e7eeed;
+  --qd-fg-muted: #a9b8b6;
+  --qd-fg-subtle: #8c9d9b;
+  --qd-fg-faint: #5f7472;
+  --qd-fg-inverse: #082834;
 
   --qd-brand: var(--color-primary-400);
   --qd-ring: var(--color-primary-400);
 
+  --qd-ink: #f1f6f5;
+  --qd-ink-hover: var(--color-primary-300);
+  --qd-ink-fg: var(--color-deep-900);
+
   --qd-primary: var(--color-primary-400);
   --qd-primary-hover: var(--color-primary-300);
-  --qd-primary-fg: #04141a;
+  --qd-primary-fg: #04201e;
   --qd-primary-soft: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
   --qd-primary-soft-hover: color-mix(in oklch, var(--color-primary-500) 22%, transparent);
   --qd-primary-soft-fg: var(--color-primary-300);
@@ -452,5 +488,5 @@
   --qd-shadow-lg:
     0 0 0 1px rgb(255 255 255 / 0.07), 0 28px 72px -18px rgb(0 0 0 / 0.7),
     0 0 64px -28px color-mix(in oklch, var(--color-primary-400) 45%, transparent);
-  --qd-shadow-button: inset 0 1px 0 0 rgb(255 255 255 / 0.28);
+  --qd-shadow-button: none;
 }

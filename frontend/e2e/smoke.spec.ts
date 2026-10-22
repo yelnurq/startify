@@ -8,6 +8,19 @@ test('the platform is up: web, API and database answer', async ({ page }) => {
   await expect(page.getByTestId('api-version')).not.toBeEmpty();
 });
 
+test('the home page loads without Content Security Policy violations', async ({ page }) => {
+  const violations: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().includes('Content Security Policy')) {
+      violations.push(message.text().slice(0, 200));
+    }
+  });
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
+  expect(violations).toEqual([]);
+});
+
 test('the interface switches between Kazakh, Russian and English', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Язык' }).click();

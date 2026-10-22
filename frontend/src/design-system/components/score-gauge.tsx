@@ -108,7 +108,7 @@ export function ScoreGauge({ value, caption, label, size = 220, className }: Sco
       </svg>
       <div className="absolute inset-x-0 top-[34%] flex flex-col items-center gap-1 text-center">
         <span className="flex items-baseline gap-1">
-          <span className="font-display text-5xl font-semibold text-fg tabular-nums">
+          <span className="font-figures text-5xl font-bold text-ink tabular-nums">
             {Math.round(clamped)}
           </span>
           <span className="text-sm font-medium text-fg-subtle">/100</span>

@@ -82,7 +82,7 @@ export function AiSettingsPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold text-fg">{t('settings.title')}</h1>
+          <h1 className="font-display text-3xl font-bold text-ink">{t('settings.title')}</h1>
           <p className="max-w-3xl text-fg-muted">{t('settings.subtitle')}</p>
         </div>
         <Button asChild variant="secondary" className="self-start sm:self-auto">
@@ -430,7 +430,7 @@ function FeatureRoutes({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 id={titleId} className="font-semibold text-fg">
+            <h4 id={titleId} className="font-semibold text-ink">
               {t(`features.${feature}`)}
             </h4>
             <Badge size="sm" tone={inherited ? 'neutral' : 'primary'}>

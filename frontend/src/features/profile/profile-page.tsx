@@ -105,7 +105,7 @@ export function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('profile.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('profile.title')}</h1>
         <p className="text-fg-muted">{t('profile.subtitle')}</p>
       </header>
       {me.isPending && (

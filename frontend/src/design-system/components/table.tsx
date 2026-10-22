@@ -13,7 +13,7 @@ export function Table({ className, label, ...props }: TableProps) {
       role="region"
       aria-label={label}
       tabIndex={0}
-      className="relative w-full overflow-x-auto rounded-xl border border-border bg-surface shadow-sm focus-visible:ring-4 focus-visible:ring-primary-500/20 focus-visible:outline-none"
+      className="relative w-full overflow-x-auto rounded-card border border-border bg-surface focus-visible:ring-4 focus-visible:ring-primary-500/20 focus-visible:outline-none"
     >
       <table
         className={cn('w-full caption-bottom border-collapse text-sm', className)}
@@ -24,7 +24,7 @@ export function Table({ className, label, ...props }: TableProps) {
 }
 
 export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
-  return <thead className={cn('bg-surface-raised/60 [&_tr]:border-b', className)} {...props} />;
+  return <thead className={cn('bg-surface [&_tr]:border-b', className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
@@ -52,7 +52,7 @@ export function TableHead({
     <th
       scope="col"
       className={cn(
-        'h-10 px-4 text-left align-middle text-xs font-medium tracking-wide whitespace-nowrap text-fg-subtle',
+        'h-11 px-4 text-left align-middle text-2xs font-bold tracking-label whitespace-nowrap text-ink uppercase',
         numeric && 'text-right',
         className,
       )}

@@ -32,7 +32,7 @@ export function RubricPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('rubric.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('rubric.title')}</h1>
         <p className="text-fg-muted">{t('rubric.lead')}</p>
       </header>
       {rubric.isPending ? (

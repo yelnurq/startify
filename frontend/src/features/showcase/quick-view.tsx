@@ -71,7 +71,7 @@ function QuickViewBody({ card, external }: { card: ShowcaseCard; external: boole
               <Badge size="sm">{t(`stages.${card.stage}`)}</Badge>
               <ScoreBadge score={card.score} level={card.level} size="sm" />
             </div>
-            <SheetTitle className="pr-10 font-display text-2xl leading-tight font-semibold text-fg">
+            <SheetTitle className="pr-10 font-display text-2xl leading-tight font-bold text-ink">
               {card.title}
             </SheetTitle>
             <SheetDescription className="text-base leading-relaxed text-fg-muted">

@@ -34,6 +34,9 @@ export default defineConfig({
   build: {
     target: 'es2023',
     sourcemap: true,
+    // Fonts stay files: the CSP allows fonts only from our origin (font-src
+    // 'self'), so a small subset inlined as a data: URL would be blocked.
+    assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined),
   },
   test: {
     environment: 'jsdom',

@@ -122,7 +122,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
           ]}
         />
         <header className="relative isolate overflow-hidden rounded-3xl bg-primary-950 shadow-lg">
-          <div className="aspect-[4/5] sm:aspect-video lg:aspect-[21/9]">
+          <div className="aspect-square sm:aspect-video lg:aspect-[21/9]">
             <CardCover
               title={card.title}
               industry={card.industry}
@@ -143,7 +143,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
             </div>
             <h1
               id="project-title"
-              className="max-w-4xl font-display text-3xl leading-tight font-semibold text-balance text-white sm:text-5xl"
+              className="max-w-4xl font-display text-3xl leading-tight font-extrabold text-balance text-white sm:text-5xl"
             >
               {card.title}
             </h1>
@@ -285,7 +285,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
             <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
               <p className="text-sm font-semibold text-fg">{t('project.score.title')}</p>
               <p className="flex items-baseline gap-2">
-                <span className="font-display text-5xl font-semibold text-fg tabular-nums">
+                <span className="font-figures text-5xl font-bold text-ink tabular-nums">
                   {card.score}
                 </span>
                 <span className="text-sm text-fg-subtle">{t('project.score.outOf')}</span>
@@ -300,7 +300,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
             </div>
           )}
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-fg">{t('project.facts.label')}</h2>
+            <h2 className="text-sm font-semibold text-ink">{t('project.facts.label')}</h2>
             <dl className="grid grid-cols-1 gap-3 text-sm">
               <Fact label={t('project.facts.university')} value={text(card.university.name)} />
               {faculty && <Fact label={t('project.facts.faculty')} value={faculty} />}
@@ -344,7 +344,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
 function Section({ id, title, children }: { id: SectionKey; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="flex scroll-mt-32 flex-col gap-4">
-      <h2 id={`${id}-title`} className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+      <h2 id={`${id}-title`} className="font-display text-2xl font-bold text-ink sm:text-3xl">
         {title}
       </h2>
       {children}
@@ -457,7 +457,7 @@ function ProjectSkeleton() {
   return (
     <div className="mx-auto flex max-w-page flex-col gap-6 px-4 pt-6 pb-16 sm:px-6" aria-busy>
       <Skeleton className="h-5 w-48" />
-      <Skeleton className="aspect-[4/5] rounded-3xl sm:aspect-video lg:aspect-[21/9]" />
+      <Skeleton className="aspect-square rounded-3xl sm:aspect-video lg:aspect-[21/9]" />
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-4">
           <Skeleton className="h-8 w-40" />

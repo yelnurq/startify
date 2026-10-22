@@ -6,10 +6,10 @@ import { useFieldControl } from './field';
 
 /** Shared look of text-like controls (inputs, textareas, select triggers). */
 export const controlClasses = cn(
-  'w-full min-w-0 rounded-md border border-border bg-surface text-sm text-fg shadow-sm',
+  'w-full min-w-0 rounded-control border border-border-strong bg-surface text-sm text-fg',
   'transition-[border-color,box-shadow] duration-150 placeholder:text-fg-subtle',
-  'hover:border-border-strong',
-  'focus-visible:border-primary-400 focus-visible:ring-4 focus-visible:ring-primary-500/15 focus-visible:outline-none',
+  'hover:border-fg-faint',
+  'focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary-500/15 focus-visible:outline-none',
   'aria-invalid:border-danger aria-invalid:focus-visible:ring-danger/15',
   'disabled:cursor-not-allowed disabled:bg-surface-raised disabled:opacity-70',
 );

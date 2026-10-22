@@ -41,7 +41,7 @@ export function SecurityPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-fg">{t('security.title')}</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">{t('security.title')}</h1>
         <p className="text-fg-muted">{t('security.subtitle')}</p>
       </header>
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

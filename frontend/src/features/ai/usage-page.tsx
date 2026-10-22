@@ -55,7 +55,7 @@ export function AiUsagePage({
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold text-fg">{t('usage.title')}</h1>
+          <h1 className="font-display text-3xl font-bold text-ink">{t('usage.title')}</h1>
           <p className="max-w-3xl text-fg-muted">{t('usage.subtitle')}</p>
         </div>
         <SegmentedControl

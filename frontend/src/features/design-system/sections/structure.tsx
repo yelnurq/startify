@@ -337,7 +337,7 @@ export function LayoutsSection({ index }: { index: number }) {
             <span className="grid size-10 place-items-center rounded-lg bg-primary-soft text-primary-soft-fg">
               <Icon className="size-5" aria-hidden />
             </span>
-            <h3 className="font-semibold text-fg">{t(`layouts.${key}`)}</h3>
+            <h3 className="font-semibold text-ink">{t(`layouts.${key}`)}</h3>
             <p className="flex-1 text-sm text-fg-muted">{t(`layouts.${key}Description`)}</p>
             <Button asChild variant="secondary" size="sm" className="self-start">
               <Link to={to}>{t('layouts.open')}</Link>

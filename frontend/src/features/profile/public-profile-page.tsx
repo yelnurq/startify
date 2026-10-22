@@ -135,7 +135,7 @@ function ProfileView({ profile }: { profile: PublicProfile }) {
           )}
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+          <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
             {profile.full_name}
           </h1>
           {profile.headline && <p className="text-fg-muted">{profile.headline}</p>}
@@ -151,7 +151,7 @@ function ProfileView({ profile }: { profile: PublicProfile }) {
 
         {profile.bio && (
           <section className="flex flex-col gap-2" aria-labelledby="bio-title">
-            <h2 id="bio-title" className="text-sm font-semibold text-fg">
+            <h2 id="bio-title" className="text-sm font-semibold text-ink">
               {t('publicProfile.about')}
             </h2>
             <p className="leading-relaxed whitespace-pre-line text-fg-muted">{profile.bio}</p>
@@ -171,7 +171,7 @@ function ProfileView({ profile }: { profile: PublicProfile }) {
 
         {visibleLinks.length > 0 && (
           <section className="flex flex-col gap-2" aria-labelledby="links-title">
-            <h2 id="links-title" className="text-sm font-semibold text-fg">
+            <h2 id="links-title" className="text-sm font-semibold text-ink">
               {t('publicProfile.links')}
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ function ProfileView({ profile }: { profile: PublicProfile }) {
 function TagSection({ id, title, tags }: { id: string; title: string; tags: string[] }) {
   return (
     <section className="flex flex-col gap-2" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`} className="text-sm font-semibold text-fg">
+      <h2 id={`${id}-title`} className="text-sm font-semibold text-ink">
         {title}
       </h2>
       <ul className="flex flex-wrap gap-1.5">

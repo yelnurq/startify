@@ -23,6 +23,7 @@ export * from './components/field';
 export * from './components/icon-button';
 export * from './components/input';
 export * from './components/kbd';
+export * from './components/kicker';
 export * from './components/logo';
 export * from './components/popover';
 export * from './components/preferences';

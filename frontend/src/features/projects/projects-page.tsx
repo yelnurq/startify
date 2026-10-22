@@ -103,7 +103,7 @@ function ProjectsPage({
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold text-fg">{t('projects.title')}</h1>
+          <h1 className="font-display text-3xl font-bold text-ink">{t('projects.title')}</h1>
           <p className="max-w-2xl text-fg-muted">{t('projects.subtitle')}</p>
         </div>
         <Button
@@ -236,7 +236,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
           <EvaluationChip evaluation={project.evaluation} />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <TruncatedText as="h2" lines={2} className="font-display text-lg font-semibold text-fg">
+          <TruncatedText as="h2" lines={2} className="font-display text-lg font-bold text-ink">
             {project.title}
           </TruncatedText>
           {project.tagline && (

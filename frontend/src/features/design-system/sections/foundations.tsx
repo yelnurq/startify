@@ -54,7 +54,7 @@ function ScaleRow({ name, label, note }: { name: string; label: string; note: st
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-fg">{label}</h3>
+        <h3 className="text-sm font-semibold text-ink">{label}</h3>
         <p className="text-sm text-fg-subtle">{note}</p>
       </div>
       <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-11">
@@ -161,7 +161,7 @@ export function TypographySection({ index }: { index: number }) {
       lead={t('typography.lead')}
     >
       <Specimen label={t('typography.display')} bodyClassName="flex flex-col gap-5">
-        <p className="font-display text-4xl font-semibold text-fg sm:text-6xl">
+        <p className="font-display text-4xl font-extrabold text-ink sm:text-6xl">
           {t('typography.headline')}
         </p>
         <p className="font-display text-2xl font-medium text-fg-muted sm:text-4xl">
@@ -183,7 +183,7 @@ export function TypographySection({ index }: { index: number }) {
         <Specimen label={t('typography.alphabet')} bodyClassName="flex flex-col gap-5">
           <p
             lang="kk"
-            className="font-display text-4xl leading-tight font-semibold tracking-wide text-primary-text"
+            className="font-display text-4xl leading-tight font-extrabold tracking-wide text-primary-text"
           >
             {KAZAKH_SPECIFIC}
           </p>
@@ -199,7 +199,7 @@ export function TypographySection({ index }: { index: number }) {
       <Specimen label={t('typography.numbers')} bodyClassName="grid gap-6 sm:grid-cols-3">
         {[1284, 371, 63.4].map((value) => (
           <div key={value} className="flex flex-col gap-1">
-            <span className="font-display text-4xl font-semibold text-fg tabular-nums">
+            <span className="font-figures text-4xl font-bold text-ink tabular-nums">
               {format.number(value)}
             </span>
             <span className="text-sm text-fg-subtle">{t('typography.numbersNote')}</span>
@@ -211,9 +211,9 @@ export function TypographySection({ index }: { index: number }) {
 }
 
 const RADII = [
-  { cls: 'rounded-md', key: 'radiusInput', px: '8' },
+  { cls: 'rounded-control', key: 'radiusInput', px: '0' },
   { cls: 'rounded-lg', key: 'radiusButton', px: '12' },
-  { cls: 'rounded-xl', key: 'radiusPanel', px: '16' },
+  { cls: 'rounded-card', key: 'radiusPanel', px: '14' },
   { cls: 'rounded-2xl', key: 'radiusModal', px: '20' },
   { cls: 'rounded-full', key: 'radiusFull', px: '∞' },
 ] as const;
@@ -283,7 +283,7 @@ export function ShapeSection({ index }: { index: number }) {
                 transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                 className="grid size-14 place-items-center rounded-xl bg-primary text-primary-fg shadow-md"
               >
-                <span className="font-display text-lg font-semibold">Q</span>
+                <span className="font-display text-lg font-bold">Q</span>
               </m.div>
             </LazyMotion>
           </div>

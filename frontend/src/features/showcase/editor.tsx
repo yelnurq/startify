@@ -331,7 +331,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1.5">
-            <h1 className="font-display text-2xl font-semibold text-fg">{t('editor.title')}</h1>
+            <h1 className="font-display text-2xl font-bold text-ink">{t('editor.title')}</h1>
             <p className="max-w-xl text-sm text-fg-muted">{t('editor.intro')}</p>
           </div>
           <Badge tone={STATUS_TONE[entry.status]} size="lg" dot>
@@ -441,8 +441,8 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-sm font-medium text-fg">{t('editor.fields.cover')}</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[16rem_1fr] sm:items-center">
-            <div className="aspect-video overflow-hidden rounded-xl border border-border bg-surface-sunken">
+          <div className="flex flex-col gap-3">
+            <div className="aspect-video w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface-sunken">
               {entry.cover_url ? (
                 <img
                   src={entry.cover_url}
@@ -681,7 +681,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-5">
-      <h2 className="border-b border-border pb-2 text-base font-semibold text-fg">{title}</h2>
+      <h2 className="border-b border-border pb-2 text-base font-semibold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -755,13 +755,16 @@ function StatusCallout({ entry }: { entry: ShowcaseEntry }) {
       );
     case 'rejected':
       return (
-        <Callout tone="danger" title={t('editor.state.rejected')} action={link}>
-          {entry.review_comment && (
-            <span className="flex flex-col gap-1">
-              <span className="font-medium">{t('editor.state.comment')}</span>
-              <span className="whitespace-pre-line">{entry.review_comment}</span>
-            </span>
-          )}
+        <Callout tone="danger" title={t('editor.state.rejectedTitle')} action={link}>
+          <span className="flex flex-col gap-2">
+            <span>{t('editor.state.rejected')}</span>
+            {entry.review_comment && (
+              <span className="flex flex-col gap-1">
+                <span className="font-medium">{t('editor.state.comment')}</span>
+                <span className="whitespace-pre-line">{entry.review_comment}</span>
+              </span>
+            )}
+          </span>
         </Callout>
       );
   }
@@ -776,7 +779,7 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
       <section className="flex flex-col gap-3" aria-labelledby="preview-card-title">
-        <h2 id="preview-card-title" className="text-sm font-semibold text-fg">
+        <h2 id="preview-card-title" className="text-sm font-semibold text-ink">
           {t('editor.preview.card')}
         </h2>
         {card ? (
@@ -788,7 +791,7 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
         )}
       </section>
       <section className="flex flex-col gap-3" aria-labelledby="contacts-title">
-        <h2 id="contacts-title" className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <h2 id="contacts-title" className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Inbox className="size-4 text-fg-subtle" aria-hidden />
           {t('editor.contacts.title')}
           {contacts.data && contacts.data.length > 0 && (

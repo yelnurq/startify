@@ -68,7 +68,7 @@ export function DashboardPage({ session }: { session: Session }) {
           <p className="text-sm text-fg-subtle first-letter:uppercase">
             {format.dateTime(now, { dateStyle: 'full' })}
           </p>
-          <h1 className="font-display text-3xl font-semibold text-balance text-fg">
+          <h1 className="font-display text-3xl font-bold text-balance text-ink">
             {t(`dashboard.greeting.${partOfDay(now.getHours())}`, {
               name: firstName(session.user.full_name),
             })}
@@ -209,7 +209,7 @@ function ProfileProgress({ me }: { me: Me }) {
             <span className="text-sm font-semibold text-fg tabular-nums">{value}%</span>
           </ProgressRing>
           <div className="flex flex-col gap-0.5">
-            <h2 className="font-semibold text-fg">{t('dashboard.profile.title')}</h2>
+            <h2 className="font-semibold text-ink">{t('dashboard.profile.title')}</h2>
             <p className="text-sm text-fg-muted">
               {t('dashboard.profile.counter', { done, total: items.length })}
             </p>
