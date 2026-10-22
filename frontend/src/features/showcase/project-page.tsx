@@ -128,6 +128,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
               industry={card.industry}
               coverUrl={card.cover_url}
               priority
+              monogram={false}
             />
           </div>
           <div

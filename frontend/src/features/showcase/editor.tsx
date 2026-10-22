@@ -344,7 +344,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
             {t('editor.prefilled.text')}
           </Callout>
         )}
-        {editable && (
+        {editable && (canPublish || canUnpublish) && (
           <div className="flex flex-wrap gap-2">
             {canPublish && (
               <Button type="button" loading={publish.isPending} onClick={() => void onPublish()}>
@@ -353,14 +353,6 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
                   : t('editor.actions.publish')}
               </Button>
             )}
-            <Button
-              type="submit"
-              variant={canPublish ? 'secondary' : 'primary'}
-              loading={save.isPending}
-              disabled={busy || (!dirty && entry.saved)}
-            >
-              {t('common:actions.save')}
-            </Button>
             {canUnpublish && (
               <Button
                 type="button"

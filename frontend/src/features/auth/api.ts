@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { api, unwrap } from '@/shared/api/client';
+import { api, readCookie, unwrap } from '@/shared/api/client';
 import { isUnauthenticated } from '@/shared/api/errors';
 import type { components } from '@/shared/api/schema.gen';
 
@@ -19,6 +19,9 @@ export const tenantQuery = queryOptions({
 export const sessionQuery = queryOptions({
   queryKey: ['session'],
   queryFn: async (): Promise<Session | null> => {
+    // The CSRF cookie lives as long as the session: without it there is none to
+    // ask about (and visitors of public pages get no 401 in the console).
+    if (readCookie('qadam_csrf') === undefined) return null;
     try {
       return await unwrap(api.GET('/auth/session'));
     } catch (error) {

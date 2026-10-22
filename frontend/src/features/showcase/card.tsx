@@ -45,6 +45,7 @@ export function CardCover({
   industry,
   coverUrl,
   priority = false,
+  monogram: showMonogram = true,
   className,
 }: {
   title: string;
@@ -52,6 +53,8 @@ export function CardCover({
   coverUrl: string | null;
   /** The largest image of the page (LCP): loaded first, not lazily. */
   priority?: boolean;
+  /** Initials on the placeholder; off where the title is written over it. */
+  monogram?: boolean;
   className?: string;
 }) {
   if (coverUrl) {
@@ -78,9 +81,11 @@ export function CardCover({
       )}
     >
       <div className="absolute inset-0 ornament opacity-[0.1]" />
-      <span className="relative font-display text-5xl font-semibold text-white/90">
-        {monogram(title)}
-      </span>
+      {showMonogram && (
+        <span className="relative font-display text-5xl font-semibold text-white/90">
+          {monogram(title)}
+        </span>
+      )}
     </div>
   );
 }
@@ -244,11 +249,15 @@ export function ShowcaseCardView({
           )}
         </div>
         <div className="mt-auto flex flex-col gap-3">
-          {(faculty || card.year) && (
-            <p className="text-xs text-fg-subtle">
-              {[faculty, String(card.year)].filter(Boolean).join(' · ')}
-            </p>
-          )}
+          <p className="flex min-w-0 items-center gap-1 text-xs text-fg-subtle">
+            {faculty && (
+              <>
+                <TruncatedText>{faculty}</TruncatedText>
+                <span aria-hidden>·</span>
+              </>
+            )}
+            <span className="shrink-0 tabular-nums">{card.year}</span>
+          </p>
           <div className="flex items-center justify-between gap-2">
             {card.needs.length > 0 ? (
               <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-fg-muted">
