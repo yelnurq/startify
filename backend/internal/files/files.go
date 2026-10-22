@@ -36,6 +36,7 @@ import (
 const (
 	PurposeAvatar       = "avatar"
 	PurposeTenantLogo   = "tenant_logo"
+	PurposeTenantCover  = "tenant_cover"
 	PurposeProjectCover = "project_cover"
 	PurposeAttachment   = "attachment"
 	PurposeKnowledge    = "knowledge"

@@ -294,7 +294,7 @@ func (s *Service) landingPage(w http.ResponseWriter, r *http.Request) {
 		"description": m.Description, "inLanguage": m.Lang,
 		"publisher": map[string]any{"@type": "CollegeOrUniversity", "name": full},
 	}
-	boot := landingBoot(u.Brief, bootLocale(r))
+	boot := landingBoot(u, bootLocale(r))
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
 		return

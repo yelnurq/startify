@@ -22,6 +22,7 @@ type Tenant struct {
 	Status        string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	CoverFileID   *uuid.UUID
 }
 
 type TenantOidcProvider struct {

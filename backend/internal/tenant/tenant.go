@@ -180,6 +180,8 @@ func (s *Service) Brief(ctx context.Context, id uuid.UUID) (apigen.TenantBrief, 
 type University struct {
 	Brief  apigen.UniversityBrief
 	Origin string
+	// CoverURL is the photo for the hero of the university's pages.
+	CoverURL *string
 }
 
 // Universities describes universities by id (a platform registry, readable
@@ -198,7 +200,8 @@ func (s *Service) Universities(ctx context.Context, ids []uuid.UUID) (map[uuid.U
 					Slug: r.Slug, Name: apiconv.ParseText(r.Name).API(), ShortName: apiconv.ParseText(r.ShortName).API(),
 					Color: r.PrimaryColor, LogoUrl: apiconv.FileURL(r.LogoFileID),
 				},
-				Origin: s.origin(r.Slug, r.PrimaryDomain),
+				Origin:   s.origin(r.Slug, r.PrimaryDomain),
+				CoverURL: apiconv.FileURL(r.CoverFileID),
 			}
 		}
 		return err
@@ -323,6 +326,7 @@ func (h *Handler) GetCurrentTenant(ctx context.Context, _ apigen.GetCurrentTenan
 			DefaultLocale: apigen.Locale(row.DefaultLocale),
 			PrimaryColor:  row.PrimaryColor,
 			LogoUrl:       apiconv.FileURL(row.LogoFileID),
+			CoverUrl:      apiconv.FileURL(row.CoverFileID),
 			SelfSignup:    settings.SelfSignup,
 			EmailDomains:  settings.EmailDomains,
 			SsoProviders:  sso,

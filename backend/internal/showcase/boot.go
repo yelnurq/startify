@@ -2,6 +2,7 @@ package showcase
 
 import (
 	_ "embed"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 	"github.com/yelnurq/startify/backend/internal/showcase/showcasedb"
+	"github.com/yelnurq/startify/backend/internal/tenant"
 )
 
 // The first screen of public pages is drawn here, in the language the web
@@ -42,8 +44,23 @@ var bootText = map[string]apiconv.Text{
 		"ru": "Qadam ведёт студенческий проект от первой идеи до Demo Day и встречи с инвестором: AI-ментор, команда, экспертиза и витрина — в одном месте.",
 		"en": "Qadam takes a student project from the first idea to Demo Day and a meeting with an investor: an AI mentor, a team, expert review and a showcase — all in one place.",
 	},
-	"showcase:catalog.eyebrow": {"kk": "Жобалар витринасы", "ru": "Витрина проектов", "en": "Project showcase"},
-	"showcase:catalog.title":   {"kk": "Серіктес іздеп жүрген жобалар", "ru": "Проекты, которые ищут партнёров", "en": "Projects looking for partners"},
+	"landing:hero.primary":           {"kk": "Жобаны бастау", "ru": "Начать проект", "en": "Start a project"},
+	"landing:hero.secondary":         {"kk": "Витринаны көру", "ru": "Смотреть витрину", "en": "Browse the showcase"},
+	"landing:route.label":            {"kk": "Жоба маршруты", "ru": "Маршрут проекта", "en": "The route of a project"},
+	"landing:route.idea":             {"kk": "Идея", "ru": "Идея", "en": "Idea"},
+	"landing:route.incubator":        {"kk": "Инкубатор", "ru": "Инкубатор", "en": "Incubator"},
+	"landing:route.evaluation":       {"kk": "AI-бағалау", "ru": "AI-оценка", "en": "AI evaluation"},
+	"landing:route.showcase":         {"kk": "Витрина", "ru": "Витрина", "en": "Showcase"},
+	"landing:route.demoDay":          {"kk": "Demo Day", "ru": "Demo Day", "en": "Demo Day"},
+	"landing:route.market":           {"kk": "Нарық", "ru": "Рынок", "en": "Market"},
+	"landing:route.hints.idea":       {"kk": "Мәселе және ол кімге қатысты", "ru": "Проблема и для кого она", "en": "The problem and whose it is"},
+	"landing:route.hints.incubator":  {"kk": "AI-ментормен 14 қадам", "ru": "14 шагов с AI-ментором", "en": "14 steps with an AI mentor"},
+	"landing:route.hints.evaluation": {"kk": "Университет рубрикасы бойынша балл", "ru": "Балл по рубрике вуза", "en": "A score by the university rubric"},
+	"landing:route.hints.showcase":   {"kk": "Серіктестерге арналған бет", "ru": "Страница для партнёров", "en": "A page for partners"},
+	"landing:route.hints.demoDay":    {"kk": "Питч және дауыс беру", "ru": "Питч и голосование", "en": "A pitch and a live vote"},
+	"landing:route.hints.market":     {"kk": "Пилоттар мен инвестициялар", "ru": "Пилоты и инвестиции", "en": "Pilots and investment"},
+	"showcase:catalog.eyebrow":       {"kk": "Жобалар витринасы", "ru": "Витрина проектов", "en": "Project showcase"},
+	"showcase:catalog.title":         {"kk": "Серіктес іздеп жүрген жобалар", "ru": "Проекты, которые ищут партнёров", "en": "Projects looking for partners"},
 	"showcase:catalog.subtitle": {
 		"kk": "{{university}} студенттік стартаптары мен инновациялық жобалары: сала, кезең және команда іздейтін қолдау бойынша іздеңіз.",
 		"ru": "Студенческие стартапы и инновационные проекты {{university}}: ищите по отрасли, стадии и тому, что нужно команде.",
@@ -73,10 +90,20 @@ var industryGradient = map[string]int{
 	"foodtech": 3, "fashion": 3, "ecommerce": 0, "manufacturing": 1, "energy": 3, "tourism": 2, "social": 1, "other": 0,
 }
 
+// routeStops are the milestones of the landing hero.
+var routeStops = []string{"idea", "incubator", "evaluation", "showcase", "demoDay", "market"}
+
+// bootStop is a milestone of the route strip.
+type bootStop struct {
+	Number, Name, Hint string
+}
+
 // bootPage is what the first screen shows.
 type bootPage struct {
 	Lang       string
 	University string
+	// Logo is the university's seal; without one the Qadam mark is drawn.
+	Logo string
 	// Kind is landing, catalog or project.
 	Kind     string
 	Kicker   string
@@ -88,6 +115,11 @@ type bootPage struct {
 	Gradient string
 	Industry string
 	Stage    string
+	// Landing hero: the actions and the route strip.
+	Primary    string
+	Secondary  string
+	RouteLabel string
+	Route      []bootStop
 }
 
 func bootString(key, locale string) string { return bootText[key].Best(locale) }
@@ -131,17 +163,36 @@ func renderBoot(p *bootPage) (string, error) {
 // bootUniversity names the university in the header for the language.
 func bootUniversity(u apigen.UniversityBrief, locale string) string { return best(u.Name, locale) }
 
-func landingBoot(u apigen.UniversityBrief, locale string) bootPage {
-	return bootPage{
-		Lang: locale, University: bootUniversity(u, locale), Kind: "landing",
+func bootLogo(u apigen.UniversityBrief) string {
+	if u.LogoUrl == nil {
+		return ""
+	}
+	return *u.LogoUrl
+}
+
+func landingBoot(u tenant.University, locale string) bootPage {
+	p := bootPage{
+		Lang: locale, University: bootUniversity(u.Brief, locale), Logo: bootLogo(u.Brief), Kind: "landing",
 		Kicker: bootString("landing:hero.eyebrow", locale),
 		Title:  bootString("landing:hero.titleLead", locale), Accent: bootString("landing:hero.titleAccent", locale),
-		Text: bootString("landing:hero.subtitle", locale),
+		Text:    bootString("landing:hero.subtitle", locale),
+		Primary: bootString("landing:hero.primary", locale), Secondary: bootString("landing:hero.secondary", locale),
+		RouteLabel: bootString("landing:route.label", locale),
 	}
+	if u.CoverURL != nil {
+		p.Cover = *u.CoverURL
+	}
+	for i, stop := range routeStops {
+		p.Route = append(p.Route, bootStop{
+			Number: fmt.Sprintf("%02d", i+1),
+			Name:   bootString("landing:route."+stop, locale), Hint: bootString("landing:route.hints."+stop, locale),
+		})
+	}
+	return p
 }
 
 func catalogBoot(u apigen.UniversityBrief, locale string, national bool) bootPage {
-	p := bootPage{Lang: locale, University: bootUniversity(u, locale), Kind: "catalog"}
+	p := bootPage{Lang: locale, University: bootUniversity(u, locale), Logo: bootLogo(u), Kind: "catalog"}
 	short := best(u.ShortName, locale)
 	if national {
 		p.Kicker = bootString("showcase:catalog.eyebrow", locale)
@@ -159,7 +210,7 @@ func catalogBoot(u apigen.UniversityBrief, locale string, national bool) bootPag
 
 func projectBoot(e *showcasedb.ShowcaseEntry, u apigen.UniversityBrief, locale string) bootPage {
 	p := bootPage{
-		Lang: locale, University: bootUniversity(u, locale), Kind: "project",
+		Lang: locale, University: bootUniversity(u, locale), Logo: bootLogo(u), Kind: "project",
 		Kicker: bootString("showcase:site.showcase", locale), Crumbs: bootString("common:breadcrumbs", locale),
 		Title: e.Title, Text: e.Tagline,
 		Gradient: coverGradients[industryGradient[e.Industry]],

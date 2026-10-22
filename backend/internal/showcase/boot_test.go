@@ -16,6 +16,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apiconv"
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/showcase/showcasedb"
+	"github.com/yelnurq/startify/backend/internal/tenant"
 )
 
 // frontendDir is the web client next to the backend in the repository; the
@@ -176,12 +177,18 @@ func TestRenderBoot(t *testing.T) {
 		Name:      apiconv.Text{"kk": "Қ. Құлажанов атындағы ҚазТБУ", "ru": "КазУТБ имени К. Кулажанова"}.API(),
 		ShortName: apiconv.Text{"kk": "ҚазТБУ", "ru": "КазУТБ"}.API(),
 	}
-	landing := landingBoot(u, "ru")
+	coverURL, sealURL := "/api/v1/files/cover/content", "/api/v1/files/seal/content"
+	u.LogoUrl = &sealURL
+	landing := landingBoot(tenant.University{Brief: u, CoverURL: &coverURL}, "ru")
 	out, err := renderBoot(&landing)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`<div id="boot" lang="ru"`, "КазУТБ имени К. Кулажанова", "От идеи до рынка — <em", "один шаг"} {
+	for _, want := range []string{
+		`<div id="boot" lang="ru"`, "КазУТБ имени К. Кулажанова", "От идеи до рынка — <em", "один шаг",
+		`<img src="/api/v1/files/seal/content"`, `<img src="/api/v1/files/cover/content"`, "Начать проект", "Смотреть витрину",
+		`aria-label="Маршрут проекта"`, `tracking-label text-primary-300">06</span>`, "Пилоты и инвестиции",
+	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("landing: no %q in\n%s", want, out)
 		}

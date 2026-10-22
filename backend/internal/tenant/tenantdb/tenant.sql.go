@@ -67,7 +67,7 @@ func (q *Queries) GetOidcProvider(ctx context.Context, id uuid.UUID) (TenantOidc
 }
 
 const getTenantByDomain = `-- name: GetTenantByDomain :one
-SELECT t.id, t.slug, t.name, t.short_name, t.default_locale, t.primary_color, t.logo_file_id, t.status, t.created_at, t.updated_at
+SELECT t.id, t.slug, t.name, t.short_name, t.default_locale, t.primary_color, t.logo_file_id, t.status, t.created_at, t.updated_at, t.cover_file_id
   FROM tenant_domains d
   JOIN tenants t ON t.id = d.tenant_id
  WHERE d.domain = $1
@@ -87,12 +87,13 @@ func (q *Queries) GetTenantByDomain(ctx context.Context, domain string) (Tenant,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CoverFileID,
 	)
 	return i, err
 }
 
 const getTenantByID = `-- name: GetTenantByID :one
-SELECT id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at FROM tenants WHERE id = $1
+SELECT id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at, cover_file_id FROM tenants WHERE id = $1
 `
 
 func (q *Queries) GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error) {
@@ -109,12 +110,13 @@ func (q *Queries) GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, erro
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CoverFileID,
 	)
 	return i, err
 }
 
 const getTenantBySlug = `-- name: GetTenantBySlug :one
-SELECT id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at FROM tenants WHERE slug = $1
+SELECT id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at, cover_file_id FROM tenants WHERE slug = $1
 `
 
 func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, error) {
@@ -131,6 +133,7 @@ func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, err
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CoverFileID,
 	)
 	return i, err
 }
@@ -189,7 +192,7 @@ func (q *Queries) ListEnabledOidcProviders(ctx context.Context, tenantID uuid.UU
 }
 
 const listTenantsByIDs = `-- name: ListTenantsByIDs :many
-SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id,
+SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id, t.cover_file_id,
        coalesce((SELECT d.domain FROM tenant_domains d WHERE d.tenant_id = t.id AND d.is_primary LIMIT 1), '')::text AS primary_domain
   FROM tenants t
  WHERE t.id = ANY($1::uuid[])
@@ -202,6 +205,7 @@ type ListTenantsByIDsRow struct {
 	ShortName     json.RawMessage
 	PrimaryColor  string
 	LogoFileID    *uuid.UUID
+	CoverFileID   *uuid.UUID
 	PrimaryDomain string
 }
 
@@ -221,6 +225,7 @@ func (q *Queries) ListTenantsByIDs(ctx context.Context, ids []uuid.UUID) ([]List
 			&i.ShortName,
 			&i.PrimaryColor,
 			&i.LogoFileID,
+			&i.CoverFileID,
 			&i.PrimaryDomain,
 		); err != nil {
 			return nil, err
@@ -233,6 +238,21 @@ func (q *Queries) ListTenantsByIDs(ctx context.Context, ids []uuid.UUID) ([]List
 	return items, nil
 }
 
+const setTenantBranding = `-- name: SetTenantBranding :exec
+UPDATE tenants SET logo_file_id = $1, cover_file_id = $2 WHERE id = $3
+`
+
+type SetTenantBrandingParams struct {
+	LogoFileID  *uuid.UUID
+	CoverFileID *uuid.UUID
+	ID          uuid.UUID
+}
+
+func (q *Queries) SetTenantBranding(ctx context.Context, arg SetTenantBrandingParams) error {
+	_, err := q.db.Exec(ctx, setTenantBranding, arg.LogoFileID, arg.CoverFileID, arg.ID)
+	return err
+}
+
 const upsertTenant = `-- name: UpsertTenant :one
 INSERT INTO tenants (slug, name, short_name, default_locale, primary_color)
 VALUES ($1, $2, $3, $4, $5)
@@ -241,7 +261,7 @@ ON CONFLICT (slug) DO UPDATE
        short_name = EXCLUDED.short_name,
        default_locale = EXCLUDED.default_locale,
        primary_color = EXCLUDED.primary_color
-RETURNING id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at
+RETURNING id, slug, name, short_name, default_locale, primary_color, logo_file_id, status, created_at, updated_at, cover_file_id
 `
 
 type UpsertTenantParams struct {
@@ -272,6 +292,7 @@ func (q *Queries) UpsertTenant(ctx context.Context, arg UpsertTenantParams) (Ten
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CoverFileID,
 	)
 	return i, err
 }

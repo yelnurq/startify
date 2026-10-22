@@ -1,16 +1,18 @@
 // Command seed fills the database with the demonstration data: the KazUTB
-// structure, demo accounts of every role, requests for teammates and student
-// projects. It is idempotent and refuses to run in production.
+// structure with its seal and campus photo, demo accounts of every role,
+// requests for teammates and student projects. It is idempotent and refuses to run in production.
 package main
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/seed"
@@ -41,6 +43,13 @@ func run() error {
 	defer database.Close()
 
 	if err := seed.Demo(ctx, database); err != nil {
+		return err
+	}
+	storage, err := files.NewStorage(ctx, cfg.S3)
+	if err != nil {
+		return err
+	}
+	if err := seed.Branding(ctx, database, files.NewService(database, storage, cfg.Files, slog.Default())); err != nil {
 		return err
 	}
 	fmt.Println("Demo data is ready. Sign in at", cfg.App.PublicURL, "with any account below, password", seed.DemoPassword)

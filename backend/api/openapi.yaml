@@ -2916,6 +2916,7 @@ components:
         - default_locale
         - primary_color
         - logo_url
+        - cover_url
         - self_signup
         - email_domains
         - sso_providers
@@ -2939,6 +2940,10 @@ components:
           pattern: "^#[0-9A-Fa-f]{6}$"
         logo_url:
           type: [string, "null"]
+          description: The university's seal.
+        cover_url:
+          type: [string, "null"]
+          description: A photo of the university for the hero of its public pages.
         self_signup:
           type: boolean
           description: Whether students may register on their own.
