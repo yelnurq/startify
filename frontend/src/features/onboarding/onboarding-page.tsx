@@ -10,7 +10,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, LazyMotion, m } from 'motion/react';
 import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -36,6 +36,7 @@ import {
   Textarea,
   ThemeToggle,
   toast,
+  useReducedMotion,
 } from '@/design-system';
 import { useSignOut, type Session } from '@/features/auth/api';
 import { FormAlert } from '@/features/auth/components';
@@ -51,6 +52,7 @@ import { errorMessage } from '@/shared/api/errors';
 import { TagPicker } from '@/shared/forms/tag-picker';
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { changeLocale, isLocale, LOCALES } from '@/shared/i18n';
+import { loadMotionFeatures } from '@/shared/motion';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import {
@@ -143,7 +145,7 @@ interface StepProps {
 export function OnboardingPage({ session }: { session: Session }) {
   const { t, i18n } = useTranslation(['onboarding', 'common']);
   const navigate = useNavigate();
-  const reduce = useReducedMotion() ?? false;
+  const reduce = useReducedMotion();
   const faculties = useQuery(facultiesQuery);
   const complete = useCompleteOnboarding();
   const signOut = useSignOut();
@@ -241,49 +243,51 @@ export function OnboardingPage({ session }: { session: Session }) {
               }}
             >
               <div className="p-5 sm:p-8">
-                <AnimatePresence mode="wait" initial={false} custom={direction}>
-                  <motion.div
-                    key={key}
-                    custom={direction}
-                    variants={{
-                      enter: (dir: number) => ({ opacity: 0, x: dir * offset }),
-                      center: { opacity: 1, x: 0 },
-                      exit: (dir: number) => ({ opacity: 0, x: dir * -offset }),
-                    }}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex flex-col gap-6"
-                  >
-                    <div className="flex flex-col gap-2">
-                      <h1
-                        tabIndex={-1}
-                        ref={(element) => {
-                          if (element && moved.current) element.focus();
-                        }}
-                        className="font-display text-2xl font-semibold text-fg outline-none sm:text-3xl"
-                      >
-                        {key === 'language'
-                          ? t('language.title', { name: session.user.full_name })
-                          : key === 'study'
-                            ? t(student ? 'study.title' : 'study.titleStaff')
-                            : t(`${key}.title`)}
-                      </h1>
-                      <p className="text-fg-muted">
-                        {key === 'study'
-                          ? t(student ? 'study.subtitle' : 'study.subtitleStaff')
-                          : t(`${key}.subtitle`)}
-                      </p>
-                    </div>
-                    {key === 'language' && <LanguageStep {...props} />}
-                    {key === 'study' && (
-                      <StudyStep {...props} student={student} faculties={faculties} />
-                    )}
-                    {key === 'interests' && <InterestsStep {...props} />}
-                    {key === 'idea' && <IdeaStep {...props} />}
-                  </motion.div>
-                </AnimatePresence>
+                <LazyMotion features={loadMotionFeatures} strict>
+                  <AnimatePresence mode="wait" initial={false} custom={direction}>
+                    <m.div
+                      key={key}
+                      custom={direction}
+                      variants={{
+                        enter: (dir: number) => ({ opacity: 0, x: dir * offset }),
+                        center: { opacity: 1, x: 0 },
+                        exit: (dir: number) => ({ opacity: 0, x: dir * -offset }),
+                      }}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex flex-col gap-6"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <h1
+                          tabIndex={-1}
+                          ref={(element) => {
+                            if (element && moved.current) element.focus();
+                          }}
+                          className="font-display text-2xl font-semibold text-fg outline-none sm:text-3xl"
+                        >
+                          {key === 'language'
+                            ? t('language.title', { name: session.user.full_name })
+                            : key === 'study'
+                              ? t(student ? 'study.title' : 'study.titleStaff')
+                              : t(`${key}.title`)}
+                        </h1>
+                        <p className="text-fg-muted">
+                          {key === 'study'
+                            ? t(student ? 'study.subtitle' : 'study.subtitleStaff')
+                            : t(`${key}.subtitle`)}
+                        </p>
+                      </div>
+                      {key === 'language' && <LanguageStep {...props} />}
+                      {key === 'study' && (
+                        <StudyStep {...props} student={student} faculties={faculties} />
+                      )}
+                      {key === 'interests' && <InterestsStep {...props} />}
+                      {key === 'idea' && <IdeaStep {...props} />}
+                    </m.div>
+                  </AnimatePresence>
+                </LazyMotion>
                 <FormAlert message={formError} />
               </div>
               <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-raised px-5 py-4 sm:px-8">

@@ -5,7 +5,7 @@ import { ChevronDown, Lock, Mail, UserRound } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import { Button, Checkbox, EmptyState, Field, Input, Skeleton, toast } from '@/design-system';
 import { ApiError } from '@/shared/api/client';

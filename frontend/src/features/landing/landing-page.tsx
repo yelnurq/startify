@@ -19,14 +19,14 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { PublicLayout } from '@/app/layouts/public-layout';
-import { Badge, Button, Card, cn, Logo } from '@/design-system';
-import { sessionQuery } from '@/features/auth/api';
-import { metaQuery } from '@/features/system/api';
+import { AnimatedNumber, Badge, Button, Card, cn, Skeleton } from '@/design-system';
+import { sessionQuery, tenantQuery } from '@/features/auth/api';
+import { showcaseHighlightsQuery } from '@/features/showcase/api';
+import { ShowcaseCardView } from '@/features/showcase/card';
+import { SiteFrame, siteNavClass } from '@/features/showcase/site';
+import { useFormatters } from '@/shared/i18n/format';
 
 import { RouteTimeline, RouteVisual } from './route-visual';
-
-const YEAR = new Date().getFullYear();
 
 const STAGES = [
   { key: 'idea', icon: Lightbulb, steps: ['s1', 's2', 's3', 's4'] },
@@ -66,6 +66,8 @@ const AUDIENCES: { key: 'students' | 'universities' | 'partners'; icon: LucideIc
 
 const NAV = ['how', 'students', 'universities', 'partners'] as const;
 
+const COUNTERS = ['projects', 'published', 'students', 'evaluations'] as const;
+
 /** Public home page: what Qadam is, how the incubator works, who it is for. */
 export function LandingPage() {
   const { t } = useTranslation('landing');
@@ -73,44 +75,20 @@ export function LandingPage() {
   const signedIn = Boolean(session.data);
 
   return (
-    <PublicLayout
-      logo={
-        <Link to="/" className="rounded-lg">
-          <Logo />
-        </Link>
-      }
+    <SiteFrame
       nav={NAV.map((key) => (
-        <a
-          key={key}
-          href={`#${key}`}
-          className="rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-raised hover:text-fg"
-        >
+        <a key={key} href={`#${key}`} className={siteNavClass}>
           {t(`nav.${key}`)}
         </a>
       ))}
-      actions={
-        signedIn ? (
-          <Button asChild size="sm">
-            <Link to="/app">{t('actions.toApp')}</Link>
-          </Button>
-        ) : (
-          <>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/login">{t('actions.signIn')}</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/register">{t('actions.start')}</Link>
-            </Button>
-          </>
-        )
-      }
-      footer={<LandingFooter />}
     >
       <Hero signedIn={signedIn} />
+      <Counters />
       <HowItWorks />
+      <Featured />
       <Audiences signedIn={signedIn} />
       <FinalCta signedIn={signedIn} />
-    </PublicLayout>
+    </SiteFrame>
   );
 }
 
@@ -143,7 +121,7 @@ function Hero({ signedIn }: { signedIn: boolean }) {
               </Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <a href="#how">{t('hero.secondary')}</a>
+              <Link to="/showcase">{t('hero.secondary')}</Link>
             </Button>
           </div>
           <p className="flex items-center gap-2 text-sm text-fg-subtle">
@@ -302,9 +280,12 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
                   </Button>
                 )}
                 {key === 'partners' && (
-                  <Badge tone="gold" size="lg">
-                    {t('audiences.partners.soon')}
-                  </Badge>
+                  <Button asChild variant="secondary">
+                    <Link to="/showcase">
+                      {t('audiences.partners.cta')}
+                      <ArrowRight aria-hidden />
+                    </Link>
+                  </Button>
                 )}
               </div>
             </Card>
@@ -353,61 +334,78 @@ function FinalCta({ signedIn }: { signedIn: boolean }) {
   );
 }
 
-function ApiStatus() {
+/** Live numbers of the university (B-012); hidden when the API is unavailable. */
+function Counters() {
   const { t } = useTranslation('landing');
-  const meta = useQuery(metaQuery);
-  if (meta.isPending) {
-    return (
-      <Badge tone="neutral" dot>
-        {t('footer.apiChecking')}
-      </Badge>
-    );
-  }
-  if (meta.isError) {
-    return (
-      <Badge tone="danger" dot>
-        {t('footer.apiOffline')}
-      </Badge>
-    );
-  }
+  const { number } = useFormatters();
+  const highlights = useQuery(showcaseHighlightsQuery);
+  if (highlights.isError) return null;
+  const counters = highlights.data?.counters;
   return (
-    <Badge tone="success" dot>
-      {t('footer.api')}
-      <span data-testid="api-version" className="ml-1 font-mono tabular-nums">
-        {meta.data.version}
-      </span>
-    </Badge>
+    <section
+      aria-label={t('counters.label')}
+      className="mx-auto max-w-page px-4 pb-14 sm:px-6 lg:pb-20"
+    >
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6 lg:grid-cols-4">
+        {COUNTERS.map((key) => (
+          <div key={key} className="flex flex-col-reverse gap-1">
+            <dt className="text-sm text-fg-muted">{t(`counters.${key}`)}</dt>
+            <dd className="font-display text-3xl font-semibold text-fg tabular-nums sm:text-4xl">
+              {counters ? (
+                <AnimatedNumber
+                  value={counters[key]}
+                  format={(value) => number(Math.round(value))}
+                />
+              ) : (
+                <Skeleton className="h-9 w-20 sm:h-10" />
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
-function LandingFooter() {
-  const { t } = useTranslation(['landing', 'common']);
+/** The best published projects of the showcase; the block is hidden until there are some. */
+function Featured() {
+  const { t } = useTranslation('landing');
+  const highlights = useQuery(showcaseHighlightsQuery);
+  const tenant = useQuery(tenantQuery);
+  const featured = highlights.data?.featured ?? [];
+  if (featured.length === 0) return null;
   return (
-    <footer className="border-t border-border bg-surface">
-      <div className="mx-auto flex max-w-page flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col gap-2">
-          <Logo />
-          <p className="max-w-sm text-sm text-fg-subtle">{t('common:app.tagline')}</p>
+    <section
+      aria-labelledby="featured-title"
+      className="mx-auto max-w-page px-4 pt-16 sm:px-6 lg:pt-24"
+    >
+      <div className="flex flex-col gap-10">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <SectionHeading
+            id="featured-title"
+            eyebrow={t('featured.eyebrow')}
+            title={t('featured.title')}
+            text={t('featured.text')}
+          />
+          <Button asChild variant="secondary">
+            <Link to="/showcase">
+              {t('featured.all')}
+              <ArrowRight aria-hidden />
+            </Link>
+          </Button>
         </div>
-        <nav
-          aria-label={t('footer.label')}
-          className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
-        >
-          <Link to="/login" className="text-fg-muted hover:text-fg">
-            {t('actions.signIn')}
-          </Link>
-          <Link to="/register" className="text-fg-muted hover:text-fg">
-            {t('actions.register')}
-          </Link>
-          <Link to="/design" className="text-fg-muted hover:text-fg">
-            {t('common:nav.designSystem')}
-          </Link>
-        </nav>
-        <div className="flex flex-col items-start gap-2 md:items-end">
-          <ApiStatus />
-          <p className="text-xs text-fg-subtle">{t('footer.rights', { year: YEAR })}</p>
-        </div>
+        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {featured.slice(0, 6).map((card) => (
+            <li key={`${card.university.slug}/${card.slug}`}>
+              <ShowcaseCardView
+                card={card}
+                external={tenant.data !== undefined && card.university.slug !== tenant.data.slug}
+                showUniversity={false}
+              />
+            </li>
+          ))}
+        </ul>
       </div>
-    </footer>
+    </section>
   );
 }

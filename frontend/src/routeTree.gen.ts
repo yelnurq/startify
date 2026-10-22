@@ -24,12 +24,16 @@ import { Route as DesignShellRouteImport } from './app/routes/design/shell'
 import { Route as DesignWorkspaceRouteImport } from './app/routes/design/workspace'
 import { Route as LoginIndexRouteImport } from './app/routes/login/index'
 import { Route as LoginCodeRouteImport } from './app/routes/login/code'
+import { Route as ShowcaseIndexRouteImport } from './app/routes/showcase/index'
+import { Route as ShowcaseSlugRouteImport } from './app/routes/showcase/$slug'
 import { Route as TeamRequestIdRouteImport } from './app/routes/team/$requestId'
 import { Route as USlugRouteImport } from './app/routes/u/$slug'
+import { Route as AppAdminContactsRouteImport } from './app/routes/app/admin/contacts'
 import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
 import { Route as AppAdminKnowledgeRouteImport } from './app/routes/app/admin/knowledge'
 import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
 import { Route as AppAdminRubricRouteImport } from './app/routes/app/admin/rubric'
+import { Route as AppAdminShowcaseRouteImport } from './app/routes/app/admin/showcase'
 import { Route as AppProjectsIndexRouteImport } from './app/routes/app/projects/index'
 import { Route as AppSettingsSecurityRouteImport } from './app/routes/app/settings/security'
 import { Route as AppTeamIndexRouteImport } from './app/routes/app/team/index'
@@ -38,6 +42,7 @@ import { Route as AppAdminAiIndexRouteImport } from './app/routes/app/admin/ai/i
 import { Route as AppAdminAiUsageRouteImport } from './app/routes/app/admin/ai/usage'
 import { Route as AppProjectsProjectIdIndexRouteImport } from './app/routes/app/projects/$projectId/index'
 import { Route as AppProjectsProjectIdEvaluationRouteImport } from './app/routes/app/projects/$projectId/evaluation'
+import { Route as AppProjectsProjectIdShowcaseRouteImport } from './app/routes/app/projects/$projectId/showcase'
 import { Route as AppProjectsProjectIdEvaluationsEvaluationIdRouteImport } from './app/routes/app/projects/$projectId/evaluations/$evaluationId'
 import { Route as AppProjectsProjectIdStepsStepKeyRouteImport } from './app/routes/app/projects/$projectId/steps/$stepKey'
 
@@ -116,6 +121,16 @@ const LoginCodeRoute = LoginCodeRouteImport.update({
   path: '/login/code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShowcaseIndexRoute = ShowcaseIndexRouteImport.update({
+  id: '/showcase/',
+  path: '/showcase/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShowcaseSlugRoute = ShowcaseSlugRouteImport.update({
+  id: '/showcase/$slug',
+  path: '/showcase/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TeamRequestIdRoute = TeamRequestIdRouteImport.update({
   id: '/team/$requestId',
   path: '/team/$requestId',
@@ -125,6 +140,11 @@ const USlugRoute = USlugRouteImport.update({
   id: '/u/$slug',
   path: '/u/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdminContactsRoute = AppAdminContactsRouteImport.update({
+  id: '/admin/contacts',
+  path: '/admin/contacts',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAdminImportRoute = AppAdminImportRouteImport.update({
   id: '/admin/import',
@@ -144,6 +164,11 @@ const AppAdminMembersRoute = AppAdminMembersRouteImport.update({
 const AppAdminRubricRoute = AppAdminRubricRouteImport.update({
   id: '/admin/rubric',
   path: '/admin/rubric',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminShowcaseRoute = AppAdminShowcaseRouteImport.update({
+  id: '/admin/showcase',
+  path: '/admin/showcase',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
@@ -188,6 +213,12 @@ const AppProjectsProjectIdEvaluationRoute =
     path: '/projects/$projectId/evaluation',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProjectsProjectIdShowcaseRoute =
+  AppProjectsProjectIdShowcaseRouteImport.update({
+    id: '/projects/$projectId/showcase',
+    path: '/projects/$projectId/showcase',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProjectsProjectIdEvaluationsEvaluationIdRoute =
   AppProjectsProjectIdEvaluationsEvaluationIdRouteImport.update({
     id: '/projects/$projectId/evaluations/$evaluationId',
@@ -214,21 +245,26 @@ export interface FileRoutesByFullPath {
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
   '/login/code': typeof LoginCodeRoute
+  '/showcase/$slug': typeof ShowcaseSlugRoute
   '/team/$requestId': typeof TeamRequestIdRoute
   '/u/$slug': typeof USlugRoute
   '/app/': typeof AppIndexRoute
   '/design/': typeof DesignIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/showcase/': typeof ShowcaseIndexRoute
+  '/app/admin/contacts': typeof AppAdminContactsRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/admin/rubric': typeof AppAdminRubricRoute
+  '/app/admin/showcase': typeof AppAdminShowcaseRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
+  '/app/projects/$projectId/showcase': typeof AppProjectsProjectIdShowcaseRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
   '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
@@ -246,21 +282,26 @@ export interface FileRoutesByTo {
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
   '/login/code': typeof LoginCodeRoute
+  '/showcase/$slug': typeof ShowcaseSlugRoute
   '/team/$requestId': typeof TeamRequestIdRoute
   '/u/$slug': typeof USlugRoute
   '/app': typeof AppIndexRoute
   '/design': typeof DesignIndexRoute
   '/login': typeof LoginIndexRoute
+  '/showcase': typeof ShowcaseIndexRoute
+  '/app/admin/contacts': typeof AppAdminContactsRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/admin/rubric': typeof AppAdminRubricRoute
+  '/app/admin/showcase': typeof AppAdminShowcaseRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects': typeof AppProjectsIndexRoute
   '/app/team': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
+  '/app/projects/$projectId/showcase': typeof AppProjectsProjectIdShowcaseRoute
   '/app/admin/ai': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId': typeof AppProjectsProjectIdIndexRoute
   '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
@@ -280,21 +321,26 @@ export interface FileRoutesById {
   '/design/shell': typeof DesignShellRoute
   '/design/workspace': typeof DesignWorkspaceRoute
   '/login/code': typeof LoginCodeRoute
+  '/showcase/$slug': typeof ShowcaseSlugRoute
   '/team/$requestId': typeof TeamRequestIdRoute
   '/u/$slug': typeof USlugRoute
   '/app/': typeof AppIndexRoute
   '/design/': typeof DesignIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/showcase/': typeof ShowcaseIndexRoute
+  '/app/admin/contacts': typeof AppAdminContactsRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
   '/app/admin/rubric': typeof AppAdminRubricRoute
+  '/app/admin/showcase': typeof AppAdminShowcaseRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/team/$requestId': typeof AppTeamRequestIdRoute
   '/app/projects/': typeof AppProjectsIndexRoute
   '/app/team/': typeof AppTeamIndexRoute
   '/app/admin/ai/usage': typeof AppAdminAiUsageRoute
   '/app/projects/$projectId/evaluation': typeof AppProjectsProjectIdEvaluationRoute
+  '/app/projects/$projectId/showcase': typeof AppProjectsProjectIdShowcaseRoute
   '/app/admin/ai/': typeof AppAdminAiIndexRoute
   '/app/projects/$projectId/': typeof AppProjectsProjectIdIndexRoute
   '/app/projects/$projectId/evaluations/$evaluationId': typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
@@ -315,21 +361,26 @@ export interface FileRouteTypes {
     | '/design/shell'
     | '/design/workspace'
     | '/login/code'
+    | '/showcase/$slug'
     | '/team/$requestId'
     | '/u/$slug'
     | '/app/'
     | '/design/'
     | '/login/'
+    | '/showcase/'
+    | '/app/admin/contacts'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/admin/rubric'
+    | '/app/admin/showcase'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
     | '/app/projects/$projectId/evaluation'
+    | '/app/projects/$projectId/showcase'
     | '/app/admin/ai/'
     | '/app/projects/$projectId/'
     | '/app/projects/$projectId/evaluations/$evaluationId'
@@ -347,21 +398,26 @@ export interface FileRouteTypes {
     | '/design/shell'
     | '/design/workspace'
     | '/login/code'
+    | '/showcase/$slug'
     | '/team/$requestId'
     | '/u/$slug'
     | '/app'
     | '/design'
     | '/login'
+    | '/showcase'
+    | '/app/admin/contacts'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/admin/rubric'
+    | '/app/admin/showcase'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects'
     | '/app/team'
     | '/app/admin/ai/usage'
     | '/app/projects/$projectId/evaluation'
+    | '/app/projects/$projectId/showcase'
     | '/app/admin/ai'
     | '/app/projects/$projectId'
     | '/app/projects/$projectId/evaluations/$evaluationId'
@@ -380,21 +436,26 @@ export interface FileRouteTypes {
     | '/design/shell'
     | '/design/workspace'
     | '/login/code'
+    | '/showcase/$slug'
     | '/team/$requestId'
     | '/u/$slug'
     | '/app/'
     | '/design/'
     | '/login/'
+    | '/showcase/'
+    | '/app/admin/contacts'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
     | '/app/admin/rubric'
+    | '/app/admin/showcase'
     | '/app/settings/security'
     | '/app/team/$requestId'
     | '/app/projects/'
     | '/app/team/'
     | '/app/admin/ai/usage'
     | '/app/projects/$projectId/evaluation'
+    | '/app/projects/$projectId/showcase'
     | '/app/admin/ai/'
     | '/app/projects/$projectId/'
     | '/app/projects/$projectId/evaluations/$evaluationId'
@@ -413,10 +474,12 @@ export interface RootRouteChildren {
   DesignShellRoute: typeof DesignShellRoute
   DesignWorkspaceRoute: typeof DesignWorkspaceRoute
   LoginCodeRoute: typeof LoginCodeRoute
+  ShowcaseSlugRoute: typeof ShowcaseSlugRoute
   TeamRequestIdRoute: typeof TeamRequestIdRoute
   USlugRoute: typeof USlugRoute
   DesignIndexRoute: typeof DesignIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  ShowcaseIndexRoute: typeof ShowcaseIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -526,6 +589,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/showcase/': {
+      id: '/showcase/'
+      path: '/showcase'
+      fullPath: '/showcase/'
+      preLoaderRoute: typeof ShowcaseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/showcase/$slug': {
+      id: '/showcase/$slug'
+      path: '/showcase/$slug'
+      fullPath: '/showcase/$slug'
+      preLoaderRoute: typeof ShowcaseSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/team/$requestId': {
       id: '/team/$requestId'
       path: '/team/$requestId'
@@ -539,6 +616,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/u/$slug'
       preLoaderRoute: typeof USlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/admin/contacts': {
+      id: '/app/admin/contacts'
+      path: '/admin/contacts'
+      fullPath: '/app/admin/contacts'
+      preLoaderRoute: typeof AppAdminContactsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/admin/import': {
       id: '/app/admin/import'
@@ -566,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/rubric'
       fullPath: '/app/admin/rubric'
       preLoaderRoute: typeof AppAdminRubricRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/showcase': {
+      id: '/app/admin/showcase'
+      path: '/admin/showcase'
+      fullPath: '/app/admin/showcase'
+      preLoaderRoute: typeof AppAdminShowcaseRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/projects/': {
@@ -624,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsProjectIdEvaluationRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/projects/$projectId/showcase': {
+      id: '/app/projects/$projectId/showcase'
+      path: '/projects/$projectId/showcase'
+      fullPath: '/app/projects/$projectId/showcase'
+      preLoaderRoute: typeof AppProjectsProjectIdShowcaseRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/projects/$projectId/evaluations/$evaluationId': {
       id: '/app/projects/$projectId/evaluations/$evaluationId'
       path: '/projects/$projectId/evaluations/$evaluationId'
@@ -644,16 +742,19 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAdminContactsRoute: typeof AppAdminContactsRoute
   AppAdminImportRoute: typeof AppAdminImportRoute
   AppAdminKnowledgeRoute: typeof AppAdminKnowledgeRoute
   AppAdminMembersRoute: typeof AppAdminMembersRoute
   AppAdminRubricRoute: typeof AppAdminRubricRoute
+  AppAdminShowcaseRoute: typeof AppAdminShowcaseRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppTeamRequestIdRoute: typeof AppTeamRequestIdRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
   AppTeamIndexRoute: typeof AppTeamIndexRoute
   AppAdminAiUsageRoute: typeof AppAdminAiUsageRoute
   AppProjectsProjectIdEvaluationRoute: typeof AppProjectsProjectIdEvaluationRoute
+  AppProjectsProjectIdShowcaseRoute: typeof AppProjectsProjectIdShowcaseRoute
   AppAdminAiIndexRoute: typeof AppAdminAiIndexRoute
   AppProjectsProjectIdIndexRoute: typeof AppProjectsProjectIdIndexRoute
   AppProjectsProjectIdEvaluationsEvaluationIdRoute: typeof AppProjectsProjectIdEvaluationsEvaluationIdRoute
@@ -663,16 +764,19 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAdminContactsRoute: AppAdminContactsRoute,
   AppAdminImportRoute: AppAdminImportRoute,
   AppAdminKnowledgeRoute: AppAdminKnowledgeRoute,
   AppAdminMembersRoute: AppAdminMembersRoute,
   AppAdminRubricRoute: AppAdminRubricRoute,
+  AppAdminShowcaseRoute: AppAdminShowcaseRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppTeamRequestIdRoute: AppTeamRequestIdRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
   AppTeamIndexRoute: AppTeamIndexRoute,
   AppAdminAiUsageRoute: AppAdminAiUsageRoute,
   AppProjectsProjectIdEvaluationRoute: AppProjectsProjectIdEvaluationRoute,
+  AppProjectsProjectIdShowcaseRoute: AppProjectsProjectIdShowcaseRoute,
   AppAdminAiIndexRoute: AppAdminAiIndexRoute,
   AppProjectsProjectIdIndexRoute: AppProjectsProjectIdIndexRoute,
   AppProjectsProjectIdEvaluationsEvaluationIdRoute:
@@ -694,10 +798,12 @@ const rootRouteChildren: RootRouteChildren = {
   DesignShellRoute: DesignShellRoute,
   DesignWorkspaceRoute: DesignWorkspaceRoute,
   LoginCodeRoute: LoginCodeRoute,
+  ShowcaseSlugRoute: ShowcaseSlugRoute,
   TeamRequestIdRoute: TeamRequestIdRoute,
   USlugRoute: USlugRoute,
   DesignIndexRoute: DesignIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  ShowcaseIndexRoute: ShowcaseIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

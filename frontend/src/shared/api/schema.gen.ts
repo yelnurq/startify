@@ -1421,6 +1421,321 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{projectId}/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The project's showcase page as the team edits it
+         * @description Before the first save the page is prefilled from the incubator answers (`version` 0).
+         *     Sensitive details are left out when the project hides them.
+         */
+        get: operations["getShowcaseEntry"];
+        /**
+         * Save the showcase page
+         * @description The team edits the page. A published page shows the changes at once; moving a page
+         *     to `public` visibility sends it to review (`in_review`) before it is visible outside
+         *     the university.
+         */
+        put: operations["updateShowcaseEntry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/showcase/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload the cover image
+         * @description JPEG, PNG or WebP up to 10 MiB; stored as a 1600×900 JPEG without metadata.
+         */
+        put: operations["setShowcaseCover"];
+        post?: never;
+        /** Remove the cover image */
+        delete: operations["deleteShowcaseCover"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/showcase/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish the page
+         * @description `university` pages are published at once; `public` pages go to an innovation manager
+         *     for review. The page must be saved and have a problem and a solution
+         *     (`showcase.incomplete`).
+         */
+        post: operations["publishShowcaseEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/showcase/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take the page off the showcase */
+        post: operations["unpublishShowcaseEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Contact requests addressed to the project
+         * @description The team sees forwarded requests; innovation managers see all.
+         */
+        get: operations["listProjectContacts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Showcase pages for moderation
+         * @description Requires `innovation_manager` or `tenant_admin`.
+         */
+        get: operations["listShowcaseReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/showcase/{projectId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve or reject a public page */
+        post: operations["reviewShowcaseEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contact requests of the university
+         * @description Requires `innovation_manager` or `tenant_admin`.
+         */
+        get: operations["listContactRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/contacts/{contactId}/moderate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contactId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forward a request to the team or reject it */
+        post: operations["moderateContactRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The showcase of published projects
+         * @description Public. `scope=university` (default) lists the pages of the university of the address
+         *     (members also see `university` pages); `scope=national` lists public pages of every
+         *     university. Full-text search works in Kazakh, Russian and English.
+         */
+        get: operations["listShowcase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Counts for the showcase filters */
+        get: operations["getShowcaseFacets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase/highlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live numbers and featured projects for the landing page */
+        get: operations["getShowcaseHighlights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase/entries/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        /**
+         * A public project page
+         * @description Public pages are open to everyone; university pages to members only.
+         */
+        get: operations["getShowcaseProject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase/entries/{slug}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the team to get in touch
+         * @description Public and rate-limited. Depending on the university's setting the request goes to an
+         *     innovation manager first or straight to the team; the team's addresses are never shown.
+         */
+        post: operations["contactShowcaseProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/showcase/entries/{slug}/og.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        /** The link preview image of a page (1200×630) */
+        get: operations["getShowcaseImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2483,6 +2798,192 @@ export interface components {
             /** Format: date-time */
             completed_at: string;
         };
+        /** @enum {string} */
+        ShowcaseStatus: "draft" | "in_review" | "published" | "rejected";
+        /**
+         * @description `university` — members of the university; `public` — everyone, after review.
+         * @enum {string}
+         */
+        ShowcaseVisibility: "university" | "public";
+        /**
+         * @description Incubator stage of the project when it was published.
+         * @enum {string}
+         */
+        ShowcaseStage: "idea" | "market" | "product" | "launch";
+        /** @enum {string} */
+        ShowcaseNeed: "investment" | "team" | "partner" | "pilot" | "mentor";
+        ShowcaseSections: {
+            problem?: string;
+            solution?: string;
+            market?: string;
+            traction?: string;
+            ask?: string;
+        };
+        ShowcaseTeamMember: {
+            name: string;
+            role: string;
+            avatar_url: string | null;
+        };
+        UniversityBrief: {
+            slug: string;
+            name: components["schemas"]["LocalizedText"];
+            short_name: components["schemas"]["LocalizedText"];
+            color: string;
+            logo_url: string | null;
+        };
+        ShowcaseEntry: {
+            /** Format: uuid */
+            project_id: string;
+            /** @description False while the page is a prefilled suggestion that was never saved. */
+            saved: boolean;
+            slug: string;
+            status: components["schemas"]["ShowcaseStatus"];
+            visibility: components["schemas"]["ShowcaseVisibility"];
+            title: string;
+            tagline: string;
+            industry: components["schemas"]["Industry"];
+            stage: components["schemas"]["ShowcaseStage"];
+            cover_url: string | null;
+            video_url: string | null;
+            sections: components["schemas"]["ShowcaseSections"];
+            team: components["schemas"]["ShowcaseTeamMember"][];
+            needs: components["schemas"]["ShowcaseNeed"][];
+            tags: string[];
+            /** @description Show the readiness score of the latest AI evaluation. */
+            show_score: boolean;
+            score: number | null;
+            level: components["schemas"]["ReadinessLevel"] | null;
+            contact_enabled: boolean;
+            review_comment: string | null;
+            /** Format: date-time */
+            submitted_at: string | null;
+            /** Format: date-time */
+            published_at: string | null;
+            /** @description Address of the published page. */
+            url: string | null;
+        };
+        ShowcaseEntryUpdate: {
+            slug: string;
+            title: string;
+            tagline: string;
+            video_url?: string;
+            sections: components["schemas"]["ShowcaseSections"];
+            needs: components["schemas"]["ShowcaseNeed"][];
+            tags: string[];
+            visibility: components["schemas"]["ShowcaseVisibility"];
+            show_score: boolean;
+            contact_enabled: boolean;
+        };
+        ShowcaseCard: {
+            slug: string;
+            /** @description Absolute address of the page on its university's site. */
+            url: string;
+            title: string;
+            tagline: string;
+            industry: components["schemas"]["Industry"];
+            stage: components["schemas"]["ShowcaseStage"];
+            faculty: components["schemas"]["LocalizedText"] | null;
+            year: number;
+            cover_url: string | null;
+            needs: components["schemas"]["ShowcaseNeed"][];
+            tags: string[];
+            score: number | null;
+            level: components["schemas"]["ReadinessLevel"] | null;
+            university: components["schemas"]["UniversityBrief"];
+            /** Format: date-time */
+            published_at: string;
+        };
+        ShowcasePage: {
+            items: components["schemas"]["ShowcaseCard"][];
+            next_cursor: string | null;
+        };
+        FacetCount: {
+            key: string;
+            count: number;
+        };
+        FacultyFacet: {
+            /** Format: uuid */
+            id: string;
+            name: components["schemas"]["LocalizedText"];
+            count: number;
+        };
+        ShowcaseFacets: {
+            total: number;
+            industries: components["schemas"]["FacetCount"][];
+            stages: components["schemas"]["FacetCount"][];
+            needs: components["schemas"]["FacetCount"][];
+            years: components["schemas"]["FacetCount"][];
+            faculties: components["schemas"]["FacultyFacet"][];
+            tags: components["schemas"]["FacetCount"][];
+        };
+        ShowcaseCounters: {
+            projects: number;
+            published: number;
+            students: number;
+            evaluations: number;
+        };
+        ShowcaseHighlights: {
+            counters: components["schemas"]["ShowcaseCounters"];
+            featured: components["schemas"]["ShowcaseCard"][];
+        };
+        ShowcaseProject: {
+            card: components["schemas"]["ShowcaseCard"];
+            video_url: string | null;
+            sections: components["schemas"]["ShowcaseSections"];
+            team: components["schemas"]["ShowcaseTeamMember"][];
+            contact_enabled: boolean;
+            /** @description The link preview image. */
+            image_url: string;
+        };
+        ShowcaseReview: {
+            approve: boolean;
+            /** @description Required when rejecting. */
+            comment?: string;
+        };
+        ShowcaseReviewList: {
+            items: components["schemas"]["ShowcaseEntry"][];
+        };
+        /** @enum {string} */
+        ContactKind: "investment" | "partnership" | "pilot" | "mentoring" | "hiring" | "other";
+        /** @enum {string} */
+        ContactStatus: "pending" | "forwarded" | "rejected";
+        ContactCreate: {
+            name: string;
+            /** Format: email */
+            email: string;
+            organization?: string;
+            kind: components["schemas"]["ContactKind"];
+            message: string;
+            /** @description Leave empty (a trap for bots). */
+            website?: string;
+        };
+        ContactAccepted: {
+            /** @enum {string} */
+            status: "pending" | "forwarded";
+        };
+        ContactRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            project_id: string;
+            project_title: string;
+            name: string;
+            email: string;
+            organization: string | null;
+            kind: components["schemas"]["ContactKind"];
+            message: string;
+            status: components["schemas"]["ContactStatus"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            moderated_at: string | null;
+        };
+        ContactRequestList: {
+            items: components["schemas"]["ContactRequest"][];
+        };
+        ContactModeration: {
+            forward: boolean;
+        };
     };
     responses: {
         /** @description Error described in RFC 9457 Problem Details format. */
@@ -2496,6 +2997,7 @@ export interface components {
         };
     };
     parameters: {
+        ShowcaseSlug: string;
         EvaluationId: string;
         /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
         IfMatchRequired: string;
@@ -4681,6 +5183,433 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Rubric"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getShowcaseEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateShowcaseEntry: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShowcaseEntryUpdate"];
+            };
+        };
+        responses: {
+            /** @description The page. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setShowcaseCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The page with the cover. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteShowcaseCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page without a cover. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    publishShowcaseEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page with its new status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    unpublishShowcaseEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page, back to draft. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listProjectContacts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requests, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactRequestList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listShowcaseReviews: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ShowcaseStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pages, the oldest submission first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseReviewList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    reviewShowcaseEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShowcaseReview"];
+            };
+        };
+        responses: {
+            /** @description The page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseEntry"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listContactRequests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ContactStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requests, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactRequestList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    moderateContactRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactModeration"];
+            };
+        };
+        responses: {
+            /** @description The request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactRequest"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listShowcase: {
+        parameters: {
+            query?: {
+                scope?: "university" | "national";
+                q?: string;
+                industry?: components["schemas"]["Industry"];
+                stage?: components["schemas"]["ShowcaseStage"];
+                faculty?: string;
+                year?: number;
+                need?: components["schemas"]["ShowcaseNeed"];
+                tag?: string;
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pages, the most recently published first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcasePage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getShowcaseFacets: {
+        parameters: {
+            query?: {
+                scope?: "university" | "national";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Facets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseFacets"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getShowcaseHighlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Highlights of the university of the address. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseHighlights"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getShowcaseProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShowcaseProject"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    contactShowcaseProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactCreate"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactAccepted"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getShowcaseImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: components["parameters"]["ShowcaseSlug"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             default: components["responses"]["Problem"];

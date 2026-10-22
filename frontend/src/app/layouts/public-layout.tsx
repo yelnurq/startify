@@ -13,12 +13,21 @@ interface PublicLayoutProps {
   nav?: ReactNode;
   /** Sign-in and sign-up buttons. */
   actions?: ReactNode;
+  /** The one action that stays in the header on phones, e.g. «Войти». */
+  mobileAction?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }
 
 /** Frame of public pages: landing, showcase, competitions. */
-export function PublicLayout({ logo, nav, actions, footer, children }: PublicLayoutProps) {
+export function PublicLayout({
+  logo,
+  nav,
+  actions,
+  mobileAction,
+  footer,
+  children,
+}: PublicLayoutProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   return (
@@ -41,11 +50,12 @@ export function PublicLayout({ logo, nav, actions, footer, children }: PublicLay
             <LanguageSwitcher />
             <ThemeToggle />
             <div className="ml-2 hidden items-center gap-2 sm:flex">{actions}</div>
-            {nav && (
+            {mobileAction && <div className="ml-1 flex items-center sm:hidden">{mobileAction}</div>}
+            {(nav ?? actions) && (
               <IconButton
                 label={t('actions.openMenu')}
                 icon={<Menu />}
-                className="md:hidden"
+                className={nav ? 'md:hidden' : 'sm:hidden'}
                 onClick={() => {
                   setMenuOpen(true);
                 }}
@@ -58,16 +68,25 @@ export function PublicLayout({ logo, nav, actions, footer, children }: PublicLay
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="right" size="sm">
           <SheetTitle className="px-5 pt-5 text-base font-semibold">{t('nav.main')}</SheetTitle>
-          <nav
-            aria-label={t('nav.main')}
-            className="flex flex-col gap-1 p-3 [&_a]:flex [&_a]:h-11 [&_a]:items-center [&_a]:rounded-lg [&_a]:px-3"
+          {nav && (
+            <nav
+              aria-label={t('nav.main')}
+              className="flex flex-col gap-1 p-3 [&_a]:flex [&_a]:h-11 [&_a]:items-center [&_a]:rounded-lg [&_a]:px-3"
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a')) setMenuOpen(false);
+              }}
+            >
+              {nav}
+            </nav>
+          )}
+          <div
+            className="mt-auto flex flex-col gap-2 border-t border-border p-4"
             onClick={(event) => {
               if ((event.target as HTMLElement).closest('a')) setMenuOpen(false);
             }}
           >
-            {nav}
-          </nav>
-          <div className="mt-auto flex flex-col gap-2 border-t border-border p-4">{actions}</div>
+            {actions}
+          </div>
         </SheetContent>
       </Sheet>
 

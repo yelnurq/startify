@@ -4,7 +4,7 @@ import { KeyRound, Laptop, LogOut, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import {
   Badge,

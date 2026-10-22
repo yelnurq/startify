@@ -1,5 +1,6 @@
 {
   "nav": {
+    "showcase": "Showcase",
     "how": "How it works",
     "students": "Students",
     "universities": "Universities",
@@ -7,16 +8,14 @@
   },
   "actions": {
     "toApp": "Go to workspace",
-    "signIn": "Sign in",
-    "start": "Get started",
-    "register": "Sign up"
+    "signIn": "Sign in"
   },
   "hero": {
     "eyebrow": "AI platform for university innovation",
     "title": "From idea to market — one step",
     "subtitle": "Qadam takes a student project from the first idea to Demo Day and a meeting with an investor: an AI mentor, a team, expert review and a showcase — all in one place.",
     "primary": "Start a project",
-    "secondary": "How it works",
+    "secondary": "Browse the showcase",
     "note": "Sign in with your university email or SSO"
   },
   "route": {
@@ -113,7 +112,7 @@
       "p1": "A showcase of projects with readiness scores",
       "p2": "Direct contact with the teams",
       "p3": "Join Demo Days and competitions as an expert",
-      "soon": "The showcase opens soon"
+      "cta": "Open the showcase"
     }
   },
   "cta": {
@@ -121,11 +120,17 @@
     "text": "Signing up takes a minute. After onboarding, the AI mentor helps you through the first step.",
     "primary": "Start a project"
   },
-  "footer": {
-    "label": "Footer navigation",
-    "apiChecking": "Checking the API…",
-    "apiOffline": "API unavailable",
-    "api": "API",
-    "rights": "© {{year}} Qadam"
+  "counters": {
+    "label": "Qadam in numbers",
+    "projects": "Projects in the incubator",
+    "published": "Projects on the showcase",
+    "students": "Students in teams",
+    "evaluations": "AI evaluations of projects"
+  },
+  "featured": {
+    "eyebrow": "Showcase",
+    "title": "Top projects of the showcase",
+    "text": "Student teams that went through the incubator and look for partners, pilots and investment.",
+    "all": "The whole showcase"
   }
 }

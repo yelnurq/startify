@@ -4,7 +4,7 @@ import { Mail } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import { Button, Field, Input } from '@/design-system';
 import { errorMessage } from '@/shared/api/errors';

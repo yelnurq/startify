@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Flame, Gauge, LayoutDashboard, MessageSquare } from 'lucide-react';
+import { Flame, Gauge, LayoutDashboard, MessageSquare, Store } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/design-system';
 import type { EvaluationBrief } from '@/features/evaluation/api';
 import { levelTone } from '@/features/evaluation/logic';
+import { showcaseEntryQuery } from '@/features/showcase/api';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import type { IncubatorTemplate, StepList, StepSummary } from './api';
@@ -32,7 +34,7 @@ interface StepNavProps {
   steps: StepList | undefined;
   activeKey: string | undefined;
   /** Which page of the project is open. */
-  activeView?: 'overview' | 'step' | 'evaluation';
+  activeView?: 'overview' | 'step' | 'evaluation' | 'showcase';
   /** The latest evaluation, shown on its entry. */
   evaluation?: EvaluationBrief | null;
   /** Called after navigating, e.g. to close the sheet on phones. */
@@ -133,6 +135,12 @@ export function StepNav({
         </span>
       </Link>
 
+      <ShowcaseLink
+        projectId={projectId}
+        active={activeView === 'showcase'}
+        {...(onNavigate ? { onNavigate } : {})}
+      />
+
       <Accordion type="multiple" defaultValue={activeStage ? [activeStage] : []}>
         {template.stages.map((stage, stageIndex) => {
           const done = stage.steps.filter((s) => isDone(byKey.get(s.key)?.status)).length;
@@ -212,4 +220,53 @@ export function StepNav({
 
 function stageOfCurrent(template: IncubatorTemplate, key: string | undefined): string | undefined {
   return template.stages.find((stage) => stage.steps.some((s) => s.key === key))?.key;
+}
+
+/** The showcase page of the project with its status. */
+function ShowcaseLink({
+  projectId,
+  active,
+  onNavigate,
+}: {
+  projectId: string;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslation('showcase');
+  const entry = useQuery(showcaseEntryQuery(projectId));
+  const page = entry.data?.data;
+  const status = page?.saved ? page.status : undefined;
+  return (
+    <Link
+      to="/app/projects/$projectId/showcase"
+      params={{ projectId }}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-surface-raised',
+        active && 'border-primary-border bg-primary-soft',
+      )}
+    >
+      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-surface-sunken text-fg-subtle">
+        <Store className="size-5" aria-hidden />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-sm font-semibold text-fg">{t('editor.title')}</span>
+        <span
+          className={cn(
+            'text-xs font-medium',
+            status === 'published'
+              ? 'text-success-soft-fg'
+              : status === 'rejected'
+                ? 'text-danger-soft-fg'
+                : status === 'in_review'
+                  ? 'text-warning-soft-fg'
+                  : 'text-fg-muted',
+          )}
+        >
+          {status ? t(`status.${status}`) : t('editor.nav.none')}
+        </span>
+      </span>
+    </Link>
+  );
 }

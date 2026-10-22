@@ -3,14 +3,17 @@ import { getRouteApi, Link, Outlet, useMatches, useNavigate } from '@tanstack/re
 import {
   BarChart3,
   BookOpenText,
+  ClipboardCheck,
   Scale,
   ChevronsUpDown,
   FileUp,
   Home,
+  Inbox,
   Lightbulb,
   LogOut,
   ShieldCheck,
   Sparkles,
+  Store,
   User,
   Users,
   UsersRound,
@@ -97,6 +100,9 @@ function AppNav({ session }: { session: Session }) {
         <NavLink to="/app/team" icon={<UsersRound />}>
           {t('nav.team')}
         </NavLink>
+        <NavLink to="/showcase" icon={<Store />}>
+          {t('nav.showcase')}
+        </NavLink>
       </NavSection>
       {(admin || manager || leadership) && (
         <NavSection label={t('nav.administration')}>
@@ -118,6 +124,16 @@ function AppNav({ session }: { session: Session }) {
           {(admin || manager) && (
             <NavLink to="/app/admin/rubric" icon={<Scale />}>
               {t('nav.rubric')}
+            </NavLink>
+          )}
+          {(admin || manager) && (
+            <NavLink to="/app/admin/showcase" icon={<ClipboardCheck />}>
+              {t('nav.showcaseReview')}
+            </NavLink>
+          )}
+          {(admin || manager) && (
+            <NavLink to="/app/admin/contacts" icon={<Inbox />}>
+              {t('nav.contacts')}
             </NavLink>
           )}
           {admin && (
@@ -257,6 +273,13 @@ function useAppCommands(session: Session) {
         perform: () => void navigate({ to: '/app/team' }),
       },
       {
+        id: 'app.showcase',
+        group,
+        label: t('app:nav.showcase'),
+        icon: <Store />,
+        perform: () => void navigate({ to: '/showcase' }),
+      },
+      {
         id: 'app.security',
         group,
         label: t('app:nav.security'),
@@ -296,6 +319,20 @@ function useAppCommands(session: Session) {
         label: t('app:nav.rubric'),
         icon: <Scale />,
         perform: () => void navigate({ to: '/app/admin/rubric' }),
+      });
+      items.push({
+        id: 'app.showcaseReview',
+        group,
+        label: t('app:nav.showcaseReview'),
+        icon: <ClipboardCheck />,
+        perform: () => void navigate({ to: '/app/admin/showcase' }),
+      });
+      items.push({
+        id: 'app.contacts',
+        group,
+        label: t('app:nav.contacts'),
+        icon: <Inbox />,
+        perform: () => void navigate({ to: '/app/admin/contacts' }),
       });
     }
     if (admin) {

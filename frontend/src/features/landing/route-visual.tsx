@@ -7,11 +7,10 @@ import {
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { cn, smoothPath } from '@/design-system';
+import { cn, smoothPath, useReducedMotion } from '@/design-system';
 
 type NodeKey = 'idea' | 'incubator' | 'evaluation' | 'showcase' | 'demoDay' | 'market';
 
@@ -43,7 +42,7 @@ const CHIPS: { key: 'mentor' | 'rubric' | 'voting'; x: number; y: number }[] = [
 /** Hero illustration: a project travelling from an idea to the market. */
 export function RouteVisual({ className }: { className?: string }) {
   const { t } = useTranslation('landing');
-  const reduce = useReducedMotion() ?? false;
+  const reduce = useReducedMotion();
   const gradient = useId();
   const glow = useId();
   return (
@@ -73,15 +72,15 @@ export function RouteVisual({ className }: { className?: string }) {
           strokeWidth={10}
           strokeLinecap="round"
         />
-        <motion.path
+        <path
           d={PATH}
           fill="none"
           stroke={`url(#${gradient})`}
           strokeWidth={4}
           strokeLinecap="round"
-          initial={reduce ? false : { pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          pathLength={1}
+          strokeDasharray="1"
+          className="motion-safe:animate-draw"
         />
         {!reduce &&
           [0, 2.2, 4.4].map((begin) => (
@@ -97,11 +96,10 @@ export function RouteVisual({ className }: { className?: string }) {
         {NODES.map(({ key, x, y, icon: Icon, label }, index) => {
           const last = key === 'market';
           return (
-            <motion.g
+            <g
               key={key}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.25 + index * 0.3 }}
+              className="motion-safe:animate-rise"
+              style={{ animationDelay: `${String(0.25 + index * 0.3)}s` }}
             >
               <circle
                 cx={x}
@@ -128,7 +126,7 @@ export function RouteVisual({ className }: { className?: string }) {
               >
                 {t(`route.${key}`)}
               </text>
-            </motion.g>
+            </g>
           );
         })}
         {CHIPS.map(({ key, x, y }) => (

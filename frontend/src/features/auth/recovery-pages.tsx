@@ -5,7 +5,7 @@ import { CircleCheck, Mail, MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import { Button, Callout, EmptyState, Field, Input, Spinner, toast } from '@/design-system';
 import { api, unwrap } from '@/shared/api/client';

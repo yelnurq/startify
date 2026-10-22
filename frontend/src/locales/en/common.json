@@ -240,6 +240,17 @@
     },
     "documents": {
       "unavailable": "The document service is unavailable right now — the PDF cannot be downloaded"
+    },
+    "showcase": {
+      "not_found": "Project page not found",
+      "incomplete": "Fill in the problem and the solution to publish the page",
+      "not_in_review": "The page is no longer in review — refresh the list",
+      "contact_disabled": "The team does not accept contact requests now",
+      "too_many_requests": "Too many requests. Try again in {{retry_after_seconds}} s"
+    },
+    "contact": {
+      "not_found": "Contact request not found",
+      "already_moderated": "The request has already been handled — refresh the list"
     }
   },
   "roles": {

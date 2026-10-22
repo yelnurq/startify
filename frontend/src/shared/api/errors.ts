@@ -1,6 +1,6 @@
 import { i18n } from '@/shared/i18n';
 
-import { ApiError, NetworkError } from './client';
+import { ApiError, NetworkError, type FieldError } from './client';
 
 /**
  * Localised, user-facing message for any error thrown by the API layer.
@@ -49,6 +49,15 @@ export function codeMessage(code: string): string {
     ? t(`common:errors.${code}` as 'common:errors.internal', { defaultValue: '' })
     : '';
   return message || t('common:errors.auth.oidc_failed');
+}
+
+/** Localised text of a server-side field error (`common:validation.<code>`). */
+export function fieldErrorMessage(fe: FieldError): string {
+  // Validation codes come from the server at runtime.
+  return i18n.t(`common:validation.${fe.code}` as 'common:validation.invalid', {
+    ...fe.params,
+    defaultValue: i18n.t('common:validation.invalid'),
+  });
 }
 
 /** True for errors that mean "not signed in any more". */

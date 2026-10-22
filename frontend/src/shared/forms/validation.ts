@@ -1,8 +1,11 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import { z } from 'zod';
 
-import { ApiError, type FieldError } from '@/shared/api/client';
+import { ApiError } from '@/shared/api/client';
+import { fieldErrorMessage } from '@/shared/api/errors';
 import { i18n } from '@/shared/i18n';
+
+export { fieldErrorMessage };
 
 let installed = false;
 
@@ -68,13 +71,4 @@ export function applyFieldErrors<T extends FieldValues>(
     setError(field, { type: 'server', message: fieldErrorMessage(fe) });
   }
   return true;
-}
-
-/** Localised text of a server-side field error (`common:validation.<code>`). */
-export function fieldErrorMessage(fe: FieldError): string {
-  // Validation codes come from the server at runtime.
-  return i18n.t(`common:validation.${fe.code}` as 'common:validation.invalid', {
-    ...fe.params,
-    defaultValue: i18n.t('common:validation.invalid'),
-  });
 }

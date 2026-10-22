@@ -1,9 +1,10 @@
 import { Check, X } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
+import { LazyMotion, m } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Badge, Button, cn, contrastRatio, useTheme } from '@/design-system';
+import { Badge, Button, cn, contrastRatio, useReducedMotion, useTheme } from '@/design-system';
+import { loadMotionFeatures } from '@/shared/motion';
 import { useFormatters } from '@/shared/i18n/format';
 
 import { Section, Specimen } from '../section';
@@ -274,15 +275,17 @@ export function ShapeSection({ index }: { index: number }) {
         <Specimen label={t('shape.motion')} bodyClassName="flex flex-col gap-4">
           <p className="text-sm text-fg-muted">{t('shape.motionNote')}</p>
           <div className="flex h-24 items-center rounded-lg bg-surface-sunken px-3">
-            <motion.div
-              key={run}
-              initial={reduce ? false : { x: 0, opacity: 0.4, scale: 0.9 }}
-              animate={{ x: reduce ? 0 : 'min(60vw, 18rem)', opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              className="grid size-14 place-items-center rounded-xl bg-primary text-primary-fg shadow-md"
-            >
-              <span className="font-display text-lg font-semibold">Q</span>
-            </motion.div>
+            <LazyMotion features={loadMotionFeatures} strict>
+              <m.div
+                key={run}
+                initial={reduce ? false : { x: 0, opacity: 0.4, scale: 0.9 }}
+                animate={{ x: reduce ? 0 : 'min(60vw, 18rem)', opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                className="grid size-14 place-items-center rounded-xl bg-primary text-primary-fg shadow-md"
+              >
+                <span className="font-display text-lg font-semibold">Q</span>
+              </m.div>
+            </LazyMotion>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button

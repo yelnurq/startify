@@ -1,7 +1,7 @@
-import { useReducedMotion } from 'motion/react';
 import { useEffect, useId, useState } from 'react';
 
 import { cn } from '../lib/cn';
+import { useReducedMotion } from '../lib/reduced-motion';
 
 const SWEEP = 240; // degrees of the dial, open at the bottom
 const START = 90 + (360 - SWEEP) / 2; // measured clockwise from 3 o'clock

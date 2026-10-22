@@ -144,6 +144,9 @@
   --animate-pulse-ring: pulse-ring 2s var(--ease-out) infinite;
   --animate-accordion-down: accordion-down 220ms var(--ease-out) both;
   --animate-accordion-up: accordion-up 180ms var(--ease-out) both;
+  /* Draws an SVG path with pathLength="1" and stroke-dasharray="1". */
+  --animate-draw: draw 2.2s var(--ease-out) 0.2s both;
+  --animate-rise: rise 450ms var(--ease-out) both;
 
   @keyframes accordion-down {
     from {
@@ -207,6 +210,20 @@
     }
   }
   @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes rise {
     from {
       opacity: 0;
       transform: translateY(8px);

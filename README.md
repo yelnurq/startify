@@ -23,7 +23,7 @@
 git clone https://github.com/yelnurq/startify.git && cd startify
 cp .env.example .env
 make dev
-make seed        # демо-данные КазУТБ: структура, аккаунты, 25 проектов с AI-оценками, база знаний
+make seed        # демо-данные КазУТБ: структура, аккаунты, 25 проектов с AI-оценками, витрина, база знаний
 ```
 
 После сборки:
@@ -31,6 +31,7 @@ make seed        # демо-данные КазУТБ: структура, ак�
 | Что | Адрес |
 |---|---|
 | Веб-приложение | http://localhost:3000 |
+| Витрина проектов | http://localhost:3000/showcase (национальная — `?scope=national`) |
 | Дизайн-система | http://localhost:3000/design |
 | API (метаданные) | http://localhost:8080/api/v1/meta |
 | Перехват e-mail (Mailpit) | http://localhost:8025 |

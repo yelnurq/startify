@@ -5,7 +5,7 @@ import { Camera, Copy, ExternalLink, Globe, Lock, Save, Trash2 } from 'lucide-re
 import { useId, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import {
   Avatar,

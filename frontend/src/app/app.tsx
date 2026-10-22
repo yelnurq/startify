@@ -41,7 +41,9 @@ declare module '@tanstack/react-router' {
       | 'aiUsage'
       | 'knowledge'
       | 'projects'
-      | 'rubric';
+      | 'rubric'
+      | 'showcaseReview'
+      | 'contacts';
     /** The page brings its own columns: no content padding (project workspace). */
     bleed?: boolean;
   }

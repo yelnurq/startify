@@ -4,6 +4,7 @@
     "projects": "Projects",
     "profile": "My profile",
     "team": "Looking for a team",
+    "showcase": "Showcase",
     "administration": "Administration",
     "members": "Members",
     "import": "Data import",
@@ -12,7 +13,9 @@
     "knowledge": "Knowledge base",
     "ai": "AI settings",
     "aiUsage": "AI usage",
-    "rubric": "Evaluation rubric"
+    "rubric": "Evaluation rubric",
+    "showcaseReview": "Showcase review",
+    "contacts": "Contact requests"
   },
   "titles": {
     "home": "Home",
@@ -25,7 +28,9 @@
     "ai": "AI settings",
     "aiUsage": "AI usage",
     "projects": "Projects",
-    "rubric": "Evaluation rubric"
+    "rubric": "Evaluation rubric",
+    "showcaseReview": "Showcase review",
+    "contacts": "Showcase contact requests"
   },
   "user": {
     "menu": "User menu"

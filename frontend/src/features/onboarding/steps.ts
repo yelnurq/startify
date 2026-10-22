@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '@/shared/forms/zod';
 
 import type { components } from '@/shared/api/schema.gen';
 import { i18n, LOCALES, type Locale } from '@/shared/i18n';

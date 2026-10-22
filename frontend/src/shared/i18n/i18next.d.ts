@@ -10,6 +10,7 @@ import type evaluation from '@/locales/ru/evaluation.json';
 import type incubator from '@/locales/ru/incubator.json';
 import type landing from '@/locales/ru/landing.json';
 import type onboarding from '@/locales/ru/onboarding.json';
+import type showcase from '@/locales/ru/showcase.json';
 import type team from '@/locales/ru/team.json';
 
 // Translation keys are type-checked against the Russian catalogue; the
@@ -29,6 +30,7 @@ declare module 'i18next' {
       ai: typeof ai;
       incubator: typeof incubator;
       evaluation: typeof evaluation;
+      showcase: typeof showcase;
     };
     returnNull: false;
   }
