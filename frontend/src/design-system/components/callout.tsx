@@ -37,7 +37,7 @@ export function Callout({ tone = 'info', title, children, action, icon, classNam
       <span className="mt-0.5 shrink-0 [&_svg]:size-4.5">{icon ?? <Icon aria-hidden />}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {title && <p className="font-semibold">{title}</p>}
-        {children && <div className="leading-relaxed opacity-90">{children}</div>}
+        {children && <div className="leading-relaxed">{children}</div>}
         {action && <div className="mt-2 flex flex-wrap gap-2">{action}</div>}
       </div>
     </div>

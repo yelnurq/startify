@@ -16,13 +16,14 @@ const sizes = {
 const presenceSizes = { xs: 'size-2', sm: 'size-2.5', md: 'size-3', lg: 'size-3.5', xl: 'size-4' };
 
 // Calm, theme-aware backgrounds for initials, picked deterministically by name.
+// The avatar tones of the university's site: teal, ink, aqua, copper, gold, green.
 const palettes = [
-  'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200',
-  'bg-gold-100 text-gold-800 dark:bg-gold-900 dark:text-gold-200',
-  'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200',
-  'bg-info-100 text-info-800 dark:bg-info-900 dark:text-info-200',
-  'bg-danger-100 text-danger-800 dark:bg-danger-900 dark:text-danger-200',
-  'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200',
+  'bg-linear-to-br from-primary-700 to-primary-500 text-white',
+  'bg-linear-to-br from-ink-800 to-ink-600 text-white',
+  'bg-linear-to-br from-primary-600 to-primary-400 text-ink-800',
+  'bg-linear-to-br from-copper-600 to-copper-400 text-white',
+  'bg-linear-to-br from-gold-600 to-gold-400 text-ink-800',
+  'bg-linear-to-br from-success-700 to-success-500 text-white',
 ];
 
 function hash(value: string): number {

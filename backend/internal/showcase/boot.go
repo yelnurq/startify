@@ -62,10 +62,10 @@ var bootText = map[string]apiconv.Text{
 // coverGradients repeat the placeholder covers of the client's cards
 // (frontend src/features/showcase/card.tsx, GRADIENTS and INDUSTRY_GRADIENT).
 var coverGradients = []string{
-	"from-primary-600 via-deep-800 to-deep-900",
-	"from-ink-600 via-ink-800 to-ink-950",
-	"from-primary-700 via-primary-900 to-ink-900",
-	"from-deep-800 via-ink-800 to-ink-950",
+	"from-deep-700 to-ink-950",
+	"from-ink-800 to-ink-600",
+	"from-primary-700 to-deep-900",
+	"from-deep-900 to-deep-800",
 }
 
 var industryGradient = map[string]int{

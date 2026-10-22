@@ -110,7 +110,7 @@ function Hero({ signedIn }: { signedIn: boolean }) {
       <div aria-hidden className="absolute inset-0 ornament opacity-[0.025] [--qd-brand:#fff]" />
       <div
         aria-hidden
-        className="absolute -top-56 -right-48 size-[44rem] rounded-full bg-primary-500/20 blur-3xl"
+        className="absolute -top-56 -right-48 size-[44rem] rounded-full bg-primary-500/10 blur-3xl"
       />
       <div className="relative mx-auto grid max-w-page grid-cols-1 items-center gap-12 px-4 pt-14 pb-32 sm:px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:pt-24 lg:pb-40">
         <div className="flex min-w-0 flex-col items-start gap-7">
@@ -165,7 +165,7 @@ function HeroSearch() {
           aria-label={t('hero.searchLabel')}
           placeholder={t('hero.searchPlaceholder')}
           leading={<Search />}
-          className="h-14 border-white/25 bg-white/5 text-base text-white placeholder:text-white/60 hover:border-white/45 focus-visible:border-primary-300"
+          className="h-14 border-white/20 bg-ink-800/50 text-base text-white placeholder:text-white/60 hover:border-white/40 focus-visible:border-primary"
         />
       </div>
       <Button type="submit" size="lg" className="h-14 px-7">
@@ -299,7 +299,7 @@ function HowItWorks() {
         <ol className="relative grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <span
             aria-hidden
-            className="absolute inset-x-12 top-12 hidden h-px bg-primary-border lg:block"
+            className="absolute inset-x-12 top-12 hidden h-0.5 bg-linear-to-r from-primary/10 via-primary/45 to-primary/10 lg:block"
           />
           {STAGES.map(({ key, icon: Icon, steps }, index) => (
             <li key={key} className="relative">

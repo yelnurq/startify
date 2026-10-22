@@ -92,14 +92,27 @@
   color: #ffffff;
 }
 
-/* Navy band of the hero, the footer and call-to-action banners. */
+/* The hero of the university's site without its photo: navy ink fading into
+   deep teal (from-ink/95 via-deep/85 to-deep/55 over deep). */
 @utility panel-ink {
-  background-color: var(--color-ink-900);
+  background-color: var(--color-deep-900);
   background-image: linear-gradient(
-    120deg,
-    var(--color-ink-950) 0%,
-    var(--color-ink-800) 55%,
-    var(--color-deep-800) 100%
+    to right,
+    color-mix(in srgb, var(--color-ink-800) 95%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 85%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 55%, transparent)
+  );
+  color: #ffffff;
+}
+
+/* Call-to-action banner of the site: ink, deep teal, then the accent. */
+@utility panel-accent {
+  background-color: var(--color-deep-900);
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink-800) 95%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 90%, transparent),
+    color-mix(in srgb, var(--color-primary-700) 70%, transparent)
   );
   color: #ffffff;
 }

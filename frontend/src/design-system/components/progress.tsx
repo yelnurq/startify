@@ -5,8 +5,8 @@ import { cn } from '../lib/cn';
 
 const fills = {
   primary: 'bg-primary',
-  brand: 'bg-linear-to-r from-primary-400 to-primary-600',
-  success: 'bg-success',
+  brand: 'bg-linear-to-r from-primary-700 to-primary-500',
+  success: 'bg-linear-to-r from-success-700 to-success-500',
   gold: 'bg-gold',
   danger: 'bg-danger',
 } as const;

@@ -36,88 +36,109 @@
   --tracking-label: 0.12em;
   --tracking-kicker: 0.18em;
 
-  /* Teal of the university's site (#067A75 = 700, white label 5.2:1),
-     mint #83DCD5 = 300 and the bright accent #09BAB2 = 500. */
+  /* Teal of the university's site: accent #067A75 = 700 (white label 5.2:1),
+     aqua #0A9D96 = 600, bright #09BAB2 = 500, light aqua #5FD6CD = 400,
+     mint #83DCD5 = 300, tints #D5EBE7 / #E3F4F2 / #F0F8F7. */
   --color-primary-50: #f0f8f7;
   --color-primary-100: #e3f4f2;
-  --color-primary-200: #c5e9e4;
+  --color-primary-200: #d5ebe7;
   --color-primary-300: #83dcd5;
-  --color-primary-400: #42c9c1;
+  --color-primary-400: #5fd6cd;
   --color-primary-500: #09bab2;
-  --color-primary-600: #00938c;
+  --color-primary-600: #0a9d96;
   --color-primary-700: #067a75;
   --color-primary-800: #00625e;
   --color-primary-900: #004e4b;
   --color-primary-950: #003330;
 
-  /* Navy ink of headings and dark buttons, and the deep teal of dark panels. */
+  /* Navy ink of headings and dark buttons (#102945, its light end #2C5A86,
+     the footer's #0D1F2C, navy #001E40) and the deep teal of dark panels
+     (#082834, #0E3A3F, the cover placeholder's #14696D). */
   --color-ink-600: #2c5a86;
   --color-ink-800: #102945;
-  --color-ink-900: #0b2038;
+  --color-ink-900: #0d1f2c;
   --color-ink-950: #001e40;
+  --color-deep-700: #14696d;
   --color-deep-800: #0e3a3f;
   --color-deep-900: #082834;
 
-  /* Gold of the flag: fills, awards and highlights only, never text on white. */
-  --color-gold-50: #fbf9e5;
-  --color-gold-100: #f6f1ca;
-  --color-gold-200: #f1e19e;
-  --color-gold-300: #e8c962;
-  --color-gold-400: #f5b800;
-  --color-gold-500: #bf8f00;
-  --color-gold-600: #a57600;
-  --color-gold-700: #8d5f00;
-  --color-gold-800: #754b00;
-  --color-gold-900: #603900;
-  --color-gold-950: #402400;
+  /* Gold of the university's site (#B07A00 → #E2B53E): fills, awards and highlights; text uses 700. */
+  --color-gold-50: #fffaf0;
+  --color-gold-100: #fbf0d6;
+  --color-gold-200: #efe3c4;
+  --color-gold-300: #ecd07e;
+  --color-gold-400: #e2b53e;
+  --color-gold-500: #c99a1f;
+  --color-gold-600: #b07a00;
+  --color-gold-700: #8f6200;
+  --color-gold-800: #734e00;
+  --color-gold-900: #5c3e00;
+  --color-gold-950: #3d2600;
 
-  --color-success-50: #edfded;
-  --color-success-100: #daf9db;
-  --color-success-200: #baf1be;
-  --color-success-300: #8fe29a;
-  --color-success-400: #5fcd76;
-  --color-success-500: #32b359;
-  --color-success-600: #009946;
-  --color-success-700: #007f3c;
-  --color-success-800: #006631;
-  --color-success-900: #005228;
-  --color-success-950: #003519;
+  /* Green of the university's site: #1B7A4A = 700 (white label 5.3:1), #3FB57A = 500, tints #E3F3EA / #F6FBF8. */
+  --color-success-50: #f6fbf8;
+  --color-success-100: #e3f3ea;
+  --color-success-200: #c3e6d2;
+  --color-success-300: #93d3ae;
+  --color-success-400: #61c48f;
+  --color-success-500: #3fb57a;
+  --color-success-600: #26975f;
+  --color-success-700: #1b7a4a;
+  --color-success-800: #146139;
+  --color-success-900: #0f4d2e;
+  --color-success-950: #08341e;
 
-  --color-warning-50: #fff7e7;
-  --color-warning-100: #ffedcc;
-  --color-warning-200: #ffda9f;
-  --color-warning-300: #fac067;
-  --color-warning-400: #eca020;
-  --color-warning-500: #d08500;
-  --color-warning-600: #b36d00;
-  --color-warning-700: #985800;
-  --color-warning-800: #7d4400;
-  --color-warning-900: #673400;
-  --color-warning-950: #452000;
+  /* Warning of the university's site: text #8A5A00 = 700, tints #FBF0D6 / #FFFBF0. */
+  --color-warning-50: #fffbf0;
+  --color-warning-100: #fbf0d6;
+  --color-warning-200: #f3dfa7;
+  --color-warning-300: #e9c776;
+  --color-warning-400: #e2b53e;
+  --color-warning-500: #c69a1c;
+  --color-warning-600: #b07a00;
+  --color-warning-700: #8a5a00;
+  --color-warning-800: #704800;
+  --color-warning-900: #5a3a00;
+  --color-warning-950: #3d2600;
 
-  --color-danger-50: #fff5f4;
-  --color-danger-100: #ffe9e8;
-  --color-danger-200: #ffd4d1;
-  --color-danger-300: #ffb5b1;
-  --color-danger-400: #ff8b87;
-  --color-danger-500: #f85a5c;
-  --color-danger-600: #db3e45;
-  --color-danger-700: #bb2b34;
-  --color-danger-800: #991e27;
-  --color-danger-900: #7c161e;
-  --color-danger-950: #55070f;
+  /* Red of the university's site: #BA1A1A = 700 (white label 6.5:1), tints #FBE5E3 / #FDF3F2. */
+  --color-danger-50: #fdf3f2;
+  --color-danger-100: #fbe5e3;
+  --color-danger-200: #f6c9c5;
+  --color-danger-300: #f0a39d;
+  --color-danger-400: #e5736b;
+  --color-danger-500: #d64540;
+  --color-danger-600: #c52b28;
+  --color-danger-700: #ba1a1a;
+  --color-danger-800: #961414;
+  --color-danger-900: #7a1111;
+  --color-danger-950: #530808;
 
-  --color-info-50: #f3f8ff;
-  --color-info-100: #e5f0ff;
-  --color-info-200: #cce2ff;
-  --color-info-300: #abceff;
-  --color-info-400: #81b3ff;
-  --color-info-500: #5595ff;
-  --color-info-600: #3979ee;
-  --color-info-700: #2e62cc;
-  --color-info-800: #264da9;
-  --color-info-900: #203d88;
-  --color-info-950: #12255f;
+  /* Information in the navy of the university's site: #2C5A86 = 700, tint #E8EEF5. */
+  --color-info-50: #f3f6fa;
+  --color-info-100: #e8eef5;
+  --color-info-200: #cfdbe9;
+  --color-info-300: #a9bfd8;
+  --color-info-400: #7f9fc4;
+  --color-info-500: #5b86b5;
+  --color-info-600: #3f6d9c;
+  --color-info-700: #2c5a86;
+  --color-info-800: #224870;
+  --color-info-900: #1a3858;
+  --color-info-950: #102945;
+
+  /* Copper of the university's site (#A4531F → #D9853F, tint #FBEFE6): avatars and accents. */
+  --color-copper-50: #fdf6f1;
+  --color-copper-100: #fbefe6;
+  --color-copper-200: #f5d6bf;
+  --color-copper-300: #ebb48b;
+  --color-copper-400: #d9853f;
+  --color-copper-500: #c06a2c;
+  --color-copper-600: #a4531f;
+  --color-copper-700: #8a4419;
+  --color-copper-800: #703714;
+  --color-copper-900: #5a2c10;
+  --color-copper-950: #3b1c0a;
 
   /* Green-grey neutrals of the university's site. */
   --color-neutral-0: #ffffff;
@@ -377,39 +398,39 @@
   --qd-primary-fg: #ffffff;
   --qd-primary-soft: var(--color-primary-100);
   --qd-primary-soft-hover: var(--color-primary-200);
-  --qd-primary-soft-fg: var(--color-primary-800);
+  --qd-primary-soft-fg: var(--color-primary-700);
   --qd-primary-text: var(--color-primary-700);
   --qd-primary-border: var(--color-primary-200);
 
   --qd-gold: var(--color-gold-400);
-  --qd-gold-fg: #4d3600;
-  --qd-gold-soft: var(--color-gold-50);
-  --qd-gold-soft-fg: var(--color-gold-800);
+  --qd-gold-fg: var(--color-gold-950);
+  --qd-gold-soft: var(--color-gold-100);
+  --qd-gold-soft-fg: var(--color-gold-700);
   --qd-gold-border: var(--color-gold-200);
 
   --qd-success: var(--color-success-700);
   --qd-success-fg: #ffffff;
-  --qd-success-soft: var(--color-success-50);
-  --qd-success-soft-fg: var(--color-success-800);
+  --qd-success-soft: var(--color-success-100);
+  --qd-success-soft-fg: var(--color-success-700);
   --qd-success-border: var(--color-success-200);
 
   --qd-warning: var(--color-warning-400);
-  --qd-warning-fg: #3d1f00;
-  --qd-warning-soft: var(--color-warning-50);
-  --qd-warning-soft-fg: var(--color-warning-800);
+  --qd-warning-fg: var(--color-warning-950);
+  --qd-warning-soft: var(--color-warning-100);
+  --qd-warning-soft-fg: var(--color-warning-700);
   --qd-warning-border: var(--color-warning-200);
 
   --qd-danger: var(--color-danger-700);
   --qd-danger-hover: var(--color-danger-800);
   --qd-danger-fg: #ffffff;
-  --qd-danger-soft: var(--color-danger-50);
-  --qd-danger-soft-fg: var(--color-danger-800);
+  --qd-danger-soft: var(--color-danger-100);
+  --qd-danger-soft-fg: var(--color-danger-700);
   --qd-danger-border: var(--color-danger-200);
 
   --qd-info: var(--color-info-700);
   --qd-info-fg: #ffffff;
-  --qd-info-soft: var(--color-info-50);
-  --qd-info-soft-fg: var(--color-info-800);
+  --qd-info-soft: var(--color-info-100);
+  --qd-info-soft-fg: var(--color-info-700);
   --qd-info-border: var(--color-info-200);
 
   /* Flat surfaces with soft, wide shadows only where something floats. */

@@ -18,15 +18,21 @@ function NavAnchor({ icon, badge, children, className, ...props }: NavAnchorProp
     <a
       aria-label={collapsed ? children : undefined}
       className={cn(
-        'group relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm font-medium text-fg-muted transition-colors',
+        'group relative flex h-9 items-center gap-3 rounded-lg px-2 text-sm font-medium text-fg-muted transition-colors',
         'hover:bg-primary-soft/60 hover:text-ink',
-        'data-[status=active]:bg-primary-soft data-[status=active]:font-semibold data-[status=active]:text-primary-soft-fg',
+        // The active entry of the university's site: a teal wash with a hairline,
+        // a bar at the sidebar's edge and the icon on a teal tile.
+        'data-[status=active]:bg-linear-to-r data-[status=active]:from-primary-soft data-[status=active]:to-primary-soft/35',
+        'data-[status=active]:font-semibold data-[status=active]:text-ink data-[status=active]:ring-1 data-[status=active]:ring-primary/15 data-[status=active]:ring-inset',
+        'before:absolute before:inset-y-2 before:-left-3 before:w-0.75 before:rounded-r-sm before:bg-linear-to-b before:from-primary-500 before:to-primary before:opacity-0 data-[status=active]:before:opacity-100',
         collapsed && 'justify-center px-0',
         className,
       )}
       {...props}
     >
-      <span className="flex shrink-0 [&_svg]:size-4.5">{icon}</span>
+      <span className="grid size-7 shrink-0 place-items-center rounded-md transition-colors group-hover:text-primary-text group-data-[status=active]:bg-linear-to-br group-data-[status=active]:from-primary group-data-[status=active]:to-primary-500 group-data-[status=active]:text-white group-data-[status=active]:shadow-sm [&_svg]:size-4">
+        {icon}
+      </span>
       {!collapsed && <span className="flex-1 truncate">{children}</span>}
       {!collapsed && badge}
     </a>

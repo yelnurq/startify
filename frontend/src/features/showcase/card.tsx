@@ -13,13 +13,13 @@ import { monogram, splitVisible, type Industry } from './logic';
 
 type ReadinessLevel = components['schemas']['ReadinessLevel'];
 
-// Covers without an image get a gradient of the university's teal and navy,
-// varied by industry.
+// Covers without an image get the placeholder of the university's site
+// (#14696D → navy) or one of its panel gradients, varied by industry.
 const GRADIENTS = [
-  'from-primary-600 via-deep-800 to-deep-900',
-  'from-ink-600 via-ink-800 to-ink-950',
-  'from-primary-700 via-primary-900 to-ink-900',
-  'from-deep-800 via-ink-800 to-ink-950',
+  'from-deep-700 to-ink-950',
+  'from-ink-800 to-ink-600',
+  'from-primary-700 to-deep-900',
+  'from-deep-900 to-deep-800',
 ] as const;
 
 const INDUSTRY_GRADIENT: Record<Industry, number> = {

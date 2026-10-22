@@ -123,7 +123,7 @@ function SiteFooter() {
   const { t } = useTranslation(['showcase', 'common', 'landing']);
   const university = useUniversityName();
   return (
-    <footer className="border-t-3 border-primary-500 panel-ink">
+    <footer className="border-t-2 border-primary-500 bg-linear-to-br from-ink-800 via-ink-900 to-deep-900 text-white/70">
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="flex flex-col gap-5">
           <Logo inverted caption={university} />

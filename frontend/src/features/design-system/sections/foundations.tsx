@@ -75,6 +75,43 @@ function ScaleRow({ name, label, note }: { name: string; label: string; note: st
   );
 }
 
+/** Brand colours that are single shades rather than scales. */
+function SwatchRow({ tokens, label, note }: { tokens: string[]; label: string; note: string }) {
+  const vars = useCssVars(tokens);
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-ink">{label}</h3>
+        <p className="text-sm text-fg-subtle">{note}</p>
+      </div>
+      <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-11">
+        {tokens.map((token) => (
+          <div key={token} className="flex flex-col gap-1.5">
+            <div
+              className="aspect-square rounded-lg ring-1 ring-black/5 ring-inset dark:ring-white/5"
+              style={{ background: `var(${token})` }}
+            />
+            <span className="text-xs font-semibold text-fg">{token.replace('--color-', '')}</span>
+            <span className="-mt-1 font-mono text-xs text-fg-subtle uppercase">
+              {(vars[token] ?? '').replace('#', '')}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const INK_TOKENS = [
+  '--color-ink-600',
+  '--color-ink-800',
+  '--color-ink-900',
+  '--color-ink-950',
+  '--color-deep-700',
+  '--color-deep-800',
+  '--color-deep-900',
+];
+
 const SURFACE_TOKENS = [
   { token: '--qd-bg', key: 'bg', cls: 'bg-bg' },
   { token: '--qd-surface', key: 'surface', cls: 'bg-surface' },
@@ -102,7 +139,9 @@ export function ColorsSection({ index }: { index: number }) {
     <Section id="colors" index={index} title={t('colors.title')} lead={t('colors.lead')}>
       <Specimen label={t('colors.brand')} bodyClassName="flex flex-col gap-8">
         <ScaleRow name="primary" label={t('colors.primaryName')} note={t('colors.primaryNote')} />
+        <SwatchRow tokens={INK_TOKENS} label={t('colors.inkName')} note={t('colors.inkNote')} />
         <ScaleRow name="gold" label={t('colors.goldName')} note={t('colors.goldNote')} />
+        <ScaleRow name="copper" label={t('colors.copperName')} note={t('colors.copperNote')} />
       </Specimen>
       <Specimen label={t('colors.semantic')} bodyClassName="flex flex-col gap-8">
         <ScaleRow name="success" label={t('colors.success')} note={t('colors.successNote')} />
