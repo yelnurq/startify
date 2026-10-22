@@ -36,7 +36,7 @@ const (
 	ogWidth  = 1200
 	ogHeight = 630
 	// ogVersion changes the hash of every preview when the design changes.
-	ogVersion = "og2"
+	ogVersion = "og3"
 )
 
 //go:embed og.html

@@ -14,12 +14,16 @@ import (
 )
 
 const countLive = `-- name: CountLive :one
-SELECT count(*) FROM showcase_entries
- WHERE tenant_id = app_current_tenant() AND published_at IS NOT NULL
+SELECT count(*) FROM showcase_entries e
+ WHERE CASE $1::text
+         WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
+         ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
+       END
 `
 
-func (q *Queries) CountLive(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countLive)
+// Pages of the current university that the scope can open.
+func (q *Queries) CountLive(ctx context.Context, scope string) (int64, error) {
+	row := q.db.QueryRow(ctx, countLive, scope)
 	var count int64
 	err := row.Scan(&count)
 	return count, err

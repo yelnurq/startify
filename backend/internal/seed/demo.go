@@ -30,7 +30,7 @@ var KazUTB = TenantSpec{
 	},
 	ShortName:       apiconv.Text{"kk": "ҚазТБУ", "ru": "КазУТБ", "en": "KazUTB"},
 	Locale:          "kk",
-	Color:           "#00A3C4",
+	Color:           "#067A75",
 	SelfSignup:      true,
 	IPPolicyVersion: "2026-09",
 	IPPolicyText: apiconv.Text{

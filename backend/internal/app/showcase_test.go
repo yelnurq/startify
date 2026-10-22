@@ -158,6 +158,12 @@ func TestShowcasePublishing(t *testing.T) {
 	}
 	expectProblem(t, anonymous.do(http.MethodGet, "/api/v1/showcase/entries/agroscan", nil), http.StatusNotFound, "showcase.not_found")
 	expect(t, student.do(http.MethodGet, "/api/v1/showcase/entries/agroscan", nil), http.StatusOK)
+	// The landing counter counts what the visitor can open.
+	for who, want := range map[*browser]int{anonymous: 0, student: 1} {
+		if n := decode[apigen.ShowcaseHighlights](t, who.do(http.MethodGet, "/api/v1/showcase/highlights", nil)).Counters.Published; n != want {
+			t.Fatalf("published counter %d, want %d", n, want)
+		}
+	}
 	expectProblem(t, student.do(http.MethodGet, "/api/v1/admin/showcase", nil), http.StatusForbidden, "rbac.forbidden")
 	rec = manager.do(http.MethodGet, "/api/v1/admin/showcase", nil)
 	expect(t, rec, http.StatusOK)
@@ -469,7 +475,7 @@ func TestShowcaseSEO(t *testing.T) {
 			t.Fatalf("preview %q", rec.Body)
 		}
 	}
-	if calls.Load() != 1 || !strings.Contains(html, "AgroScan") || !strings.Contains(html, "ҚазТБУ") || !strings.Contains(html, "#00A3C4") {
+	if calls.Load() != 1 || !strings.Contains(html, "AgroScan") || !strings.Contains(html, "ҚазТБУ") || !strings.Contains(html, "#067A75") {
 		t.Fatalf("renderer called %d times with %s", calls.Load(), html)
 	}
 	expectProblem(t, crawler.do(http.MethodGet, "/api/v1/showcase/entries/missing/og.png", nil), http.StatusNotFound, "showcase.not_found")

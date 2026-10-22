@@ -296,7 +296,7 @@ func (s *Service) Highlights(ctx context.Context) (apigen.ShowcaseHighlights, er
 	var featured []showcasedb.ListFeaturedRow
 	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
-		n, err := q.CountLive(ctx)
+		n, err := q.CountLive(ctx, scope)
 		if err != nil {
 			return err
 		}

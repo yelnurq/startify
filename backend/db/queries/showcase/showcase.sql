@@ -114,8 +114,12 @@ SELECT e.project_id, e.tenant_id, e.slug, e.title, e.tagline, e.industry, e.stag
  LIMIT @row_limit;
 
 -- name: CountLive :one
-SELECT count(*) FROM showcase_entries
- WHERE tenant_id = app_current_tenant() AND published_at IS NOT NULL;
+-- Pages of the current university that the scope can open.
+SELECT count(*) FROM showcase_entries e
+ WHERE CASE @scope::text
+         WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
+         ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
+       END;
 
 -- name: ListForReview :many
 SELECT * FROM showcase_entries
