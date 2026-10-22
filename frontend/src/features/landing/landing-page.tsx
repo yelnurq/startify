@@ -23,6 +23,7 @@ import {
   AnimatedNumber,
   BrandMark,
   Button,
+  EdgeIllustration,
   IdeaIllustration,
   Illustration,
   Input,
@@ -251,7 +252,12 @@ function Numbers() {
 function HowItWorks() {
   const { t } = useTranslation('landing');
   return (
-    <section id="how" aria-labelledby="how-title" className="scroll-mt-20">
+    <section id="how" aria-labelledby="how-title" className="relative scroll-mt-20 overflow-x-clip">
+      <EdgeIllustration
+        name="route"
+        placement="bottom-left"
+        className="z-10 hidden w-72 translate-y-1/2 rotate-6 lg:block"
+      />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
         <div className="flex flex-col gap-10 lg:sticky lg:top-28 lg:self-start">
           <SectionHeading
@@ -367,7 +373,15 @@ function Featured() {
   const featured = highlights.data?.featured ?? [];
   if (featured.length === 0) return null;
   return (
-    <section aria-labelledby="featured-title" className="border-y border-border bg-surface">
+    <section
+      aria-labelledby="featured-title"
+      className="relative overflow-x-clip border-y border-border bg-surface"
+    >
+      <EdgeIllustration
+        name="pitch"
+        placement="top-right"
+        className="hidden w-64 -translate-y-1/2 -rotate-6 lg:block"
+      />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:py-28">
         <div className="flex flex-col gap-8 lg:sticky lg:top-28 lg:self-start">
           <SectionHeading
@@ -427,11 +441,13 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
   const { t } = useTranslation('landing');
   const [audience, setAudience] = useAudienceFromHash();
   return (
-    <section
-      aria-labelledby="audiences-title"
-      className="mx-auto max-w-page px-4 py-20 sm:px-6 lg:py-28"
-    >
-      <div className="flex flex-col gap-10">
+    <section aria-labelledby="audiences-title" className="relative overflow-x-clip">
+      <EdgeIllustration
+        name="puzzle"
+        placement="top-right"
+        className="hidden w-64 translate-y-1/4 rotate-12 lg:block"
+      />
+      <div className="mx-auto flex max-w-page flex-col gap-10 px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
           id="audiences-title"
           eyebrow={t('audiences.eyebrow')}
@@ -525,55 +541,70 @@ function FinalCta({ signedIn }: { signedIn: boolean }) {
   const text = useLocalized();
   const cover = tenant.data?.cover_url;
   return (
-    <section className="mx-auto max-w-page px-4 pb-20 sm:px-6 lg:pb-28" aria-labelledby="cta-title">
-      <div className="grid grid-cols-1 overflow-hidden rounded-card border border-border bg-surface lg:grid-cols-2">
-        <div className="flex flex-col justify-center gap-5 p-8 sm:p-12">
-          <Kicker>{t('cta.kicker')}</Kicker>
-          <h2 id="cta-title" className="font-display text-3xl font-extrabold text-ink sm:text-5xl">
-            {t('cta.title')}
-          </h2>
-          <p className="text-lg leading-relaxed text-fg-muted">{t('cta.text')}</p>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link to={signedIn ? '/app' : '/register'}>
-                {signedIn ? t('actions.toApp') : t('cta.primary')}
-                <ArrowRight aria-hidden />
-              </Link>
-            </Button>
-            {!signedIn && (
-              <Button asChild size="lg" variant="secondary">
-                <Link to="/login">{t('actions.signIn')}</Link>
+    <section className="relative isolate overflow-x-clip" aria-labelledby="cta-title">
+      <EdgeIllustration
+        name="megaphone"
+        placement="left"
+        className="-z-10 hidden w-60 -translate-y-2/3 -rotate-12 lg:block"
+      />
+      <EdgeIllustration
+        name="rocket"
+        placement="right"
+        className="-z-10 hidden w-56 translate-y-0 rotate-12 lg:block"
+      />
+      <div className="mx-auto max-w-page px-4 pb-20 sm:px-6 lg:pb-28">
+        <div className="grid grid-cols-1 overflow-hidden rounded-card border border-border bg-surface lg:grid-cols-2">
+          <div className="flex flex-col justify-center gap-5 p-8 sm:p-12">
+            <Kicker>{t('cta.kicker')}</Kicker>
+            <h2
+              id="cta-title"
+              className="font-display text-3xl font-extrabold text-ink sm:text-5xl"
+            >
+              {t('cta.title')}
+            </h2>
+            <p className="text-lg leading-relaxed text-fg-muted">{t('cta.text')}</p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link to={signedIn ? '/app' : '/register'}>
+                  {signedIn ? t('actions.toApp') : t('cta.primary')}
+                  <ArrowRight aria-hidden />
+                </Link>
               </Button>
+              {!signedIn && (
+                <Button asChild size="lg" variant="secondary">
+                  <Link to="/login">{t('actions.signIn')}</Link>
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="relative isolate flex min-h-72 items-end bg-deep-900 p-8">
+            {cover && (
+              <img
+                src={cover}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 -z-10 size-full object-cover"
+              />
+            )}
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10 bg-linear-to-t from-deep-900/90 via-deep-900/30 to-transparent"
+            />
+            {tenant.data && (
+              <div className="flex items-center gap-4">
+                <BrandMark src={tenant.data.logo_url} inverted className="size-14" />
+                <div className="flex flex-col">
+                  <p className="font-display text-lg leading-snug font-bold text-white">
+                    {text(tenant.data.name)}
+                  </p>
+                  <p className="text-2xs font-bold tracking-label text-primary-300 uppercase">
+                    {t('cta.photoCaption')}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
-        </div>
-        <div className="relative isolate flex min-h-72 items-end bg-deep-900 p-8">
-          {cover && (
-            <img
-              src={cover}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 -z-10 size-full object-cover"
-            />
-          )}
-          <div
-            aria-hidden
-            className="absolute inset-0 -z-10 bg-linear-to-t from-deep-900/90 via-deep-900/30 to-transparent"
-          />
-          {tenant.data && (
-            <div className="flex items-center gap-4">
-              <BrandMark src={tenant.data.logo_url} inverted className="size-14" />
-              <div className="flex flex-col">
-                <p className="font-display text-lg leading-snug font-bold text-white">
-                  {text(tenant.data.name)}
-                </p>
-                <p className="text-2xs font-bold tracking-label text-primary-300 uppercase">
-                  {t('cta.photoCaption')}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </section>

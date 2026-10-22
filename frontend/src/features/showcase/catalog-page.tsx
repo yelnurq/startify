@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   Callout,
+  EdgeIllustration,
   EmptyState,
   Field,
   Input,
@@ -93,7 +94,15 @@ export function CatalogPage() {
 
   return (
     <SiteFrame>
-      <section aria-labelledby="catalog-title" className="border-b border-border bg-surface">
+      <section
+        aria-labelledby="catalog-title"
+        className="relative overflow-hidden border-b border-border bg-surface"
+      >
+        <EdgeIllustration
+          name="search"
+          placement="top-right"
+          className="hidden w-60 translate-y-0 -rotate-6 lg:block"
+        />
         <div className="mx-auto grid max-w-page grid-cols-1 items-end gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:py-16">
           <div className="flex flex-col gap-5">
             <Kicker>{national ? t('catalog.eyebrow') : university || t('catalog.eyebrow')}</Kicker>

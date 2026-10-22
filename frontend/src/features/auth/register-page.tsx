@@ -225,7 +225,7 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthPage title={t('register.title')} subtitle={t('register.subtitle')}>
+    <AuthPage title={t('register.title')} subtitle={t('register.subtitle')} art="idea">
       {tenant.data && <RegisterForm tenant={tenant.data} />}
       {tenant.isError && <FormAlert message={t('register.tenantUnavailable')} />}
       <p className="text-center text-sm text-fg-muted">

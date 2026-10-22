@@ -12,7 +12,15 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AuthLayout } from '@/app/layouts/auth-layout';
-import { Callout, cn, Illustration, Input, Kicker, Logo } from '@/design-system';
+import {
+  Callout,
+  cn,
+  Illustration,
+  type IllustrationName,
+  Input,
+  Kicker,
+  Logo,
+} from '@/design-system';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import { tenantQuery } from './api';
@@ -79,10 +87,13 @@ function BackHome() {
 export function AuthPage({
   title,
   subtitle,
+  art,
   children,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
+  /** The drawing in the corner of the form side. */
+  art?: IllustrationName;
   children: ReactNode;
 }) {
   return (
@@ -94,6 +105,7 @@ export function AuthPage({
       }
       back={<BackHome />}
       aside={<AuthAside />}
+      art={art}
     >
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">

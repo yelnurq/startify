@@ -18,6 +18,7 @@ export * from './components/command-palette';
 export * from './components/dialog';
 export * from './components/diff-text';
 export * from './components/dropdown-menu';
+export * from './components/edge-illustration';
 export * from './components/empty-state';
 export * from './components/field';
 export * from './components/icon-button';

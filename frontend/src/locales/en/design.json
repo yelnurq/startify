@@ -449,7 +449,9 @@
       "vote": "Voting",
       "growth": "Growth and traction",
       "megaphone": "Announcements"
-    }
+    },
+    "edgeTitle": "EdgeIllustration — a drawing peeks out of an edge",
+    "edgeText": "The drawing sits at an edge or a corner of a section, a card or the screen, partly hidden behind it, and may tilt. Decoration only: hidden on phones, never over text."
   },
   "layouts": {
     "title": "Screen templates",

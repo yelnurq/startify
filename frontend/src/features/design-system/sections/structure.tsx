@@ -22,11 +22,15 @@ import {
   Breadcrumbs,
   Button,
   Card,
+  EdgeIllustration,
   EmptyState,
+  type IllustrationName,
   illustrations,
+  RadarChart,
   SegmentedControl,
   StageTrack,
   StatTile,
+  type StepItem,
   Stepper,
   Table,
   TableBody,
@@ -38,9 +42,6 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  type IllustrationName,
-  type StepItem,
-  RadarChart,
 } from '@/design-system';
 import { useFormatters } from '@/shared/i18n/format';
 
@@ -306,6 +307,17 @@ export function EmptyStatesSection({ index }: { index: number }) {
           action={<Button>{t('empty.exampleAction')}</Button>}
           secondaryAction={<Button variant="secondary">{t('empty.exampleSecondary')}</Button>}
         />
+      </Card>
+      <Card className="relative min-h-48 justify-center overflow-hidden p-6 sm:p-8">
+        <EdgeIllustration
+          name="rocket"
+          placement="bottom-right"
+          className="w-48 -rotate-12 sm:w-60"
+        />
+        <div className="flex max-w-md flex-col gap-2">
+          <p className="font-semibold text-ink">{t('empty.edgeTitle')}</p>
+          <p className="text-sm text-fg-muted">{t('empty.edgeText')}</p>
+        </div>
       </Card>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {ILLUSTRATIONS.map((name) => {

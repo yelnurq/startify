@@ -20,6 +20,7 @@ import {
   Card,
   celebrateStage,
   cn,
+  EdgeIllustration,
   Field,
   Illustration,
   type IllustrationName,
@@ -211,7 +212,17 @@ export function OnboardingPage({ session }: { session: Session }) {
   const props: StepProps = { draft, update, errors };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-bg">
+      <EdgeIllustration
+        name="route"
+        placement="bottom-left"
+        className="hidden w-80 -translate-y-1/4 rotate-6 xl:block"
+      />
+      <EdgeIllustration
+        name="rocket"
+        placement="right"
+        className="hidden w-64 -rotate-12 xl:block"
+      />
       <header className="sticky top-0 z-40 border-b border-border/70 surface-glass">
         <div className="mx-auto flex h-16 max-w-page items-center gap-3 px-4 sm:px-6">
           <Link to="/" className="rounded-lg">

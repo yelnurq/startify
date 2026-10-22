@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { initials } from './avatar';
 import { Button } from './button';
+import { EdgeIllustration } from './edge-illustration';
 import { Field } from './field';
 import { Input } from './input';
 import { Textarea } from './textarea';
@@ -95,5 +96,18 @@ describe('initials', () => {
     expect(initials('Нұрлан Әбдірахманов')).toBe('НӘ');
     expect(initials('  Мадина  ')).toBe('М');
     expect(initials('Ерасыл Серікұлы Қуанышев')).toBe('ЕҚ');
+  });
+});
+
+describe('EdgeIllustration', () => {
+  it('is decoration out of the way of the content', () => {
+    const { container } = render(
+      <EdgeIllustration name="rocket" placement="bottom-right" className="w-64" />,
+    );
+    const art = container.querySelector('[data-slot="edge-illustration"]');
+    expect(art).toHaveAttribute('aria-hidden', 'true');
+    expect(art).toHaveClass('pointer-events-none', 'absolute', 'right-0', 'bottom-0', 'w-64');
+    expect(art).not.toHaveClass('w-56');
+    expect(art?.querySelector('svg.illustration')).not.toBeNull();
   });
 });

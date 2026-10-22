@@ -131,7 +131,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthPage title={t('forgot.title')} subtitle={t('forgot.subtitle')}>
+    <AuthPage title={t('forgot.title')} subtitle={t('forgot.subtitle')} art="inbox">
       <FormAlert message={formError} />
       <form className="flex flex-col gap-5" onSubmit={(e) => void onSubmit(e)} noValidate>
         <Field label={t('fields.email')} error={form.formState.errors.email?.message}>
