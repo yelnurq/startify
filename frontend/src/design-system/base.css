@@ -8,6 +8,8 @@
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
     scrollbar-gutter: stable;
+    /* In-page links glide; reduced motion turns it off below. */
+    scroll-behavior: smooth;
   }
 
   body {

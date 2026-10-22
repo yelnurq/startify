@@ -9,15 +9,6 @@
     "ru": "Русский",
     "en": "English"
   },
-  "theme": {
-    "label": "Көрініс",
-    "light": "Ашық",
-    "dark": "Қараңғы",
-    "system": "Жүйедегідей",
-    "switchToLight": "Ашық көрініске ауысу",
-    "switchToDark": "Қараңғы көрініске ауысу",
-    "switchToSystem": "Жүйедегі көріністі қолдану"
-  },
   "actions": {
     "close": "Жабу",
     "cancel": "Бас тарту",

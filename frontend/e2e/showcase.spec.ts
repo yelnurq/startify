@@ -192,22 +192,55 @@ test.describe('public showcase', () => {
     await expect(page.getByText(/Инновационный офис университета проверит её/)).toBeVisible();
   });
 
-  for (const theme of ['light', 'dark'] as const) {
-    test(`catalogue and project page pass axe in the ${theme} theme`, async ({ page }) => {
-      await page.addInitScript((t) => {
-        localStorage.setItem('qadam.color-theme', t);
-      }, theme);
-      for (const url of ['/showcase', '/showcase/agroscan', '/']) {
-        await page.goto(url);
-        // The app's page, not the first screen the server draws before it.
-        await expect(page.locator('#root main h1')).toBeVisible();
-        await expect(page.locator('#boot')).toHaveCount(0);
-        await page.waitForLoadState('networkidle');
-        await expectNoSeriousViolations(page);
-        await expectNoHorizontalScroll(page);
-      }
-    });
-  }
+  test('catalogue and project page pass axe', async ({ page }) => {
+    for (const url of ['/showcase', '/showcase/agroscan', '/']) {
+      await page.goto(url);
+      // The app's page, not the first screen the server draws before it.
+      await expect(page.locator('#root main h1')).toBeVisible();
+      await expect(page.locator('#boot')).toHaveCount(0);
+      await page.waitForLoadState('networkidle');
+      await expectNoSeriousViolations(page);
+      await expectNoHorizontalScroll(page);
+    }
+  });
+
+  test('the filter panel picks and clears options', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', 'phones filter in a sheet');
+    await page.goto('/showcase');
+    const panel = page.getByRole('complementary', { name: 'Фильтры' });
+    const agritech = panel.getByRole('button', { name: /^Агротех/ });
+    await agritech.click();
+    await expect(page).toHaveURL(/industry=agritech/);
+    await expect(agritech).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#root').getByRole('link', { name: 'Kiiz Lab' })).toHaveCount(0);
+    await agritech.click();
+    await expect(page).not.toHaveURL(/industry=/);
+    await panel.getByRole('button', { name: /^Запуск/ }).click();
+    await expect(page).toHaveURL(/stage=launch/);
+    await panel.getByRole('button', { name: 'Сбросить', exact: true }).click();
+    await expect(page).not.toHaveURL(/stage=/);
+    const stage = panel.getByRole('button', { name: 'Стадия' });
+    await stage.click();
+    await expect(stage).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('section links of a project page land below the sticky bars', async ({ page }) => {
+    await page.goto('/showcase/agroscan');
+    await expect(page.locator('#boot')).toHaveCount(0);
+    await page.locator('#root').getByRole('link', { name: 'Команда', exact: true }).click();
+    await expect(page).toHaveURL(/#team$/);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const title = document.getElementById('team-title')?.getBoundingClientRect().top ?? 0;
+          const bars = Array.from(document.querySelectorAll<HTMLElement>('header, nav'))
+            .filter((el) => getComputedStyle(el).position === 'sticky')
+            .map((el) => el.getBoundingClientRect().bottom);
+          return title > Math.max(...bars) && title < window.innerHeight / 2;
+        }),
+      )
+      .toBe(true);
+  });
 
   test('the server draws the first screen, and the app takes its place', async ({ page }) => {
     const response = await page.request.get('/showcase/agroscan', {
@@ -250,8 +283,12 @@ test.describe('public showcase', () => {
     await expect(numbers.locator('dd .sr-only').first()).toHaveText(/^\d[\d\s]*$/);
     await expect(page.getByRole('heading', { name: 'Лучшие проекты витрины' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'AgroScan' })).toBeVisible();
-    // Phones keep «Войти» in the header (B-011).
-    await expect(page.getByRole('banner').getByRole('link', { name: 'Войти' })).toBeVisible();
+    // The header has a single action: «Начать» opens sign-in.
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Начать' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Войти' })).toHaveCount(0);
     await page.getByRole('link', { name: 'Вся витрина' }).click();
     await expect(page).toHaveURL(/\/showcase$/);
   });

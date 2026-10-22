@@ -5,7 +5,9 @@ test('the platform is up: web, API and database answer', async ({ page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: 'От идеи до рынка — один шаг' }),
   ).toBeVisible();
-  await expect(page.getByTestId('api-version')).not.toBeEmpty();
+  const meta = await page.request.get('/api/v1/meta');
+  expect(meta.ok()).toBe(true);
+  expect(((await meta.json()) as { version: string }).version).not.toBe('');
 });
 
 test('the home page loads without Content Security Policy violations', async ({ page }) => {

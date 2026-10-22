@@ -4,9 +4,8 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PublicLayout } from '@/app/layouts/public-layout';
-import { Badge, Button, Logo } from '@/design-system';
+import { Button, Logo } from '@/design-system';
 import { sessionQuery, tenantQuery } from '@/features/auth/api';
-import { metaQuery } from '@/features/system/api';
 import { useLocalized } from '@/shared/i18n/localized';
 
 const YEAR = new Date().getFullYear();
@@ -53,25 +52,16 @@ export function SiteFrame({ nav, children }: SiteFrameProps) {
         </>
       }
       actions={
-        signedIn ? (
-          <Button asChild>
-            <Link to="/app">{t('site.toApp')}</Link>
-          </Button>
-        ) : (
-          <>
-            <Button asChild variant="secondary">
-              <Link to="/login">{t('site.signIn')}</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/register">{t('site.start')}</Link>
-            </Button>
-          </>
-        )
+        <Button asChild>
+          <Link to={signedIn ? '/app' : '/login'}>
+            {signedIn ? t('site.toApp') : t('site.start')}
+          </Link>
+        </Button>
       }
       mobileAction={
-        <Button asChild size="sm" variant={signedIn ? 'primary' : 'secondary'}>
+        <Button asChild size="sm">
           <Link to={signedIn ? '/app' : '/login'}>
-            {signedIn ? t('site.toApp') : t('site.signIn')}
+            {signedIn ? t('site.toApp') : t('site.start')}
           </Link>
         </Button>
       }
@@ -79,33 +69,6 @@ export function SiteFrame({ nav, children }: SiteFrameProps) {
     >
       {children}
     </PublicLayout>
-  );
-}
-
-function ApiStatus() {
-  const { t } = useTranslation('showcase');
-  const meta = useQuery(metaQuery);
-  if (meta.isPending) {
-    return (
-      <Badge tone="neutral" dot>
-        {t('site.apiChecking')}
-      </Badge>
-    );
-  }
-  if (meta.isError) {
-    return (
-      <Badge tone="danger" dot>
-        {t('site.apiOffline')}
-      </Badge>
-    );
-  }
-  return (
-    <Badge tone="success" dot>
-      {t('site.api')}
-      <span data-testid="api-version" className="ml-1 font-mono tabular-nums">
-        {meta.data.version}
-      </span>
-    </Badge>
   );
 }
 
@@ -156,16 +119,12 @@ function SiteFooter() {
             <a href="/#partners" className={footerLink}>
               {t('landing:nav.partners')}
             </a>
-            <Link to="/design" className={footerLink}>
-              {t('common:nav.designSystem')}
-            </Link>
           </FooterColumn>
         </nav>
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
           <p className="text-xs text-white/70">{t('site.rights', { year: YEAR })}</p>
-          <ApiStatus />
         </div>
       </div>
     </footer>

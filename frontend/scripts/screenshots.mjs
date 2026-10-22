@@ -51,7 +51,7 @@ const targets = [
 mkdirSync(outDir, { recursive: true });
 const browser = await chromium.launch();
 let count = 0;
-for (const theme of ['light', 'dark']) {
+for (const theme of ['light']) {
   for (const [device, options] of Object.entries(viewports)) {
     const context = await browser.newContext({
       ...options,

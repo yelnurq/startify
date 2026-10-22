@@ -31,7 +31,6 @@ import {
   SegmentedControl,
   Stepper,
   Textarea,
-  ThemeToggle,
   toast,
   type StepItem,
 } from '@/design-system';
@@ -186,7 +185,6 @@ export function WorkspaceDemo() {
         </Button>
         <div className="ml-auto flex items-center gap-1">
           <LanguageSwitcher />
-          <ThemeToggle />
         </div>
       </header>
       <WorkspaceLayout

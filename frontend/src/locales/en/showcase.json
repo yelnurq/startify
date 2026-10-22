@@ -6,9 +6,6 @@
     "toApp": "Workspace",
     "register": "Sign up",
     "footerLabel": "Footer navigation",
-    "apiChecking": "Checking the API…",
-    "apiOffline": "API unavailable",
-    "api": "API",
     "rights": "© {{year}} Qadam",
     "footerPlatform": "Platform",
     "footerResources": "Resources"
@@ -128,12 +125,13 @@
       "year": "Year",
       "needs": "What the project needs",
       "tags": "Tags",
-      "any": "All",
-      "option": "{{label}} ({{count}})",
       "active": "Selected filters",
       "remove": "Remove the “{{label}}” filter",
       "reset": "Reset filters",
-      "show": "Show projects"
+      "show": "Show projects",
+      "clear": "Clear",
+      "more": "{{count}} more",
+      "less": "Show less"
     },
     "results": "Projects",
     "found_one": "{{count, number}} project found",

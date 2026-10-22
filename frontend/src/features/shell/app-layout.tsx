@@ -33,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   LanguageSwitcher,
-  ThemeToggle,
   TruncatedText,
   useRegisterCommands,
   type PaletteCommand,
@@ -60,7 +59,6 @@ export function AppLayout({ session: initial }: { session: Session }) {
       actions={
         <>
           <LanguageSwitcher />
-          <ThemeToggle />
         </>
       }
     >

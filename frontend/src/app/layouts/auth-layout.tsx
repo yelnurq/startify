@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { EdgeIllustration } from '@/design-system/components/edge-illustration';
-import { LanguageSwitcher, ThemeToggle } from '@/design-system/components/preferences';
+import { LanguageSwitcher } from '@/design-system/components/preferences';
 import type { IllustrationName } from '@/design-system/illustrations';
 
 interface AuthLayoutProps {
@@ -37,10 +37,7 @@ export function AuthLayout({ logo, back, aside, art = 'shield', children }: Auth
         <div className="flex h-16 items-center justify-between gap-4 border-b border-border px-5 sm:px-10 lg:h-18">
           <div className="min-w-0 lg:hidden">{logo}</div>
           <div className="hidden lg:block">{back}</div>
-          <div className="flex items-center gap-1">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
+          <LanguageSwitcher />
         </div>
         <main
           id="main"

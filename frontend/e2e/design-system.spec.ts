@@ -15,41 +15,31 @@ test.describe('design system', () => {
     });
   }
 
-  for (const theme of ['light', 'dark'] as const) {
-    test(`/design has no serious accessibility violations (${theme})`, async ({ page }) => {
-      await page.addInitScript((t) => {
-        localStorage.setItem('qadam.color-theme', t);
-      }, theme);
-      await page.goto('/design');
-      await page.waitForLoadState('networkidle');
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-        .analyze();
-      const serious = results.violations.filter(
-        (v) => v.impact === 'serious' || v.impact === 'critical',
-      );
-      expect(
-        serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`),
-      ).toEqual([]);
-    });
-  }
+  test('/design has no serious accessibility violations', async ({ page }) => {
+    await page.goto('/design');
+    await page.waitForLoadState('networkidle');
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    const serious = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    );
+    expect(
+      serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`),
+    ).toEqual([]);
+  });
 
   test.describe('with a dark system theme', () => {
     test.use({ colorScheme: 'dark' });
 
-    test('the site stays light until the dark theme is chosen', async ({ page }) => {
+    test('the site stays light and offers no theme switch', async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem('qadam.color-theme', 'dark');
+      });
       await page.goto('/');
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      await expect(page.getByRole('button', { name: 'Оформление' })).toHaveCount(0);
     });
-  });
-
-  test('the theme switches and is remembered', async ({ page }) => {
-    await page.goto('/design');
-    await page.getByRole('button', { name: 'Оформление' }).first().click();
-    await page.getByRole('menuitemradio', { name: 'Тёмное' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.reload();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
 
   test('the command palette opens with the keyboard and navigates', async ({ page }) => {

@@ -2,7 +2,7 @@ export { cn } from './lib/cn';
 export { useReducedMotion } from './lib/reduced-motion';
 export { celebrateStage, celebrateWin } from './lib/confetti';
 export { brandPalette, contrastRatio, generateScale, meetsAA } from './color';
-export { useTheme, type ThemePreference } from './theme';
+export { useTheme } from './theme';
 
 export * from './components/accordion';
 export * from './components/animated-number';

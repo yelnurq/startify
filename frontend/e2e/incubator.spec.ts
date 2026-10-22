@@ -326,28 +326,26 @@ test.describe('incubator', () => {
     await supervisorContext.close();
   });
 
-  test('screens are accessible in both themes and fit a phone', async ({ page }) => {
+  test('screens are accessible and fit a phone', async ({ page }) => {
     await createStudent(page, { name: 'Мадияр Ахметов' });
     const projectId = await createProject(page, 'Доступный проект');
-    for (const theme of ['light', 'dark'] as const) {
-      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
-      await page.goto('/app/projects');
-      await expect(page.getByRole('link', { name: /Доступный проект/ })).toBeVisible();
-      await expectNoSeriousViolations(page);
-      await expectNoHorizontalScroll(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/app/projects');
+    await expect(page.getByRole('link', { name: /Доступный проект/ })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await expectNoHorizontalScroll(page);
 
-      await page.goto(`/app/projects/${projectId}/steps/audience`);
-      await expect(
-        page.getByRole('heading', { name: 'Целевая аудитория и персоны', level: 1 }),
-      ).toBeVisible();
-      await expectNoSeriousViolations(page);
-      await expectNoHorizontalScroll(page);
+    await page.goto(`/app/projects/${projectId}/steps/audience`);
+    await expect(
+      page.getByRole('heading', { name: 'Целевая аудитория и персоны', level: 1 }),
+    ).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await expectNoHorizontalScroll(page);
 
-      await page.goto(`/app/projects/${projectId}`);
-      await expect(page.getByRole('heading', { name: 'Доступный проект', level: 1 })).toBeVisible();
-      await expectNoSeriousViolations(page);
-      await expectNoHorizontalScroll(page);
-    }
+    await page.goto(`/app/projects/${projectId}`);
+    await expect(page.getByRole('heading', { name: 'Доступный проект', level: 1 })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await expectNoHorizontalScroll(page);
   });
 });
 

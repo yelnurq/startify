@@ -6,9 +6,6 @@
     "toApp": "Кабинетке",
     "register": "Тіркелу",
     "footerLabel": "Сайттың төменгі навигациясы",
-    "apiChecking": "API тексерілуде…",
-    "apiOffline": "API қолжетімсіз",
-    "api": "API",
     "rights": "© {{year}} Qadam",
     "footerPlatform": "Платформа",
     "footerResources": "Ресурстар"
@@ -128,12 +125,13 @@
       "year": "Жыл",
       "needs": "Жобаға не қажет",
       "tags": "Тегтер",
-      "any": "Барлығы",
-      "option": "{{label}} ({{count}})",
       "active": "Таңдалған сүзгілер",
       "remove": "«{{label}}» сүзгісін алып тастау",
       "reset": "Сүзгілерді тазарту",
-      "show": "Жобаларды көрсету"
+      "show": "Жобаларды көрсету",
+      "clear": "Тазарту",
+      "more": "Тағы {{count}}",
+      "less": "Жию"
     },
     "results": "Жобалар",
     "found_one": "{{count, number}} жоба табылды",

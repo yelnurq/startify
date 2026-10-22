@@ -6,9 +6,6 @@
     "toApp": "В кабинет",
     "register": "Регистрация",
     "footerLabel": "Навигация в подвале сайта",
-    "apiChecking": "Проверяем API…",
-    "apiOffline": "API недоступен",
-    "api": "API",
     "rights": "© {{year}} Qadam",
     "footerPlatform": "Платформа",
     "footerResources": "Ресурсы"
@@ -132,12 +129,13 @@
       "year": "Год",
       "needs": "Что нужно проекту",
       "tags": "Теги",
-      "any": "Все",
-      "option": "{{label}} ({{count}})",
       "active": "Выбранные фильтры",
       "remove": "Убрать фильтр «{{label}}»",
       "reset": "Сбросить фильтры",
-      "show": "Показать проекты"
+      "show": "Показать проекты",
+      "clear": "Сбросить",
+      "more": "Ещё {{count}}",
+      "less": "Свернуть"
     },
     "results": "Проекты",
     "found_one": "Найден {{count, number}} проект",

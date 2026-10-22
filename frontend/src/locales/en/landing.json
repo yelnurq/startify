@@ -105,13 +105,6 @@
     },
     "tabsLabel": "Who Qadam is for"
   },
-  "cta": {
-    "title": "Take your first qadam",
-    "text": "Signing up takes a minute. After onboarding, the AI mentor helps you through the first step.",
-    "primary": "Start a project",
-    "kicker": "Start today",
-    "photoCaption": "The innovation platform of the university"
-  },
   "counters": {
     "projects": "Projects in the incubator",
     "published": "Projects on the showcase",

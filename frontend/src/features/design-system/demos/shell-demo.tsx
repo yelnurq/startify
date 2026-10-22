@@ -39,7 +39,6 @@ import {
   LanguageSwitcher,
   ProgressRing,
   StageTrack,
-  ThemeToggle,
   TruncatedText,
 } from '@/design-system';
 import { useFormatters } from '@/shared/i18n/format';
@@ -164,7 +163,6 @@ export function DemoActions() {
         />
       </span>
       <LanguageSwitcher />
-      <ThemeToggle />
     </>
   );
 }

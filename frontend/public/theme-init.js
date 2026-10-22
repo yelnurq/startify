@@ -1,22 +1,10 @@
-// Runs before the app bundle: applies the saved theme without a flash of the
-// wrong one, and marks the language the app will choose, so that a first
-// screen drawn by the server in another language stays hidden
-// (src/design-system/base.css). Keep in sync with src/design-system/theme.ts
-// and detectLocale in src/shared/i18n (storage keys, order, default).
+// Runs before the app bundle: Qadam is light (D-052), and it marks the
+// language the app will choose, so that a first screen drawn by the server in
+// another language stays hidden (src/design-system/base.css). Keep in sync
+// with detectLocale in src/shared/i18n (storage key, order, default).
 (function () {
   var root = document.documentElement;
-  // Light by default, as the university's site; dark or the system's theme
-  // only when chosen.
-  var preference = 'light';
-  try {
-    preference = localStorage.getItem('qadam.color-theme') || 'light';
-  } catch (e) {
-    // Storage may be unavailable (private mode): the default applies.
-  }
-  var dark =
-    preference === 'dark' ||
-    (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  root.dataset.theme = dark ? 'dark' : 'light';
+  root.dataset.theme = 'light';
 
   var locales = ['kk', 'ru', 'en'];
   var locale = null;

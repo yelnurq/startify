@@ -9,15 +9,6 @@
     "ru": "Русский",
     "en": "English"
   },
-  "theme": {
-    "label": "Appearance",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System",
-    "switchToLight": "Switch to light appearance",
-    "switchToDark": "Switch to dark appearance",
-    "switchToSystem": "Use the system appearance"
-  },
   "actions": {
     "close": "Close",
     "cancel": "Cancel",

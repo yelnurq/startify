@@ -8,13 +8,15 @@ const placements = {
   'top-right': 'top-0 right-0 translate-x-1/4 -translate-y-1/4',
   'bottom-left': 'bottom-0 left-0 -translate-x-1/4 translate-y-1/4',
   'bottom-right': 'right-0 bottom-0 translate-x-1/4 translate-y-1/4',
+  /** Anywhere in the parent: the position comes with the class name. */
+  free: '',
 } as const;
 
 export type EdgePlacement = keyof typeof placements;
 
 interface EdgeIllustrationProps {
   name: IllustrationName;
-  /** The edge or corner of the nearest positioned parent it peeks out of. */
+  /** The edge or corner of the nearest positioned parent it peeks out of, or `free`. */
   placement: EdgePlacement;
   /** Size, tilt and from which width it shows, e.g. "hidden w-64 -rotate-6 xl:block". */
   className?: string;

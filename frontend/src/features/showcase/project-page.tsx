@@ -164,7 +164,7 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
       {present.length > 1 && (
         <nav
           aria-label={t('project.sections.label')}
-          className="sticky top-16 z-20 mt-6 border-y border-border/70 surface-glass"
+          className="sticky top-16 z-20 mt-6 border-y border-border/70 surface-glass lg:top-20"
         >
           <ol className="mx-auto flex max-w-page [scrollbar-width:none] gap-1 overflow-x-auto px-4 py-2 sm:px-6">
             {present.map((key) => (
@@ -343,7 +343,11 @@ function ProjectView({ project }: { project: ShowcaseProject }) {
 
 function Section({ id, title, children }: { id: SectionKey; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="flex scroll-mt-32 flex-col gap-4">
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="flex scroll-mt-36 flex-col gap-4 lg:scroll-mt-44"
+    >
       <h2 id={`${id}-title`} className="font-display text-2xl font-bold text-ink sm:text-3xl">
         {title}
       </h2>
@@ -443,7 +447,7 @@ function useActiveSection(keys: SectionKey[]): SectionKey | undefined {
         if (first) setActive(first);
       },
       // The band under the header and the anchors, down to the middle of the screen.
-      { rootMargin: '-128px 0px -50% 0px' },
+      { rootMargin: '-160px 0px -50% 0px' },
     );
     for (const el of elements) observer.observe(el);
     return () => {

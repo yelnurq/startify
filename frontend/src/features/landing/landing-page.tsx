@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 
 import {
   AnimatedNumber,
-  BrandMark,
   Button,
   EdgeIllustration,
   IdeaIllustration,
@@ -102,7 +101,6 @@ export function LandingPage() {
       <HowItWorks />
       <Featured />
       <Audiences signedIn={signedIn} />
-      <FinalCta signedIn={signedIn} />
     </SiteFrame>
   );
 }
@@ -202,7 +200,20 @@ function Numbers() {
   const counters = highlights.data?.counters;
   const university = tenant.data ? text(tenant.data.short_name) : '';
   return (
-    <section aria-labelledby="numbers-title" className="border-b border-border bg-surface">
+    <section
+      aria-labelledby="numbers-title"
+      className="relative overflow-x-clip border-b border-border bg-surface"
+    >
+      <EdgeIllustration
+        name="calendar"
+        placement="free"
+        className="top-0 right-1/4 z-10 hidden w-28 -translate-y-1/2 rotate-12 lg:block"
+      />
+      <EdgeIllustration
+        name="growth"
+        placement="free"
+        className="bottom-0 left-1/3 z-10 hidden w-24 translate-y-1/2 -rotate-6 lg:block"
+      />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center lg:py-20">
         <div className="flex flex-col gap-3">
           <Kicker>{t('counters.kicker')}</Kicker>
@@ -213,7 +224,6 @@ function Numbers() {
             {t('counters.title', { university })}
           </h2>
           <p className="leading-relaxed text-fg-muted">{t('counters.text')}</p>
-          <Illustration name="growth" className="hidden max-w-48 lg:block" />
         </div>
         <dl className="grid grid-cols-2 gap-y-8 sm:grid-cols-4">
           {COUNTERS.map((key) => (
@@ -243,11 +253,20 @@ function Numbers() {
 function HowItWorks() {
   const { t } = useTranslation('landing');
   return (
-    <section id="how" aria-labelledby="how-title" className="relative scroll-mt-20 overflow-x-clip">
+    <section
+      id="how"
+      aria-labelledby="how-title"
+      className="relative scroll-mt-20 overflow-x-clip lg:scroll-mt-24"
+    >
       <EdgeIllustration
         name="route"
         placement="bottom-left"
-        className="z-10 hidden w-72 translate-y-1/2 rotate-6 lg:block"
+        className="z-10 hidden w-80 translate-y-1/2 rotate-6 lg:block"
+      />
+      <EdgeIllustration
+        name="rocket"
+        placement="free"
+        className="top-6 right-1/12 hidden w-16 rotate-12 lg:block"
       />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
         <div className="flex flex-col gap-10 lg:sticky lg:top-28 lg:self-start">
@@ -371,7 +390,12 @@ function Featured() {
       <EdgeIllustration
         name="pitch"
         placement="top-right"
-        className="hidden w-64 -translate-y-1/2 -rotate-6 lg:block"
+        className="hidden w-56 translate-x-1/3 -translate-y-1/2 -rotate-6 lg:block"
+      />
+      <EdgeIllustration
+        name="funding"
+        placement="free"
+        className="bottom-0 left-1/2 z-10 hidden w-24 translate-y-1/2 rotate-6 lg:block"
       />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:py-28">
         <div className="flex flex-col gap-8 lg:sticky lg:top-28 lg:self-start">
@@ -432,11 +456,21 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
   const { t } = useTranslation('landing');
   const [audience, setAudience] = useAudienceFromHash();
   return (
-    <section aria-labelledby="audiences-title" className="relative overflow-x-clip">
+    <section aria-labelledby="audiences-title" className="relative isolate overflow-x-clip">
       <EdgeIllustration
         name="puzzle"
-        placement="top-right"
-        className="hidden w-64 translate-y-1/4 rotate-12 lg:block"
+        placement="free"
+        className="top-20 right-1/6 hidden w-44 rotate-12 lg:block"
+      />
+      <EdgeIllustration
+        name="megaphone"
+        placement="bottom-left"
+        className="-z-10 hidden w-72 -translate-x-1/2 -translate-y-1/3 -rotate-12 xl:block"
+      />
+      <EdgeIllustration
+        name="rocket"
+        placement="free"
+        className="right-1/12 bottom-0 z-10 hidden w-32 translate-y-1/3 -rotate-6 lg:block"
       />
       <div className="mx-auto flex max-w-page flex-col gap-10 px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
@@ -447,7 +481,12 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
         />
         {/* Targets of the footer links (#universities and so on); the tab follows the address. */}
         {AUDIENCES.map((key) => (
-          <span key={key} id={key} aria-hidden className="-mt-10 block scroll-mt-28" />
+          <span
+            key={key}
+            id={key}
+            aria-hidden
+            className="-mt-10 block scroll-mt-24 lg:scroll-mt-28"
+          />
         ))}
         <Tabs
           value={audience}
@@ -522,82 +561,5 @@ function AudienceAction({ audience, signedIn }: { audience: Audience; signedIn: 
         <ArrowRight aria-hidden />
       </Link>
     </Button>
-  );
-}
-
-/** The last call to start, next to the university's photo and seal. */
-function FinalCta({ signedIn }: { signedIn: boolean }) {
-  const { t } = useTranslation('landing');
-  const tenant = useQuery(tenantQuery);
-  const text = useLocalized();
-  const cover = tenant.data?.cover_url;
-  return (
-    <section className="relative isolate overflow-x-clip" aria-labelledby="cta-title">
-      <EdgeIllustration
-        name="megaphone"
-        placement="left"
-        className="-z-10 hidden w-60 -translate-y-2/3 -rotate-12 lg:block"
-      />
-      <EdgeIllustration
-        name="rocket"
-        placement="right"
-        className="-z-10 hidden w-56 translate-y-0 rotate-12 lg:block"
-      />
-      <div className="mx-auto max-w-page px-4 pb-20 sm:px-6 lg:pb-28">
-        <div className="grid grid-cols-1 overflow-hidden rounded-card border border-border bg-surface lg:grid-cols-2">
-          <div className="flex flex-col justify-center gap-5 p-8 sm:p-12">
-            <Kicker>{t('cta.kicker')}</Kicker>
-            <h2
-              id="cta-title"
-              className="font-display text-3xl font-extrabold text-ink sm:text-5xl"
-            >
-              {t('cta.title')}
-            </h2>
-            <p className="text-lg leading-relaxed text-fg-muted">{t('cta.text')}</p>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to={signedIn ? '/app' : '/register'}>
-                  {signedIn ? t('actions.toApp') : t('cta.primary')}
-                  <ArrowRight aria-hidden />
-                </Link>
-              </Button>
-              {!signedIn && (
-                <Button asChild size="lg" variant="secondary">
-                  <Link to="/login">{t('actions.signIn')}</Link>
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="relative isolate flex min-h-72 items-end bg-deep-900 p-8">
-            {cover && (
-              <img
-                src={cover}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 -z-10 size-full object-cover"
-              />
-            )}
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 bg-linear-to-t from-deep-900/90 via-deep-900/30 to-transparent"
-            />
-            {tenant.data && (
-              <div className="flex items-center gap-4">
-                <BrandMark src={tenant.data.logo_url} inverted className="size-14" />
-                <div className="flex flex-col">
-                  <p className="font-display text-lg leading-snug font-bold text-white">
-                    {text(tenant.data.name)}
-                  </p>
-                  <p className="text-2xs font-bold tracking-label text-primary-300 uppercase">
-                    {t('cta.photoCaption')}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }

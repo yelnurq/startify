@@ -170,15 +170,10 @@ test.describe('AI administration', () => {
 
   for (const url of ['/app/admin/ai', '/app/admin/ai/usage', '/app/admin/knowledge']) {
     test(`${url} has no serious accessibility violations`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== 'desktop', 'checked once per theme on desktop');
-      for (const theme of ['light', 'dark']) {
-        await page.addInitScript((t) => {
-          localStorage.setItem('qadam.color-theme', t);
-        }, theme);
-        await page.goto(url);
-        await page.waitForLoadState('networkidle');
-        await expectNoSeriousViolations(page);
-      }
+      test.skip(testInfo.project.name !== 'desktop', 'checked once, on desktop');
+      await page.goto(url);
+      await page.waitForLoadState('networkidle');
+      await expectNoSeriousViolations(page);
     });
   }
 });

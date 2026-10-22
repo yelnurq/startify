@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { IconButton } from '@/design-system/components/icon-button';
 import { cn } from '@/design-system/lib/cn';
-import { LanguageSwitcher, ThemeToggle } from '@/design-system/components/preferences';
+import { LanguageSwitcher } from '@/design-system/components/preferences';
 import { Sheet, SheetContent, SheetTitle } from '@/design-system/components/sheet';
 
 interface PublicLayoutProps {
@@ -31,7 +31,6 @@ export function PublicLayout({
 }: PublicLayoutProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Without a menu the theme switch stays in the header on phones too.
   const hasMenu = Boolean(nav ?? actions);
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
@@ -51,9 +50,6 @@ export function PublicLayout({
           )}
           <div className={cn('flex items-center gap-1', nav ? 'ml-auto lg:ml-0' : 'ml-auto')}>
             <LanguageSwitcher />
-            <div className={hasMenu ? 'hidden sm:flex' : 'flex'}>
-              <ThemeToggle />
-            </div>
             <div className="ml-2 hidden items-center gap-2 sm:flex">{actions}</div>
             {mobileAction && <div className="ml-1 flex items-center sm:hidden">{mobileAction}</div>}
             {hasMenu && (
@@ -84,9 +80,6 @@ export function PublicLayout({
               {nav}
             </nav>
           )}
-          <div className="flex items-center gap-1 border-t border-border px-4 py-2 sm:hidden">
-            <ThemeToggle />
-          </div>
           <div
             className="mt-auto flex flex-col gap-2 border-t border-border p-4"
             onClick={(event) => {

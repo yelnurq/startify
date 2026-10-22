@@ -1,23 +1,18 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   Button,
   Callout,
+  cn,
   EdgeIllustration,
   EmptyState,
-  Field,
   Input,
   Kicker,
   SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -54,8 +49,6 @@ import { QuickView } from './quick-view';
 import { SiteFrame } from './site';
 
 const route = getRouteApi('/showcase/');
-
-const ALL = 'all';
 
 /** Tags offered as chips in the filter panel. */
 const TOP_TAGS = 12;
@@ -142,16 +135,20 @@ export function CatalogPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-page grid-cols-1 gap-8 px-4 pb-16 sm:px-6 lg:grid-cols-[15rem_1fr] lg:pb-24">
+      <div className="mx-auto grid max-w-page grid-cols-1 gap-8 px-4 pt-8 pb-16 sm:px-6 lg:grid-cols-[17rem_1fr] lg:pt-12 lg:pb-24">
         <aside
           aria-label={t('catalog.filters.title')}
-          className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] self-start overflow-y-auto pr-1 pb-4 lg:block"
+          className="sticky top-24 hidden max-h-[calc(100dvh-7rem)] self-start overflow-y-auto pb-4 lg:block"
         >
           <FilterPanel
+            framed
             search={search}
             facets={facets.data}
             national={national}
             onChange={setFilter}
+            onReset={() => {
+              update(withoutFilters(search));
+            }}
           />
         </aside>
 
@@ -440,75 +437,114 @@ interface FilterPanelProps {
   facets: ShowcaseFacets | undefined;
   national: boolean;
   onChange: <K extends FilterKey>(key: K, value: ShowcaseSearch[K] | undefined) => void;
+  /** Clears every filter; shown in the panel's header when it is framed. */
+  onReset?: () => void;
+  /** A card with its own title (the sidebar); the phone sheet has its own. */
+  framed?: boolean;
+}
+
+interface FacetOption {
+  value: string;
+  label: string;
+  count: number;
 }
 
 /** Filters with counts; the same panel sits in the sidebar and in the phone sheet. */
-function FilterPanel({ search, facets, national, onChange }: FilterPanelProps) {
+function FilterPanel({
+  search,
+  facets,
+  national,
+  onChange,
+  onReset,
+  framed = false,
+}: FilterPanelProps) {
   const { t } = useTranslation('showcase');
   const text = useLocalized();
   const count = (list: { key: string; count: number }[] | undefined, key: string) =>
     list?.find((f) => f.key === key)?.count ?? 0;
-  const option = (label: string, n: number) => t('catalog.filters.option', { label, count: n });
   const industries = INDUSTRIES.filter(
     (key) => count(facets?.industries, key) > 0 || search.industry === key,
   );
   const years = (facets?.years ?? []).map((y) => Number(y.key)).filter(Number.isInteger);
   const tags = (facets?.tags ?? []).slice(0, TOP_TAGS);
+  const active = activeFilters(search).length;
 
-  return (
-    <div className="flex flex-col gap-5">
-      <FacetSelect
-        label={t('catalog.filters.industry')}
-        value={search.industry}
-        options={industries.map((key) => ({
-          value: key,
-          label: option(t(`industries.${key}`), count(facets?.industries, key)),
-        }))}
-        onChange={(value) => {
-          onChange('industry', value as ShowcaseSearch['industry']);
-        }}
-      />
-      <FacetSelect
-        label={t('catalog.filters.stage')}
-        value={search.stage}
-        options={STAGES.map((key) => ({
-          value: key,
-          label: option(t(`stages.${key}`), count(facets?.stages, key)),
-        }))}
-        onChange={(value) => {
-          onChange('stage', value as ShowcaseSearch['stage']);
-        }}
-      />
-      {!national && (
-        <FacetSelect
-          label={t('catalog.filters.faculty')}
-          value={search.faculty}
-          options={(facets?.faculties ?? []).map((f) => ({
-            value: f.id,
-            label: option(text(f.name), f.count),
+  const groups = (
+    <>
+      <FacetGroup title={t('catalog.filters.stage')}>
+        <OptionList
+          options={STAGES.map((key) => ({
+            value: key,
+            label: t(`stages.${key}`),
+            count: count(facets?.stages, key),
           }))}
-          onChange={(value) => {
-            onChange('faculty', value);
+          selected={search.stage}
+          onSelect={(value) => {
+            onChange('stage', value as ShowcaseSearch['stage']);
           }}
         />
+      </FacetGroup>
+      <FacetGroup title={t('catalog.filters.industry')}>
+        <OptionList
+          options={industries.map((key) => ({
+            value: key,
+            label: t(`industries.${key}`),
+            count: count(facets?.industries, key),
+          }))}
+          selected={search.industry}
+          limit={6}
+          onSelect={(value) => {
+            onChange('industry', value as ShowcaseSearch['industry']);
+          }}
+        />
+      </FacetGroup>
+      {!national && (facets?.faculties.length ?? 0) > 0 && (
+        <FacetGroup title={t('catalog.filters.faculty')}>
+          <OptionList
+            options={(facets?.faculties ?? []).map((f) => ({
+              value: f.id,
+              label: text(f.name),
+              count: f.count,
+            }))}
+            selected={search.faculty}
+            limit={4}
+            onSelect={(value) => {
+              onChange('faculty', value);
+            }}
+          />
+        </FacetGroup>
       )}
-      <FacetSelect
-        label={t('catalog.filters.year')}
-        value={search.year === undefined ? undefined : String(search.year)}
-        options={years.map((year) => ({
-          value: String(year),
-          label: option(String(year), count(facets?.years, String(year))),
-        }))}
-        onChange={(value) => {
-          onChange('year', value === undefined ? undefined : Number(value));
-        }}
-      />
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium text-fg">{t('catalog.filters.needs')}</legend>
+      {years.length > 0 && (
+        <FacetGroup title={t('catalog.filters.year')}>
+          <div className="flex flex-wrap gap-1.5">
+            {years.map((year) => {
+              const selected = search.year === year;
+              return (
+                <button
+                  key={year}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    onChange('year', selected ? undefined : year);
+                  }}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-sm font-semibold tabular-nums transition-colors',
+                    selected
+                      ? 'border-primary bg-primary text-primary-fg'
+                      : 'border-border bg-surface text-ink hover:border-ink',
+                  )}
+                >
+                  {year}
+                </button>
+              );
+            })}
+          </div>
+        </FacetGroup>
+      )}
+      <FacetGroup title={t('catalog.filters.needs')}>
         <div className="flex flex-wrap gap-2">
           {NEEDS.map((need) => {
             const selected = search.need === need;
-            const n = count(facets?.needs, need);
             return (
               <Tag
                 key={need}
@@ -518,15 +554,16 @@ function FilterPanel({ search, facets, national, onChange }: FilterPanelProps) {
                 }}
               >
                 {t(`needs.${need}`)}
-                <span className="text-xs text-fg-subtle tabular-nums">{n}</span>
+                <span className="text-xs text-fg-subtle tabular-nums">
+                  {count(facets?.needs, need)}
+                </span>
               </Tag>
             );
           })}
         </div>
-      </fieldset>
+      </FacetGroup>
       {tags.length > 0 && (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-medium text-fg">{t('catalog.filters.tags')}</legend>
+        <FacetGroup title={t('catalog.filters.tags')}>
           <div className="flex flex-wrap gap-2">
             {tags.map(({ key, count: n }) => {
               const selected = search.tag === key;
@@ -544,44 +581,125 @@ function FilterPanel({ search, facets, national, onChange }: FilterPanelProps) {
               );
             })}
           </div>
-        </fieldset>
+        </FacetGroup>
       )}
+    </>
+  );
+
+  if (!framed) return <div className="flex flex-col divide-y divide-border">{groups}</div>;
+  return (
+    <div className="flex flex-col rounded-card border border-border bg-surface">
+      <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
+        <h2 className="font-display text-xl font-bold text-ink">{t('catalog.filters.title')}</h2>
+        {active > 0 && onReset && (
+          <Button variant="link" size="sm" onClick={onReset}>
+            {t('catalog.filters.clear')}
+          </Button>
+        )}
+      </div>
+      <div className="flex flex-col divide-y divide-border px-5 pb-2">{groups}</div>
     </div>
   );
 }
 
-function FacetSelect({
-  label,
-  value,
+/** A group of the filter panel that folds away. */
+function FacetGroup({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  const id = useId();
+  return (
+    <section className="flex flex-col py-4">
+      <h3>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          onClick={() => {
+            setOpen((value) => !value);
+          }}
+          className="flex w-full items-center justify-between gap-3 text-left text-2xs font-bold tracking-label text-ink uppercase"
+        >
+          {title}
+          <ChevronDown
+            aria-hidden
+            className={cn('size-4 text-fg-subtle transition-transform', open && 'rotate-180')}
+          />
+        </button>
+      </h3>
+      <div id={id} hidden={!open} className="pt-3">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Options with their counts: a click picks one, a second click clears it. */
+function OptionList({
   options,
-  onChange,
+  selected,
+  limit,
+  onSelect,
 }: {
-  label: string;
-  value: string | undefined;
-  options: { value: string; label: string }[];
-  onChange: (value: string | undefined) => void;
+  options: FacetOption[];
+  selected: string | undefined;
+  /** Shown before «More»; the selected option is always shown. */
+  limit?: number;
+  onSelect: (value: string | undefined) => void;
 }) {
   const { t } = useTranslation('showcase');
+  const [expanded, setExpanded] = useState(false);
+  const cut = limit !== undefined && !expanded && options.length > limit;
+  const visible = cut ? options.filter((o, i) => i < limit || o.value === selected) : options;
   return (
-    <Field label={label}>
-      <Select
-        value={value ?? ALL}
-        onValueChange={(next) => {
-          onChange(next === ALL ? undefined : next);
-        }}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>{t('catalog.filters.any')}</SelectItem>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
+    <div className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-0.5">
+        {visible.map((option) => {
+          const on = option.value === selected;
+          return (
+            <li key={option.value}>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  onSelect(on ? undefined : option.value);
+                }}
+                className={cn(
+                  'flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
+                  on
+                    ? 'bg-primary-soft font-semibold text-primary-soft-fg'
+                    : 'text-fg hover:bg-surface-raised',
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border',
+                    on
+                      ? 'border-primary bg-primary text-primary-fg'
+                      : 'border-border-strong bg-surface',
+                  )}
+                >
+                  {on && <Check className="size-3" strokeWidth={3} />}
+                </span>
+                <span className="min-w-0 flex-1 leading-snug">{option.label}</span>
+                <span className="text-xs text-fg-subtle tabular-nums">{option.count}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {limit !== undefined && options.length > limit && (
+        <button
+          type="button"
+          onClick={() => {
+            setExpanded((value) => !value);
+          }}
+          className="self-start px-2 py-1 text-2xs font-bold tracking-label text-primary-text uppercase hover:text-ink"
+        >
+          {expanded
+            ? t('catalog.filters.less')
+            : t('catalog.filters.more', { count: options.length - limit })}
+        </button>
+      )}
+    </div>
   );
 }

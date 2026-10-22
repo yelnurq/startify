@@ -11,7 +11,8 @@ describe('theme', () => {
     vi.restoreAllMocks();
   });
 
-  it('is light by default, even when the system is dark', async () => {
+  it('is light, whatever was chosen before and whatever the system prefers', async () => {
+    localStorage.setItem('qadam.color-theme', 'dark');
     vi.spyOn(window, 'matchMedia').mockImplementation(
       (query: string) =>
         ({
@@ -22,13 +23,6 @@ describe('theme', () => {
         }) as unknown as MediaQueryList,
     );
     const { useTheme } = await freshTheme();
-    expect(useTheme.getState().preference).toBe('light');
     expect(useTheme.getState().resolved).toBe('light');
-  });
-
-  it('keeps the theme the user chose', async () => {
-    localStorage.setItem('qadam.color-theme', 'dark');
-    const { useTheme } = await freshTheme();
-    expect(useTheme.getState().resolved).toBe('dark');
   });
 });

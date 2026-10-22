@@ -37,7 +37,6 @@ import {
   Skeleton,
   Tag,
   Textarea,
-  ThemeToggle,
   toast,
   useReducedMotion,
 } from '@/design-system';
@@ -230,7 +229,6 @@ export function OnboardingPage({ session }: { session: Session }) {
           </Link>
           <div className="ml-auto flex items-center gap-1">
             <LanguageSwitcher />
-            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"

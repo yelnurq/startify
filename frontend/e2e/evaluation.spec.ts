@@ -218,28 +218,24 @@ test.describe('evaluation rubric', () => {
 });
 
 test.describe('evaluation accessibility', () => {
-  test('the report and the rubric are accessible in both themes and fit a phone', async ({
-    browser,
-  }) => {
+  test('the report and the rubric are accessible and fit a phone', async ({ browser }) => {
     const nurlanContext = await browser.newContext({ storageState: storageState('nurlan') });
     const nurlan = await nurlanContext.newPage();
     const adminContext = await browser.newContext({ storageState: storageState('admin') });
     const admin = await adminContext.newPage();
     const projectId = await projectIdOf(nurlan, 'AgroScan');
-    for (const theme of ['light', 'dark'] as const) {
-      for (const page of [nurlan, admin]) {
-        await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
-      }
-      await nurlan.goto(`/app/projects/${projectId}/evaluation`);
-      await expect(gauge(nurlan)).toBeVisible();
-      await expectNoSeriousViolations(nurlan);
-      await expectNoHorizontalScroll(nurlan);
-
-      await admin.goto('/app/admin/rubric');
-      await expect(admin.getByRole('heading', { name: 'Рубрика оценки', level: 1 })).toBeVisible();
-      await expectNoSeriousViolations(admin);
-      await expectNoHorizontalScroll(admin);
+    for (const page of [nurlan, admin]) {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
     }
+    await nurlan.goto(`/app/projects/${projectId}/evaluation`);
+    await expect(gauge(nurlan)).toBeVisible();
+    await expectNoSeriousViolations(nurlan);
+    await expectNoHorizontalScroll(nurlan);
+
+    await admin.goto('/app/admin/rubric');
+    await expect(admin.getByRole('heading', { name: 'Рубрика оценки', level: 1 })).toBeVisible();
+    await expectNoSeriousViolations(admin);
+    await expectNoHorizontalScroll(admin);
     await nurlanContext.close();
     await adminContext.close();
   });
