@@ -206,13 +206,13 @@ function Numbers() {
     >
       <EdgeIllustration
         name="calendar"
-        placement="free"
-        className="top-0 right-1/4 z-10 hidden w-28 -translate-y-1/2 rotate-12 lg:block"
+        placement="top-right"
+        className="z-10 hidden w-48 -translate-y-1/3 rotate-12 lg:block"
       />
       <EdgeIllustration
         name="growth"
-        placement="free"
-        className="bottom-0 left-1/3 z-10 hidden w-24 translate-y-1/2 -rotate-6 lg:block"
+        placement="bottom-left"
+        className="z-10 hidden w-56 translate-y-3/5 -rotate-6 lg:block"
       />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center lg:py-20">
         <div className="flex flex-col gap-3">
@@ -259,14 +259,19 @@ function HowItWorks() {
       className="relative scroll-mt-20 overflow-x-clip lg:scroll-mt-24"
     >
       <EdgeIllustration
-        name="route"
-        placement="bottom-left"
-        className="z-10 hidden w-80 translate-y-1/2 rotate-6 lg:block"
+        name="megaphone"
+        placement="free"
+        className="top-1/4 right-0 hidden w-56 translate-x-1/3 -rotate-6 min-[1760px]:w-64 min-[1760px]:translate-x-1/4 2xl:block"
       />
       <EdgeIllustration
-        name="rocket"
+        name="trophy"
         placement="free"
-        className="top-6 right-1/12 hidden w-16 rotate-12 lg:block"
+        className="top-2/3 left-0 hidden w-56 -translate-x-1/3 rotate-6 min-[1760px]:w-64 min-[1760px]:-translate-x-1/4 2xl:block"
+      />
+      <EdgeIllustration
+        name="pitch"
+        placement="bottom-right"
+        className="z-10 hidden w-72 translate-y-1/2 rotate-6 lg:block"
       />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
         <div className="flex flex-col gap-10 lg:sticky lg:top-28 lg:self-start">
@@ -388,14 +393,14 @@ function Featured() {
       className="relative overflow-x-clip border-y border-border bg-surface"
     >
       <EdgeIllustration
-        name="pitch"
-        placement="top-right"
-        className="hidden w-56 translate-x-1/3 -translate-y-1/2 -rotate-6 lg:block"
-      />
-      <EdgeIllustration
         name="funding"
         placement="free"
-        className="bottom-0 left-1/2 z-10 hidden w-24 translate-y-1/2 rotate-6 lg:block"
+        className="top-1/3 left-0 hidden w-52 -translate-x-1/3 rotate-12 min-[1760px]:w-60 min-[1760px]:-translate-x-1/4 2xl:block"
+      />
+      <EdgeIllustration
+        name="route"
+        placement="bottom-left"
+        className="z-10 hidden w-80 translate-y-1/2 -rotate-6 lg:block"
       />
       <div className="mx-auto grid max-w-page grid-cols-1 gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:py-28">
         <div className="flex flex-col gap-8 lg:sticky lg:top-28 lg:self-start">
@@ -456,21 +461,16 @@ function Audiences({ signedIn }: { signedIn: boolean }) {
   const { t } = useTranslation('landing');
   const [audience, setAudience] = useAudienceFromHash();
   return (
-    <section aria-labelledby="audiences-title" className="relative isolate overflow-x-clip">
+    <section aria-labelledby="audiences-title" className="relative overflow-x-clip">
       <EdgeIllustration
         name="puzzle"
         placement="free"
-        className="top-20 right-1/6 hidden w-44 rotate-12 lg:block"
-      />
-      <EdgeIllustration
-        name="megaphone"
-        placement="bottom-left"
-        className="-z-10 hidden w-72 -translate-x-1/2 -translate-y-1/3 -rotate-12 xl:block"
+        className="top-20 right-0 hidden w-72 translate-x-1/4 rotate-12 xl:block"
       />
       <EdgeIllustration
         name="rocket"
-        placement="free"
-        className="right-1/12 bottom-0 z-10 hidden w-32 translate-y-1/3 -rotate-6 lg:block"
+        placement="bottom-right"
+        className="z-10 hidden w-52 translate-y-1/2 -rotate-6 lg:block"
       />
       <div className="mx-auto flex max-w-page flex-col gap-10 px-4 py-20 sm:px-6 lg:py-28">
         <SectionHeading
