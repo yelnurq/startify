@@ -154,6 +154,13 @@
   экспертов; PDF рендерится через Gotenberg по запросу.
 - `make ai-eval` проверяет промпт и модель на золотых проектах (D-042).
 
+### Брендинг вуза
+
+- `tenants.logo_file_id` (печать) и `tenants.cover_file_id` (фото кампуса) — публичные файлы вуза
+  (`tenant_logo`, `tenant_cover`), отдаются в `GET /tenant` как `logo_url` и `cover_url` и в
+  `tenant.University.CoverURL` для страниц, которые рисует сервер. Без них интерфейс показывает знак
+  Qadam и заливку (D-051).
+
 ### Витрина
 
 - `showcase` хранит страницы проектов (`showcase_entries`) и запросы на контакт
