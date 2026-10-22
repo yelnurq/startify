@@ -54,6 +54,17 @@ func (q *Queries) ArchiveProject(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const countProjects = `-- name: CountProjects :one
+SELECT count(*) FROM projects WHERE tenant_id = app_current_tenant() AND deleted_at IS NULL
+`
+
+func (q *Queries) CountProjects(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countProjects)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (tenant_id, title, tagline, industry, faculty_id, current_step, ip_policy_version, ip_accepted_at, created_by)
 VALUES (app_current_tenant(), $1, $2, $3, $4, $5,
@@ -402,6 +413,20 @@ type SetProgressParams struct {
 
 func (q *Queries) SetProgress(ctx context.Context, arg SetProgressParams) error {
 	_, err := q.db.Exec(ctx, setProgress, arg.CompletedSteps, arg.CurrentStep, arg.ID)
+	return err
+}
+
+const setVisibility = `-- name: SetVisibility :exec
+UPDATE projects SET visibility = $1 WHERE id = $2
+`
+
+type SetVisibilityParams struct {
+	Visibility string
+	ID         uuid.UUID
+}
+
+func (q *Queries) SetVisibility(ctx context.Context, arg SetVisibilityParams) error {
+	_, err := q.db.Exec(ctx, setVisibility, arg.Visibility, arg.ID)
 	return err
 }
 

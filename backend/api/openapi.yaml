@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Qadam API
-  version: 0.5.0
+  version: 0.6.0
   summary: AI-платформа инновационной и проектной деятельности университета.
   description: |
     Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
@@ -56,6 +56,8 @@ tags:
     description: Steps of the incubator, history, comments, the AI mentor and pitch materials.
   - name: evaluation
     description: AI evaluation of projects by the university's rubric, expert corrections, reports.
+  - name: showcase
+    description: The public showcase of projects, its moderation and contact requests.
 paths:
   /meta:
     get:
@@ -2001,6 +2003,425 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /projects/{projectId}/showcase:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getShowcaseEntry
+      tags: [showcase]
+      summary: The project's showcase page as the team edits it
+      description: |
+        Before the first save the page is prefilled from the incubator answers (`version` 0).
+        Sensitive details are left out when the project hides them.
+      responses:
+        "200":
+          description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateShowcaseEntry
+      tags: [showcase]
+      summary: Save the showcase page
+      description: |
+        The team edits the page. A published page shows the changes at once; moving a page
+        to `public` visibility sends it to review (`in_review`) before it is visible outside
+        the university.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShowcaseEntryUpdate"
+      responses:
+        "200":
+          description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/cover:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    put:
+      operationId: setShowcaseCover
+      tags: [showcase]
+      summary: Upload the cover image
+      description: JPEG, PNG or WebP up to 10 MiB; stored as a 1600×900 JPEG without metadata.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The page with the cover.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteShowcaseCover
+      tags: [showcase]
+      summary: Remove the cover image
+      responses:
+        "200":
+          description: The page without a cover.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/publish:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: publishShowcaseEntry
+      tags: [showcase]
+      summary: Publish the page
+      description: |
+        `university` pages are published at once; `public` pages go to an innovation manager
+        for review. The page must be saved and have a problem and a solution
+        (`showcase.incomplete`).
+      responses:
+        "200":
+          description: The page with its new status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/unpublish:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: unpublishShowcaseEntry
+      tags: [showcase]
+      summary: Take the page off the showcase
+      responses:
+        "200":
+          description: The page, back to draft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/contacts:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectContacts
+      tags: [showcase]
+      summary: Contact requests addressed to the project
+      description: The team sees forwarded requests; innovation managers see all.
+      responses:
+        "200":
+          description: Requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequestList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/showcase:
+    get:
+      operationId: listShowcaseReviews
+      tags: [showcase]
+      summary: Showcase pages for moderation
+      description: Requires `innovation_manager` or `tenant_admin`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseStatus"
+      responses:
+        "200":
+          description: Pages, the oldest submission first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseReviewList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/showcase/{projectId}/review:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: reviewShowcaseEntry
+      tags: [showcase]
+      summary: Approve or reject a public page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShowcaseReview"
+      responses:
+        "200":
+          description: The page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/contacts:
+    get:
+      operationId: listContactRequests
+      tags: [showcase]
+      summary: Contact requests of the university
+      description: Requires `innovation_manager` or `tenant_admin`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContactStatus"
+      responses:
+        "200":
+          description: Requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequestList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/contacts/{contactId}/moderate:
+    parameters:
+      - name: contactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: moderateContactRequest
+      tags: [showcase]
+      summary: Forward a request to the team or reject it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactModeration"
+      responses:
+        "200":
+          description: The request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase:
+    get:
+      operationId: listShowcase
+      tags: [showcase]
+      summary: The showcase of published projects
+      description: |
+        Public. `scope=university` (default) lists the pages of the university of the address
+        (members also see `university` pages); `scope=national` lists public pages of every
+        university. Full-text search works in Kazakh, Russian and English.
+      security: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [university, national]
+            default: university
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: industry
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Industry"
+        - name: stage
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseStage"
+        - name: faculty
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: need
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Pages, the most recently published first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcasePage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/facets:
+    get:
+      operationId: getShowcaseFacets
+      tags: [showcase]
+      summary: Counts for the showcase filters
+      security: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [university, national]
+            default: university
+      responses:
+        "200":
+          description: Facets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseFacets"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/highlights:
+    get:
+      operationId: getShowcaseHighlights
+      tags: [showcase]
+      summary: Live numbers and featured projects for the landing page
+      security: []
+      responses:
+        "200":
+          description: Highlights of the university of the address.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseHighlights"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    get:
+      operationId: getShowcaseProject
+      tags: [showcase]
+      summary: A public project page
+      description: Public pages are open to everyone; university pages to members only.
+      security: []
+      responses:
+        "200":
+          description: The page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseProject"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}/contact:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    post:
+      operationId: contactShowcaseProject
+      tags: [showcase]
+      summary: Ask the team to get in touch
+      description: |
+        Public and rate-limited. Depending on the university's setting the request goes to an
+        innovation manager first or straight to the team; the team's addresses are never shown.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactCreate"
+      responses:
+        "202":
+          description: Accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactAccepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}/og.png:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    get:
+      operationId: getShowcaseImage
+      tags: [showcase]
+      summary: The link preview image of a page (1200×630)
+      security: []
+      responses:
+        "200":
+          description: The image.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -2020,6 +2441,13 @@ components:
       schema:
         type: string
   parameters:
+    ShowcaseSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 60
     EvaluationId:
       name: evaluationId
       in: path
@@ -4526,3 +4954,449 @@ components:
         completed_at:
           type: string
           format: date-time
+
+    ShowcaseStatus:
+      type: string
+      enum: [draft, in_review, published, rejected]
+    ShowcaseVisibility:
+      type: string
+      description: "`university` — members of the university; `public` — everyone, after review."
+      enum: [university, public]
+    ShowcaseStage:
+      type: string
+      description: Incubator stage of the project when it was published.
+      enum: [idea, market, product, launch]
+    ShowcaseNeed:
+      type: string
+      enum: [investment, team, partner, pilot, mentor]
+    ShowcaseSections:
+      type: object
+      additionalProperties: false
+      properties:
+        problem:
+          type: string
+          maxLength: 1500
+        solution:
+          type: string
+          maxLength: 1500
+        market:
+          type: string
+          maxLength: 1000
+        traction:
+          type: string
+          maxLength: 1000
+        ask:
+          type: string
+          maxLength: 800
+    ShowcaseTeamMember:
+      type: object
+      additionalProperties: false
+      required: [name, role, avatar_url]
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+    UniversityBrief:
+      type: object
+      additionalProperties: false
+      required: [slug, name, short_name, color, logo_url]
+      properties:
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+        color:
+          type: string
+        logo_url:
+          type: [string, "null"]
+    ShowcaseEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - project_id
+        - saved
+        - slug
+        - status
+        - visibility
+        - title
+        - tagline
+        - industry
+        - stage
+        - cover_url
+        - video_url
+        - sections
+        - team
+        - needs
+        - tags
+        - show_score
+        - score
+        - level
+        - contact_enabled
+        - review_comment
+        - submitted_at
+        - published_at
+        - url
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        saved:
+          type: boolean
+          description: False while the page is a prefilled suggestion that was never saved.
+        slug:
+          type: string
+        status:
+          $ref: "#/components/schemas/ShowcaseStatus"
+        visibility:
+          $ref: "#/components/schemas/ShowcaseVisibility"
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        stage:
+          $ref: "#/components/schemas/ShowcaseStage"
+        cover_url:
+          type: [string, "null"]
+        video_url:
+          type: [string, "null"]
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseTeamMember"
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          items:
+            type: string
+        show_score:
+          type: boolean
+          description: Show the readiness score of the latest AI evaluation.
+        score:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        contact_enabled:
+          type: boolean
+        review_comment:
+          type: [string, "null"]
+        submitted_at:
+          type: [string, "null"]
+          format: date-time
+        published_at:
+          type: [string, "null"]
+          format: date-time
+        url:
+          type: [string, "null"]
+          description: Address of the published page.
+    ShowcaseEntryUpdate:
+      type: object
+      additionalProperties: false
+      required: [slug, title, tagline, sections, needs, tags, visibility, show_score, contact_enabled]
+      properties:
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 60
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        video_url:
+          type: string
+          maxLength: 500
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        needs:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 40
+        visibility:
+          $ref: "#/components/schemas/ShowcaseVisibility"
+        show_score:
+          type: boolean
+        contact_enabled:
+          type: boolean
+    ShowcaseCard:
+      type: object
+      additionalProperties: false
+      required: [slug, url, title, tagline, industry, stage, faculty, year, cover_url, needs, tags, score, level, university, published_at]
+      properties:
+        slug:
+          type: string
+        url:
+          type: string
+          description: Absolute address of the page on its university's site.
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        stage:
+          $ref: "#/components/schemas/ShowcaseStage"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        year:
+          type: integer
+        cover_url:
+          type: [string, "null"]
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          items:
+            type: string
+        score:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        university:
+          $ref: "#/components/schemas/UniversityBrief"
+        published_at:
+          type: string
+          format: date-time
+    ShowcasePage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseCard"
+        next_cursor:
+          type: [string, "null"]
+    FacetCount:
+      type: object
+      additionalProperties: false
+      required: [key, count]
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+    FacultyFacet:
+      type: object
+      additionalProperties: false
+      required: [id, name, count]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        count:
+          type: integer
+    ShowcaseFacets:
+      type: object
+      additionalProperties: false
+      required: [total, industries, stages, needs, years, faculties, tags]
+      properties:
+        total:
+          type: integer
+        industries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        years:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        faculties:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacultyFacet"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+    ShowcaseCounters:
+      type: object
+      additionalProperties: false
+      required: [projects, published, students, evaluations]
+      properties:
+        projects:
+          type: integer
+        published:
+          type: integer
+        students:
+          type: integer
+        evaluations:
+          type: integer
+    ShowcaseHighlights:
+      type: object
+      additionalProperties: false
+      required: [counters, featured]
+      properties:
+        counters:
+          $ref: "#/components/schemas/ShowcaseCounters"
+        featured:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseCard"
+    ShowcaseProject:
+      type: object
+      additionalProperties: false
+      required: [card, video_url, sections, team, contact_enabled, image_url]
+      properties:
+        card:
+          $ref: "#/components/schemas/ShowcaseCard"
+        video_url:
+          type: [string, "null"]
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseTeamMember"
+        contact_enabled:
+          type: boolean
+        image_url:
+          type: string
+          description: The link preview image.
+    ShowcaseReview:
+      type: object
+      additionalProperties: false
+      required: [approve]
+      properties:
+        approve:
+          type: boolean
+        comment:
+          type: string
+          maxLength: 1000
+          description: Required when rejecting.
+    ShowcaseReviewList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseEntry"
+    ContactKind:
+      type: string
+      enum: [investment, partnership, pilot, mentoring, hiring, other]
+    ContactStatus:
+      type: string
+      enum: [pending, forwarded, rejected]
+    ContactCreate:
+      type: object
+      additionalProperties: false
+      required: [name, email, kind, message]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        organization:
+          type: string
+          maxLength: 160
+        kind:
+          $ref: "#/components/schemas/ContactKind"
+        message:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        website:
+          type: string
+          maxLength: 200
+          description: Leave empty (a trap for bots).
+    ContactAccepted:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, forwarded]
+    ContactRequest:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, project_title, name, email, organization, kind, message, status, created_at, moderated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        project_title:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        organization:
+          type: [string, "null"]
+        kind:
+          $ref: "#/components/schemas/ContactKind"
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContactStatus"
+        created_at:
+          type: string
+          format: date-time
+        moderated_at:
+          type: [string, "null"]
+          format: date-time
+    ContactRequestList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactRequest"
+    ContactModeration:
+      type: object
+      additionalProperties: false
+      required: [forward]
+      properties:
+        forward:
+          type: boolean

@@ -262,3 +262,37 @@ func TestMemoryStorage(t *testing.T) {
 }
 
 func discardLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
+
+func TestProcessCover(t *testing.T) {
+	encode := func(w, h int) []byte {
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, w, h))); err != nil {
+			t.Fatal(err)
+		}
+		return buf.Bytes()
+	}
+	for _, tc := range []struct{ w, h, ow, oh int }{
+		{3200, 1200, 1600, 900}, // wide: the centre is cropped to 16:9
+		{1000, 2000, 1000, 562}, // tall: full width, cropped height
+		{800, 450, 800, 450},    // small 16:9 stays as is
+	} {
+		out, err := ProcessCover(encode(tc.w, tc.h))
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(out))
+		if err != nil || format != "jpeg" || cfg.Width != tc.ow || cfg.Height != tc.oh {
+			t.Fatalf("%dx%d: got %s %dx%d %v", tc.w, tc.h, format, cfg.Width, cfg.Height, err)
+		}
+	}
+	if _, err := ProcessCover(encode(200, 100)); !apperr.Is(err, "files.image_too_small") {
+		t.Fatalf("small: %v", err)
+	}
+	// Orientations 5-8 swap the sides.
+	src := image.NewRGBA(image.Rect(0, 0, 4, 2))
+	src.SetRGBA(3, 0, color.RGBA{R: 255, A: 255})
+	rotated := orientRect(src, 6)
+	if rotated.Bounds().Dx() != 2 || rotated.Bounds().Dy() != 4 || rotated.RGBAAt(1, 3).R != 255 {
+		t.Fatalf("rotated %v", rotated.Bounds())
+	}
+}

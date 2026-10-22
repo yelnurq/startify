@@ -70,15 +70,16 @@ type harness struct {
 	redis    *miniredis.Miniredis
 }
 
-func newHarness(t *testing.T) *harness {
+// newHarness starts the API on a fresh database; env adds settings.
+func newHarness(t *testing.T, env ...string) *harness {
 	t.Helper()
-	cfg, err := config.FromEnviron([]string{
+	cfg, err := config.FromEnviron(append([]string{
 		"QADAM_ENV=test",
 		"QADAM_DATABASE_URL=postgres://unused@localhost/unused",
 		"QADAM_AUTH_SECRET_KEY=" + testSecret,
 		"QADAM_TENANT_BASE_DOMAIN=localhost",
 		"QADAM_APP_PUBLIC_URL=http://localhost:3000",
-	})
+	}, env...))
 	if err != nil {
 		t.Fatal(err)
 	}

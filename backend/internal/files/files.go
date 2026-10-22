@@ -34,11 +34,12 @@ import (
 
 // Purposes of files.
 const (
-	PurposeAvatar     = "avatar"
-	PurposeTenantLogo = "tenant_logo"
-	PurposeAttachment = "attachment"
-	PurposeKnowledge  = "knowledge"
-	PurposeGenerated  = "generated"
+	PurposeAvatar       = "avatar"
+	PurposeTenantLogo   = "tenant_logo"
+	PurposeProjectCover = "project_cover"
+	PurposeAttachment   = "attachment"
+	PurposeKnowledge    = "knowledge"
+	PurposeGenerated    = "generated"
 )
 
 // Visibilities of files.

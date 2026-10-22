@@ -75,3 +75,6 @@ SELECT * FROM evaluation_overrides WHERE evaluation_id = @evaluation_id ORDER BY
 SELECT evaluation_id, count(*)::int AS n FROM evaluation_overrides
  WHERE evaluation_id = ANY(@evaluation_ids::uuid[])
  GROUP BY evaluation_id;
+
+-- name: CountReady :one
+SELECT count(*) FROM evaluations WHERE tenant_id = app_current_tenant() AND status = 'ready';

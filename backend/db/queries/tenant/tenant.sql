@@ -53,3 +53,9 @@ ON CONFLICT (tenant_id) DO UPDATE
 INSERT INTO tenant_oidc_providers (tenant_id, name, issuer, client_id, client_secret_enc, scopes, auto_provision)
 VALUES (@tenant_id, @name, @issuer, @client_id, @client_secret_enc, @scopes, @auto_provision)
 RETURNING id;
+
+-- name: ListTenantsByIDs :many
+SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id,
+       coalesce((SELECT d.domain FROM tenant_domains d WHERE d.tenant_id = t.id AND d.is_primary LIMIT 1), '')::text AS primary_domain
+  FROM tenants t
+ WHERE t.id = ANY(@ids::uuid[]);

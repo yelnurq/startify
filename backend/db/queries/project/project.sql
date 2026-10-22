@@ -67,3 +67,9 @@ RETURNING *;
 
 -- name: RemoveMember :exec
 DELETE FROM project_members WHERE project_id = @project_id AND user_id = @user_id;
+
+-- name: CountProjects :one
+SELECT count(*) FROM projects WHERE tenant_id = app_current_tenant() AND deleted_at IS NULL;
+
+-- name: SetVisibility :exec
+UPDATE projects SET visibility = @visibility WHERE id = @id;

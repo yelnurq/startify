@@ -42,3 +42,23 @@ func TestHTMLToPDF(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHTMLToPNG(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseMultipartForm(1 << 20); err != nil || r.URL.Path != "/forms/chromium/screenshot/html" {
+			http.Error(w, "route", http.StatusNotFound)
+			return
+		}
+		if r.FormValue("width") != "1200" || r.FormValue("height") != "630" || r.FormValue("clip") != "true" || r.FormValue("format") != "png" {
+			http.Error(w, "form", http.StatusBadRequest)
+			return
+		}
+		_, _ = w.Write([]byte("\x89PNG"))
+	}))
+	defer srv.Close()
+
+	png, err := New(srv.URL, time.Second).HTMLToPNG(context.Background(), []byte("<p>Qadam</p>"), 1200, 630)
+	if err != nil || string(png) != "\x89PNG" {
+		t.Fatalf("%q %v", png, err)
+	}
+}

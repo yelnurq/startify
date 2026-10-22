@@ -10,11 +10,14 @@ const (
 	TemplatePasswordReset Template = "password_reset"
 	TemplateInvite        Template = "invite"
 	TemplateTeamResponse  Template = "team_response"
+	// TemplateContactRequest forwards a partner's request from the showcase.
+	TemplateContactRequest Template = "contact_request"
 )
 
 // copyText is the wording of a letter in one language. Placeholders in
 // braces ({name}, {tenant}, {link}, {code}, {minutes}, {responder},
-// {request}, {message}) are filled from the job data.
+// {request}, {message}, {project}, {sender}, {kind}, {email})
+// are filled from the job data.
 type copyText struct {
 	Subject    string
 	Preheader  string
@@ -167,6 +170,32 @@ var catalog = map[Template]letterCopy{
 			Paragraphs: []string{"{responder} replied to your request “{request}”:", "“{message}”"},
 			Button:     "Open the reply",
 			After:      "Contact details are on the request page in Qadam.",
+		},
+	},
+	TemplateContactRequest: {
+		"kk": {
+			Subject:    "«{project}» жобасына байланыс сұрауы",
+			Preheader:  "{sender} сізбен байланысқысы келеді",
+			Heading:    "Жобаңызға қызығушылық бар",
+			Paragraphs: []string{"{sender} витринадағы «{project}» жобасы туралы жазды. Сұрау тақырыбы: {kind}.", "«{message}»", "Жауап беру үшін: {email}"},
+			Button:     "Жобаның сұрауларын ашу",
+			After:      "Сұраулар тізімі Qadam-дағы жоба бетінде.",
+		},
+		"ru": {
+			Subject:    "Запрос на контакт по проекту «{project}»",
+			Preheader:  "{sender} хочет связаться с вами",
+			Heading:    "Вашим проектом интересуются",
+			Paragraphs: []string{"{sender} написал о проекте «{project}» на витрине. Тема запроса: {kind}.", "«{message}»", "Ответить: {email}"},
+			Button:     "Открыть запросы проекта",
+			After:      "Список запросов — на странице проекта в Qadam.",
+		},
+		"en": {
+			Subject:    "A contact request about “{project}”",
+			Preheader:  "{sender} would like to get in touch",
+			Heading:    "Someone is interested in your project",
+			Paragraphs: []string{"{sender} wrote about “{project}” on the showcase. Topic: {kind}.", "“{message}”", "Reply to: {email}"},
+			Button:     "Open the project's requests",
+			After:      "The list of requests is on the project page in Qadam.",
 		},
 	},
 }

@@ -15,6 +15,7 @@ func TestEveryLetterRendersInEveryLanguage(t *testing.T) {
 	data := map[string]string{
 		"name": "Айгерім", "tenant": "КазУТБ", "link": "https://kazutb.qadam.kz/x?token=abc",
 		"code": "482913", "minutes": "10", "responder": "Нұрлан", "request": "Ищем дизайнера", "message": "Готов помочь с UX",
+		"project": "AgroScan", "sender": "Ержан (AgroInvest)", "kind": "инвестиции", "email": "erzhan@agroinvest.kz",
 	}
 	for tpl, letters := range catalog {
 		for _, locale := range []string{"kk", "ru", "en"} {

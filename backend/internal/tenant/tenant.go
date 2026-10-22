@@ -175,6 +175,56 @@ func (s *Service) Brief(ctx context.Context, id uuid.UUID) (apigen.TenantBrief, 
 	}, nil
 }
 
+// University is how a university appears next to its projects on the
+// showcase: its brand and the address of its site.
+type University struct {
+	Brief  apigen.UniversityBrief
+	Origin string
+}
+
+// Universities describes universities by id (a platform registry, readable
+// from any university).
+func (s *Service) Universities(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]University, error) {
+	out := map[uuid.UUID]University{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		rows, err := tenantdb.New(s.db.Conn(ctx)).ListTenantsByIDs(ctx, ids)
+		for i := range rows {
+			r := &rows[i]
+			out[r.ID] = University{
+				Brief: apigen.UniversityBrief{
+					Slug: r.Slug, Name: apiconv.ParseText(r.Name).API(), ShortName: apiconv.ParseText(r.ShortName).API(),
+					Color: r.PrimaryColor, LogoUrl: apiconv.FileURL(r.LogoFileID),
+				},
+				Origin: s.origin(r.Slug, r.PrimaryDomain),
+			}
+		}
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("tenant: universities: %w", err)
+	}
+	return out, nil
+}
+
+// origin is the address of a university's site: its primary domain, the
+// public URL for the default university, or a subdomain of the base domain.
+func (s *Service) origin(slug, domain string) string {
+	switch {
+	case domain != "":
+		return s.publicURL.Scheme + "://" + domain
+	case slug == s.defaultTen || s.baseDomain == "":
+		return strings.TrimSuffix(s.publicURL.String(), "/")
+	}
+	host := slug + "." + s.baseDomain
+	if port := s.publicURL.Port(); port != "" {
+		host = net.JoinHostPort(host, port)
+	}
+	return s.publicURL.Scheme + "://" + host
+}
+
 // Settings are the sign-up rules of the current tenant.
 type Settings struct {
 	SelfSignup     bool
@@ -188,6 +238,9 @@ type Settings struct {
 	IPPolicyVersion string
 	IPPolicyText    apiconv.Text
 	PrimaryColor    string
+	// ContactModeration sends partners' contact requests to an innovation
+	// manager before the team sees them.
+	ContactModeration bool
 }
 
 // CurrentSettings loads the sign-up rules of the request's tenant.
@@ -215,6 +268,8 @@ func (s *Service) CurrentSettings(ctx context.Context) (Settings, error) {
 			Name:           apiconv.ParseText(row.Name),
 			ShortName:      apiconv.ParseText(row.ShortName),
 			PrimaryColor:   row.PrimaryColor,
+
+			ContactModeration: settings.ContactModeration,
 		}
 		if text := apiconv.ParseText(settings.IpPolicyText); len(text) > 0 && settings.IpPolicyVersion != "" {
 			out.IPPolicyVersion, out.IPPolicyText = settings.IpPolicyVersion, text

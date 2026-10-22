@@ -74,12 +74,21 @@ type Deps struct {
 	Zone *time.Location
 }
 
+// PageSource gives the public showcase page of a project (the showcase).
+type PageSource interface {
+	PublicURL(ctx context.Context, projectID uuid.UUID) (string, error)
+}
+
 // Service runs the incubator.
 type Service struct {
 	Deps
-	tmpl *Template
-	now  func() time.Time
+	tmpl  *Template
+	now   func() time.Time
+	pages PageSource
 }
+
+// UsePages connects the showcase: passports link to public pages.
+func (s *Service) UsePages(p PageSource) { s.pages = p }
 
 // NewService returns the incubator and connects it to the project service.
 func NewService(d Deps) *Service {

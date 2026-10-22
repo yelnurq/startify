@@ -316,6 +316,21 @@ func (s *Service) Request(ctx context.Context, projectID uuid.UUID) (apigen.Eval
 	return s.view(ctx, a, &row)
 }
 
+// CountReady counts the finished evaluations of the university (a public
+// figure of the landing page).
+func (s *Service) CountReady(ctx context.Context) (int, error) {
+	var n int64
+	err := s.DB.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		n, err = s.q(ctx).CountReady(ctx)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("evaluation: count: %w", err)
+	}
+	return int(n), nil
+}
+
 // List returns the evaluations of a project, newest first.
 func (s *Service) List(ctx context.Context, projectID uuid.UUID) (apigen.EvaluationList, error) {
 	if _, err := s.Projects.Access(ctx, projectID); err != nil {

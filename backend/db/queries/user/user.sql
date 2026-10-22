@@ -125,3 +125,13 @@ SELECT u.id, u.full_name, u.avatar_file_id, m.roles, m.faculty_id, p.public_slug
    AND (sqlc.narg('role')::text IS NULL OR sqlc.narg('role')::text = ANY(m.roles))
  ORDER BY u.full_name, u.id
  LIMIT @row_limit;
+
+-- name: ListRecipients :many
+SELECT u.id, u.email, u.full_name, u.locale
+  FROM users u
+  JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant() AND m.status = 'active'
+ WHERE u.id = ANY(@ids::uuid[]) AND u.status = 'active';
+
+-- name: CountStudents :one
+SELECT count(*) FROM memberships
+ WHERE tenant_id = app_current_tenant() AND 'student' = ANY(roles) AND status = 'active';

@@ -39,6 +39,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
 	"github.com/yelnurq/startify/backend/internal/platform/telemetry"
 	"github.com/yelnurq/startify/backend/internal/project"
+	"github.com/yelnurq/startify/backend/internal/showcase"
 	"github.com/yelnurq/startify/backend/internal/system"
 	"github.com/yelnurq/startify/backend/internal/team"
 	"github.com/yelnurq/startify/backend/internal/tenant"
@@ -80,6 +81,7 @@ type (
 	projectHandler    = project.Handler
 	incubatorHandler  = incubator.Handler
 	evaluationHandler = evaluation.Handler
+	showcaseHandler   = showcase.Handler
 )
 
 // server composes the module handlers into the generated strict interface.
@@ -98,6 +100,7 @@ type server struct {
 	*projectHandler
 	*incubatorHandler
 	*evaluationHandler
+	*showcaseHandler
 }
 
 var _ apigen.StrictServerInterface = (*server)(nil)
@@ -116,6 +119,7 @@ type Services struct {
 	Projects    *project.Service
 	Incubator   *incubator.Service
 	Evaluations *evaluation.Service
+	Showcase    *showcase.Service
 }
 
 func (a *API) services(ctx context.Context) (*Services, error) {
@@ -178,7 +182,14 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		DB: a.DB, Projects: projects, Users: users, Tenants: tenants, Queue: a.Queue, Audit: auditLog, Limiter: limiter,
 		Gotenberg: gotenberg.New(cfg.Gotenberg.URL, cfg.Gotenberg.Timeout),
 	})
+	showcaseSvc := showcase.NewService(showcase.Deps{
+		DB: a.DB, Projects: projects, Users: users, Org: orgs, Tenants: tenants, Files: fileSvc, Evaluations: evaluations,
+		ReadyEvaluations: evaluations.CountReady, Mailer: mailer, Audit: auditLog, Limiter: limiter,
+		Gotenberg: gotenberg.New(cfg.Gotenberg.URL, cfg.Gotenberg.Timeout), ShellURL: cfg.App.ShellURL,
+	})
+	incubatorSvc.UsePages(showcaseSvc)
 	return &Services{
+		Showcase:    showcaseSvc,
 		AI:          gateway,
 		Knowledge:   knowledgeSvc,
 		Projects:    projects,
@@ -251,6 +262,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 		projectHandler:    project.NewHandler(svc.Projects),
 		incubatorHandler:  incubator.NewHandler(svc.Incubator),
 		evaluationHandler: evaluation.NewHandler(svc.Evaluations),
+		showcaseHandler:   showcase.NewHandler(svc.Showcase),
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -282,6 +294,14 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 				httpx.WriteError(w, r, apperr.BadRequest("request.invalid_parameter", err.Error()))
 			},
 		})
+	})
+
+	// Showcase pages for search engines and link previews (Nginx sends
+	// /showcase, sitemap.xml and robots.txt here); no sign-in, so they show
+	// only public pages.
+	r.Group(func(seo chi.Router) {
+		seo.Use(httpx.Timeout(a.Config.HTTP.RequestTimeout), httpx.KeepRequest, svc.Tenants.Middleware)
+		svc.Showcase.SEORoutes(seo)
 	})
 
 	handler := otelhttp.NewHandler(r, "http.server",

@@ -50,13 +50,15 @@ type ProjectCard struct {
 
 // MaterialArgs schedules the generation of a material.
 type MaterialArgs struct {
-	TenantID    uuid.UUID   `json:"tenant_id"`
-	ProjectID   uuid.UUID   `json:"project_id"`
-	MaterialID  uuid.UUID   `json:"material_id"`
-	RequestedBy uuid.UUID   `json:"requested_by"`
-	Origin      string      `json:"origin"`
-	Card        ProjectCard `json:"card"`
-	Brand       Brand       `json:"brand"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	MaterialID  uuid.UUID `json:"material_id"`
+	RequestedBy uuid.UUID `json:"requested_by"`
+	Origin      string    `json:"origin"`
+	// PageURL is the public showcase page of the project, if it has one.
+	PageURL string      `json:"page_url,omitempty"`
+	Card    ProjectCard `json:"card"`
+	Brand   Brand       `json:"brand"`
 }
 
 // Kind implements river.JobArgs.
@@ -114,6 +116,12 @@ func (s *Service) RequestMaterial(ctx context.Context, projectID uuid.UUID, body
 	if err != nil {
 		return apigen.Material{}, err
 	}
+	var page string
+	if s.pages != nil {
+		if page, err = s.pages.PublicURL(ctx, projectID); err != nil {
+			return apigen.Material{}, err
+		}
+	}
 	user := a.Principal.UserID
 	var row incubatordb.ProjectMaterial
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
@@ -125,7 +133,7 @@ func (s *Service) RequestMaterial(ctx context.Context, projectID uuid.UUID, body
 			return err
 		}
 		if err := s.Queue.Enqueue(ctx, MaterialArgs{
-			TenantID: t.ID, ProjectID: projectID, MaterialID: row.ID, RequestedBy: user, Origin: t.Origin,
+			TenantID: t.ID, ProjectID: projectID, MaterialID: row.ID, RequestedBy: user, Origin: t.Origin, PageURL: page,
 			Card:  ProjectCard{Title: a.Project.Title, Tagline: a.Project.Tagline, Industry: a.Project.Industry},
 			Brand: Brand{University: settings.ShortName.Best(lang), Color: settings.PrimaryColor},
 		}, nil); err != nil {
@@ -391,7 +399,11 @@ func (w *MaterialWorker) passport(d *docData, args MaterialArgs, rows []incubato
 			d.Sections = append(d.Sections, s)
 		}
 	}
-	d.URL = strings.TrimSuffix(args.Origin, "/") + "/app/projects/" + args.ProjectID.String()
+	// The QR code opens the public showcase page, or the project for members.
+	d.URL = args.PageURL
+	if d.URL == "" {
+		d.URL = strings.TrimSuffix(args.Origin, "/") + "/app/projects/" + args.ProjectID.String()
+	}
 	qr, err := qrSVG(d.URL)
 	if err != nil {
 		return err

@@ -8,6 +8,8 @@ x-backend-env: &backend-env
   QADAM_ENV: ${QADAM_ENV:-development}
   QADAM_APP_PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
   QADAM_APP_DEFAULT_LOCALE: ${DEFAULT_LOCALE:-kk}
+  # Showcase pages for search engines are built on the web client's index.html.
+  QADAM_APP_SHELL_URL: http://web:8080/index.html
   QADAM_DATABASE_URL: postgres://qadam_app:${APP_DB_PASSWORD}@postgres:5432/qadam?sslmode=disable
   QADAM_DATABASE_MIGRATE_URL: postgres://qadam:${POSTGRES_PASSWORD}@postgres:5432/qadam?sslmode=disable
   QADAM_VALKEY_ADDR: valkey:6379

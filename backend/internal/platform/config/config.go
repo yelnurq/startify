@@ -141,6 +141,9 @@ type App struct {
 	PublicURL string `koanf:"public_url"`
 	// DefaultLocale is used when neither the user nor the tenant chose a language.
 	DefaultLocale string `koanf:"default_locale"`
+	// ShellURL is where the API reads the web client's index.html to build
+	// the showcase pages for search engines and link previews.
+	ShellURL string `koanf:"shell_url"`
 }
 
 // HTTP configures the API server.
@@ -427,6 +430,11 @@ func (c *Config) Validate() error {
 	}
 	if c.Env == EnvProduction && c.Files.Scan != "required" {
 		fail("QADAM_FILES_SCAN must be required in production")
+	}
+	if c.App.ShellURL != "" {
+		if u, err := url.Parse(c.App.ShellURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			fail("QADAM_APP_SHELL_URL must be an http(s) URL, got %q", c.App.ShellURL)
+		}
 	}
 	if c.Gotenberg.URL != "" {
 		if u, err := url.Parse(c.Gotenberg.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {

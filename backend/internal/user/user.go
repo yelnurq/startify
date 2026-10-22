@@ -880,6 +880,43 @@ func (s *Service) Briefs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUI
 	return out, nil
 }
 
+// Recipient is where letters to a member go.
+type Recipient struct {
+	ID       uuid.UUID
+	Email    string
+	FullName string
+	Locale   string
+}
+
+// Recipients returns the active members among the users (inside the
+// transaction of ctx, if any).
+func (s *Service) Recipients(ctx context.Context, userIDs []uuid.UUID) ([]Recipient, error) {
+	rows, err := s.q(ctx).ListRecipients(ctx, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("user: recipients: %w", err)
+	}
+	out := make([]Recipient, len(rows))
+	for i := range rows {
+		out[i] = Recipient{ID: rows[i].ID, Email: rows[i].Email, FullName: rows[i].FullName, Locale: rows[i].Locale}
+	}
+	return out, nil
+}
+
+// CountStudents counts the active students of the university (a public
+// figure of the landing page).
+func (s *Service) CountStudents(ctx context.Context) (int, error) {
+	var n int64
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		n, err = s.q(ctx).CountStudents(ctx)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("user: count students: %w", err)
+	}
+	return int(n), nil
+}
+
 // EnsureProfile creates the profile of a user, with an address derived from
 // the name (inside the transaction of ctx).
 func (s *Service) EnsureProfile(ctx context.Context, userID uuid.UUID, fullName string) error {

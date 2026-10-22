@@ -84,6 +84,17 @@ func (q *Queries) CountOverrides(ctx context.Context, evaluationIds []uuid.UUID)
 	return items, nil
 }
 
+const countReady = `-- name: CountReady :one
+SELECT count(*) FROM evaluations WHERE tenant_id = app_current_tenant() AND status = 'ready'
+`
+
+func (q *Queries) CountReady(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countReady)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countSince = `-- name: CountSince :one
 SELECT count(*)::int FROM evaluations WHERE project_id = $1 AND created_at > $2
 `

@@ -133,6 +133,75 @@ func (e CheckStatus) Valid() bool {
 	}
 }
 
+// Defines values for ContactAcceptedStatus.
+const (
+	ContactAcceptedStatusForwarded ContactAcceptedStatus = "forwarded"
+	ContactAcceptedStatusPending   ContactAcceptedStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the ContactAcceptedStatus enum.
+func (e ContactAcceptedStatus) Valid() bool {
+	switch e {
+	case ContactAcceptedStatusForwarded:
+		return true
+	case ContactAcceptedStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactKind.
+const (
+	ContactKindHiring      ContactKind = "hiring"
+	ContactKindInvestment  ContactKind = "investment"
+	ContactKindMentoring   ContactKind = "mentoring"
+	ContactKindOther       ContactKind = "other"
+	ContactKindPartnership ContactKind = "partnership"
+	ContactKindPilot       ContactKind = "pilot"
+)
+
+// Valid indicates whether the value is a known member of the ContactKind enum.
+func (e ContactKind) Valid() bool {
+	switch e {
+	case ContactKindHiring:
+		return true
+	case ContactKindInvestment:
+		return true
+	case ContactKindMentoring:
+		return true
+	case ContactKindOther:
+		return true
+	case ContactKindPartnership:
+		return true
+	case ContactKindPilot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactStatus.
+const (
+	ContactStatusForwarded ContactStatus = "forwarded"
+	ContactStatusPending   ContactStatus = "pending"
+	ContactStatusRejected  ContactStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the ContactStatus enum.
+func (e ContactStatus) Valid() bool {
+	switch e {
+	case ContactStatusForwarded:
+		return true
+	case ContactStatusPending:
+		return true
+	case ContactStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EvaluationStatus.
 const (
 	EvaluationStatusFailed  EvaluationStatus = "failed"
@@ -721,6 +790,99 @@ func (e Role) Valid() bool {
 	}
 }
 
+// Defines values for ShowcaseNeed.
+const (
+	ShowcaseNeedInvestment ShowcaseNeed = "investment"
+	ShowcaseNeedMentor     ShowcaseNeed = "mentor"
+	ShowcaseNeedPartner    ShowcaseNeed = "partner"
+	ShowcaseNeedPilot      ShowcaseNeed = "pilot"
+	ShowcaseNeedTeam       ShowcaseNeed = "team"
+)
+
+// Valid indicates whether the value is a known member of the ShowcaseNeed enum.
+func (e ShowcaseNeed) Valid() bool {
+	switch e {
+	case ShowcaseNeedInvestment:
+		return true
+	case ShowcaseNeedMentor:
+		return true
+	case ShowcaseNeedPartner:
+		return true
+	case ShowcaseNeedPilot:
+		return true
+	case ShowcaseNeedTeam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ShowcaseStage.
+const (
+	ShowcaseStageIdea    ShowcaseStage = "idea"
+	ShowcaseStageLaunch  ShowcaseStage = "launch"
+	ShowcaseStageMarket  ShowcaseStage = "market"
+	ShowcaseStageProduct ShowcaseStage = "product"
+)
+
+// Valid indicates whether the value is a known member of the ShowcaseStage enum.
+func (e ShowcaseStage) Valid() bool {
+	switch e {
+	case ShowcaseStageIdea:
+		return true
+	case ShowcaseStageLaunch:
+		return true
+	case ShowcaseStageMarket:
+		return true
+	case ShowcaseStageProduct:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ShowcaseStatus.
+const (
+	ShowcaseStatusDraft     ShowcaseStatus = "draft"
+	ShowcaseStatusInReview  ShowcaseStatus = "in_review"
+	ShowcaseStatusPublished ShowcaseStatus = "published"
+	ShowcaseStatusRejected  ShowcaseStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the ShowcaseStatus enum.
+func (e ShowcaseStatus) Valid() bool {
+	switch e {
+	case ShowcaseStatusDraft:
+		return true
+	case ShowcaseStatusInReview:
+		return true
+	case ShowcaseStatusPublished:
+		return true
+	case ShowcaseStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ShowcaseVisibility.
+const (
+	ShowcaseVisibilityPublic     ShowcaseVisibility = "public"
+	ShowcaseVisibilityUniversity ShowcaseVisibility = "university"
+)
+
+// Valid indicates whether the value is a known member of the ShowcaseVisibility enum.
+func (e ShowcaseVisibility) Valid() bool {
+	switch e {
+	case ShowcaseVisibilityPublic:
+		return true
+	case ShowcaseVisibilityUniversity:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StepGapCode.
 const (
 	StepGapCodeMinItems  StepGapCode = "minItems"
@@ -871,6 +1033,42 @@ func (e ListProjectsParamsScope) Valid() bool {
 	case ListProjectsParamsScopeAll:
 		return true
 	case ListProjectsParamsScopeMine:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListShowcaseParamsScope.
+const (
+	ListShowcaseParamsScopeNational   ListShowcaseParamsScope = "national"
+	ListShowcaseParamsScopeUniversity ListShowcaseParamsScope = "university"
+)
+
+// Valid indicates whether the value is a known member of the ListShowcaseParamsScope enum.
+func (e ListShowcaseParamsScope) Valid() bool {
+	switch e {
+	case ListShowcaseParamsScopeNational:
+		return true
+	case ListShowcaseParamsScopeUniversity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetShowcaseFacetsParamsScope.
+const (
+	GetShowcaseFacetsParamsScopeNational   GetShowcaseFacetsParamsScope = "national"
+	GetShowcaseFacetsParamsScopeUniversity GetShowcaseFacetsParamsScope = "university"
+)
+
+// Valid indicates whether the value is a known member of the GetShowcaseFacetsParamsScope enum.
+func (e GetShowcaseFacetsParamsScope) Valid() bool {
+	switch e {
+	case GetShowcaseFacetsParamsScopeNational:
+		return true
+	case GetShowcaseFacetsParamsScopeUniversity:
 		return true
 	default:
 		return false
@@ -1066,6 +1264,57 @@ type ConsentPolicy struct {
 	Version string        `json:"version"`
 }
 
+// ContactAccepted defines model for ContactAccepted.
+type ContactAccepted struct {
+	Status ContactAcceptedStatus `json:"status"`
+}
+
+// ContactAcceptedStatus defines model for ContactAccepted.Status.
+type ContactAcceptedStatus string
+
+// ContactCreate defines model for ContactCreate.
+type ContactCreate struct {
+	Email        openapi_types.Email `json:"email"`
+	Kind         ContactKind         `json:"kind"`
+	Message      string              `json:"message"`
+	Name         string              `json:"name"`
+	Organization *string             `json:"organization,omitempty"`
+
+	// Website Leave empty (a trap for bots).
+	Website *string `json:"website,omitempty"`
+}
+
+// ContactKind defines model for ContactKind.
+type ContactKind string
+
+// ContactModeration defines model for ContactModeration.
+type ContactModeration struct {
+	Forward bool `json:"forward"`
+}
+
+// ContactRequest defines model for ContactRequest.
+type ContactRequest struct {
+	CreatedAt    time.Time          `json:"created_at"`
+	Email        string             `json:"email"`
+	Id           openapi_types.UUID `json:"id"`
+	Kind         ContactKind        `json:"kind"`
+	Message      string             `json:"message"`
+	ModeratedAt  *time.Time         `json:"moderated_at"`
+	Name         string             `json:"name"`
+	Organization *string            `json:"organization"`
+	ProjectId    openapi_types.UUID `json:"project_id"`
+	ProjectTitle string             `json:"project_title"`
+	Status       ContactStatus      `json:"status"`
+}
+
+// ContactRequestList defines model for ContactRequestList.
+type ContactRequestList struct {
+	Items []ContactRequest `json:"items"`
+}
+
+// ContactStatus defines model for ContactStatus.
+type ContactStatus string
+
 // CriterionScore defines model for CriterionScore.
 type CriterionScore struct {
 	AiScore       int    `json:"ai_score"`
@@ -1166,11 +1415,26 @@ type Experiment struct {
 	Title   string `json:"title"`
 }
 
+// FacetCount defines model for FacetCount.
+type FacetCount struct {
+	Count int    `json:"count"`
+	Key   string `json:"key"`
+}
+
 // Faculty defines model for Faculty.
 type Faculty struct {
 	Code        string             `json:"code"`
 	Departments []Department       `json:"departments"`
 	Id          openapi_types.UUID `json:"id"`
+
+	// Name The same text in Kazakh, Russian and English; at least one is present.
+	Name LocalizedText `json:"name"`
+}
+
+// FacultyFacet defines model for FacultyFacet.
+type FacultyFacet struct {
+	Count int                `json:"count"`
+	Id    openapi_types.UUID `json:"id"`
 
 	// Name The same text in Kazakh, Russian and English; at least one is present.
 	Name LocalizedText `json:"name"`
@@ -1854,6 +2118,166 @@ type SessionInfo struct {
 	UserAgent  *string            `json:"user_agent"`
 }
 
+// ShowcaseCard defines model for ShowcaseCard.
+type ShowcaseCard struct {
+	CoverUrl    *string         `json:"cover_url"`
+	Faculty     *LocalizedText  `json:"faculty"`
+	Industry    Industry        `json:"industry"`
+	Level       *ReadinessLevel `json:"level"`
+	Needs       []ShowcaseNeed  `json:"needs"`
+	PublishedAt time.Time       `json:"published_at"`
+	Score       *int            `json:"score"`
+	Slug        string          `json:"slug"`
+
+	// Stage Incubator stage of the project when it was published.
+	Stage      ShowcaseStage   `json:"stage"`
+	Tagline    string          `json:"tagline"`
+	Tags       []string        `json:"tags"`
+	Title      string          `json:"title"`
+	University UniversityBrief `json:"university"`
+
+	// Url Absolute address of the page on its university's site.
+	Url  string `json:"url"`
+	Year int    `json:"year"`
+}
+
+// ShowcaseCounters defines model for ShowcaseCounters.
+type ShowcaseCounters struct {
+	Evaluations int `json:"evaluations"`
+	Projects    int `json:"projects"`
+	Published   int `json:"published"`
+	Students    int `json:"students"`
+}
+
+// ShowcaseEntry defines model for ShowcaseEntry.
+type ShowcaseEntry struct {
+	ContactEnabled bool               `json:"contact_enabled"`
+	CoverUrl       *string            `json:"cover_url"`
+	Industry       Industry           `json:"industry"`
+	Level          *ReadinessLevel    `json:"level"`
+	Needs          []ShowcaseNeed     `json:"needs"`
+	ProjectId      openapi_types.UUID `json:"project_id"`
+	PublishedAt    *time.Time         `json:"published_at"`
+	ReviewComment  *string            `json:"review_comment"`
+
+	// Saved False while the page is a prefilled suggestion that was never saved.
+	Saved    bool             `json:"saved"`
+	Score    *int             `json:"score"`
+	Sections ShowcaseSections `json:"sections"`
+
+	// ShowScore Show the readiness score of the latest AI evaluation.
+	ShowScore bool   `json:"show_score"`
+	Slug      string `json:"slug"`
+
+	// Stage Incubator stage of the project when it was published.
+	Stage       ShowcaseStage        `json:"stage"`
+	Status      ShowcaseStatus       `json:"status"`
+	SubmittedAt *time.Time           `json:"submitted_at"`
+	Tagline     string               `json:"tagline"`
+	Tags        []string             `json:"tags"`
+	Team        []ShowcaseTeamMember `json:"team"`
+	Title       string               `json:"title"`
+
+	// Url Address of the published page.
+	Url      *string `json:"url"`
+	VideoUrl *string `json:"video_url"`
+
+	// Visibility `university` — members of the university; `public` — everyone, after review.
+	Visibility ShowcaseVisibility `json:"visibility"`
+}
+
+// ShowcaseEntryUpdate defines model for ShowcaseEntryUpdate.
+type ShowcaseEntryUpdate struct {
+	ContactEnabled bool             `json:"contact_enabled"`
+	Needs          []ShowcaseNeed   `json:"needs"`
+	Sections       ShowcaseSections `json:"sections"`
+	ShowScore      bool             `json:"show_score"`
+	Slug           string           `json:"slug"`
+	Tagline        string           `json:"tagline"`
+	Tags           []string         `json:"tags"`
+	Title          string           `json:"title"`
+	VideoUrl       *string          `json:"video_url,omitempty"`
+
+	// Visibility `university` — members of the university; `public` — everyone, after review.
+	Visibility ShowcaseVisibility `json:"visibility"`
+}
+
+// ShowcaseFacets defines model for ShowcaseFacets.
+type ShowcaseFacets struct {
+	Faculties  []FacultyFacet `json:"faculties"`
+	Industries []FacetCount   `json:"industries"`
+	Needs      []FacetCount   `json:"needs"`
+	Stages     []FacetCount   `json:"stages"`
+	Tags       []FacetCount   `json:"tags"`
+	Total      int            `json:"total"`
+	Years      []FacetCount   `json:"years"`
+}
+
+// ShowcaseHighlights defines model for ShowcaseHighlights.
+type ShowcaseHighlights struct {
+	Counters ShowcaseCounters `json:"counters"`
+	Featured []ShowcaseCard   `json:"featured"`
+}
+
+// ShowcaseNeed defines model for ShowcaseNeed.
+type ShowcaseNeed string
+
+// ShowcasePage defines model for ShowcasePage.
+type ShowcasePage struct {
+	Items      []ShowcaseCard `json:"items"`
+	NextCursor *string        `json:"next_cursor"`
+}
+
+// ShowcaseProject defines model for ShowcaseProject.
+type ShowcaseProject struct {
+	Card           ShowcaseCard `json:"card"`
+	ContactEnabled bool         `json:"contact_enabled"`
+
+	// ImageUrl The link preview image.
+	ImageUrl string               `json:"image_url"`
+	Sections ShowcaseSections     `json:"sections"`
+	Team     []ShowcaseTeamMember `json:"team"`
+	VideoUrl *string              `json:"video_url"`
+}
+
+// ShowcaseReview defines model for ShowcaseReview.
+type ShowcaseReview struct {
+	Approve bool `json:"approve"`
+
+	// Comment Required when rejecting.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// ShowcaseReviewList defines model for ShowcaseReviewList.
+type ShowcaseReviewList struct {
+	Items []ShowcaseEntry `json:"items"`
+}
+
+// ShowcaseSections defines model for ShowcaseSections.
+type ShowcaseSections struct {
+	Ask      *string `json:"ask,omitempty"`
+	Market   *string `json:"market,omitempty"`
+	Problem  *string `json:"problem,omitempty"`
+	Solution *string `json:"solution,omitempty"`
+	Traction *string `json:"traction,omitempty"`
+}
+
+// ShowcaseStage Incubator stage of the project when it was published.
+type ShowcaseStage string
+
+// ShowcaseStatus defines model for ShowcaseStatus.
+type ShowcaseStatus string
+
+// ShowcaseTeamMember defines model for ShowcaseTeamMember.
+type ShowcaseTeamMember struct {
+	AvatarUrl *string `json:"avatar_url"`
+	Name      string  `json:"name"`
+	Role      string  `json:"role"`
+}
+
+// ShowcaseVisibility `university` — members of the university; `public` — everyone, after review.
+type ShowcaseVisibility string
+
 // SsoProvider defines model for SsoProvider.
 type SsoProvider struct {
 	Id openapi_types.UUID `json:"id"`
@@ -2159,6 +2583,19 @@ type TokenRequest struct {
 	Token string `json:"token"`
 }
 
+// UniversityBrief defines model for UniversityBrief.
+type UniversityBrief struct {
+	Color   string  `json:"color"`
+	LogoUrl *string `json:"logo_url"`
+
+	// Name The same text in Kazakh, Russian and English; at least one is present.
+	Name LocalizedText `json:"name"`
+
+	// ShortName The same text in Kazakh, Russian and English; at least one is present.
+	ShortName LocalizedText `json:"short_name"`
+	Slug      string        `json:"slug"`
+}
+
 // User defines model for User.
 type User struct {
 	AvatarUrl     *string             `json:"avatar_url"`
@@ -2216,6 +2653,9 @@ type RequestId = openapi_types.UUID
 // RevisionId defines model for RevisionId.
 type RevisionId = openapi_types.UUID
 
+// ShowcaseSlug defines model for ShowcaseSlug.
+type ShowcaseSlug = string
+
 // StepKey defines model for StepKey.
 type StepKey = string
 
@@ -2231,6 +2671,11 @@ type UpdateAiSettingsParams struct {
 // GetAiUsageParams defines parameters for GetAiUsage.
 type GetAiUsageParams struct {
 	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
+// ListContactRequestsParams defines parameters for ListContactRequests.
+type ListContactRequestsParams struct {
+	Status *ContactStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // CreateImportMultipartBody defines parameters for CreateImport.
@@ -2278,6 +2723,11 @@ type ListMembersParams struct {
 type UpdateRubricParams struct {
 	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// ListShowcaseReviewsParams defines parameters for ListShowcaseReviews.
+type ListShowcaseReviewsParams struct {
+	Status *ShowcaseStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // CompleteOidcParams defines parameters for CompleteOidc.
@@ -2373,6 +2823,17 @@ type CreateProjectMaterialParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// UpdateShowcaseEntryParams defines parameters for UpdateShowcaseEntry.
+type UpdateShowcaseEntryParams struct {
+	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// SetShowcaseCoverMultipartBody defines parameters for SetShowcaseCover.
+type SetShowcaseCoverMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
+
 // UpdateProjectStepParams defines parameters for UpdateProjectStep.
 type UpdateProjectStepParams struct {
 	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
@@ -2400,6 +2861,33 @@ type RestoreStepRevisionParams struct {
 	// IfMatch ETag of the version being edited; the update fails with 412 if it is stale.
 	IfMatch IfMatchRequired `json:"If-Match"`
 }
+
+// ListShowcaseParams defines parameters for ListShowcase.
+type ListShowcaseParams struct {
+	Scope    *ListShowcaseParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+	Q        *string                  `form:"q,omitempty" json:"q,omitempty"`
+	Industry *Industry                `form:"industry,omitempty" json:"industry,omitempty"`
+	Stage    *ShowcaseStage           `form:"stage,omitempty" json:"stage,omitempty"`
+	Faculty  *openapi_types.UUID      `form:"faculty,omitempty" json:"faculty,omitempty"`
+	Year     *int                     `form:"year,omitempty" json:"year,omitempty"`
+	Need     *ShowcaseNeed            `form:"need,omitempty" json:"need,omitempty"`
+	Tag      *string                  `form:"tag,omitempty" json:"tag,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListShowcaseParamsScope defines parameters for ListShowcase.
+type ListShowcaseParamsScope string
+
+// GetShowcaseFacetsParams defines parameters for GetShowcaseFacets.
+type GetShowcaseFacetsParams struct {
+	Scope *GetShowcaseFacetsParamsScope `form:"scope,omitempty" json:"scope,omitempty"`
+}
+
+// GetShowcaseFacetsParamsScope defines parameters for GetShowcaseFacets.
+type GetShowcaseFacetsParamsScope string
 
 // ListStudyGroupsParams defines parameters for ListStudyGroups.
 type ListStudyGroupsParams struct {
@@ -2450,6 +2938,9 @@ type CheckAiConnectionJSONRequestBody = AiCheckRequest
 // UpdateAiSettingsJSONRequestBody defines body for UpdateAiSettings for application/json ContentType.
 type UpdateAiSettingsJSONRequestBody = AiSettingsUpdate
 
+// ModerateContactRequestJSONRequestBody defines body for ModerateContactRequest for application/json ContentType.
+type ModerateContactRequestJSONRequestBody = ContactModeration
+
 // CreateImportMultipartRequestBody defines body for CreateImport for multipart/form-data ContentType.
 type CreateImportMultipartRequestBody CreateImportMultipartBody
 
@@ -2461,6 +2952,9 @@ type UpdateMemberJSONRequestBody = MemberUpdate
 
 // UpdateRubricJSONRequestBody defines body for UpdateRubric for application/json ContentType.
 type UpdateRubricJSONRequestBody = RubricUpdate
+
+// ReviewShowcaseEntryJSONRequestBody defines body for ReviewShowcaseEntry for application/json ContentType.
+type ReviewShowcaseEntryJSONRequestBody = ShowcaseReview
 
 // VerifyEmailJSONRequestBody defines body for VerifyEmail for application/json ContentType.
 type VerifyEmailJSONRequestBody = TokenRequest
@@ -2525,6 +3019,12 @@ type UpdateProjectMemberJSONRequestBody = ProjectMemberUpdate
 // UpdateProjectPresenceJSONRequestBody defines body for UpdateProjectPresence for application/json ContentType.
 type UpdateProjectPresenceJSONRequestBody = PresenceUpdate
 
+// UpdateShowcaseEntryJSONRequestBody defines body for UpdateShowcaseEntry for application/json ContentType.
+type UpdateShowcaseEntryJSONRequestBody = ShowcaseEntryUpdate
+
+// SetShowcaseCoverMultipartRequestBody defines body for SetShowcaseCover for multipart/form-data ContentType.
+type SetShowcaseCoverMultipartRequestBody SetShowcaseCoverMultipartBody
+
 // UpdateProjectStepJSONRequestBody defines body for UpdateProjectStep for application/json ContentType.
 type UpdateProjectStepJSONRequestBody = StepUpdate
 
@@ -2533,6 +3033,9 @@ type ApproveProjectStepJSONRequestBody = StepApprove
 
 // SendMentorMessageJSONRequestBody defines body for SendMentorMessage for application/json ContentType.
 type SendMentorMessageJSONRequestBody = MentorMessageCreate
+
+// ContactShowcaseProjectJSONRequestBody defines body for ContactShowcaseProject for application/json ContentType.
+type ContactShowcaseProjectJSONRequestBody = ContactCreate
 
 // CreateTeamRequestJSONRequestBody defines body for CreateTeamRequest for application/json ContentType.
 type CreateTeamRequestJSONRequestBody = TeamRequestCreate
@@ -2557,6 +3060,12 @@ type ServerInterface interface {
 	// GetAiUsage Tokens and estimated cost of AI calls
 	// (GET /admin/ai/usage)
 	GetAiUsage(w http.ResponseWriter, r *http.Request, params GetAiUsageParams)
+	// ListContactRequests Contact requests of the university
+	// (GET /admin/contacts)
+	ListContactRequests(w http.ResponseWriter, r *http.Request, params ListContactRequestsParams)
+	// ModerateContactRequest Forward a request to the team or reject it
+	// (POST /admin/contacts/{contactId}/moderate)
+	ModerateContactRequest(w http.ResponseWriter, r *http.Request, contactId openapi_types.UUID)
 	// CreateImport Upload a CSV or XLSX file for import
 	// (POST /admin/imports)
 	CreateImport(w http.ResponseWriter, r *http.Request)
@@ -2593,6 +3102,12 @@ type ServerInterface interface {
 	// UpdateRubric Change the weights of the rubric
 	// (PUT /admin/rubric)
 	UpdateRubric(w http.ResponseWriter, r *http.Request, params UpdateRubricParams)
+	// ListShowcaseReviews Showcase pages for moderation
+	// (GET /admin/showcase)
+	ListShowcaseReviews(w http.ResponseWriter, r *http.Request, params ListShowcaseReviewsParams)
+	// ReviewShowcaseEntry Approve or reject a public page
+	// (POST /admin/showcase/{projectId}/review)
+	ReviewShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// GetAiStatus AI availability for the signed-in member
 	// (GET /ai/status)
 	GetAiStatus(w http.ResponseWriter, r *http.Request)
@@ -2713,6 +3228,9 @@ type ServerInterface interface {
 	// UpdateProjectComment Edit or resolve a comment
 	// (PATCH /projects/{projectId}/comments/{commentId})
 	UpdateProjectComment(w http.ResponseWriter, r *http.Request, projectId ProjectId, commentId CommentId)
+	// ListProjectContacts Contact requests addressed to the project
+	// (GET /projects/{projectId}/contacts)
+	ListProjectContacts(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// ListEvaluations Evaluation history of a project
 	// (GET /projects/{projectId}/evaluations)
 	ListEvaluations(w http.ResponseWriter, r *http.Request, projectId ProjectId)
@@ -2749,6 +3267,24 @@ type ServerInterface interface {
 	// UpdateProjectPresence Report being in the project and see who else is
 	// (POST /projects/{projectId}/presence)
 	UpdateProjectPresence(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// GetShowcaseEntry The project's showcase page as the team edits it
+	// (GET /projects/{projectId}/showcase)
+	GetShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// UpdateShowcaseEntry Save the showcase page
+	// (PUT /projects/{projectId}/showcase)
+	UpdateShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateShowcaseEntryParams)
+	// DeleteShowcaseCover Remove the cover image
+	// (DELETE /projects/{projectId}/showcase/cover)
+	DeleteShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// SetShowcaseCover Upload the cover image
+	// (PUT /projects/{projectId}/showcase/cover)
+	SetShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// PublishShowcaseEntry Publish the page
+	// (POST /projects/{projectId}/showcase/publish)
+	PublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// UnpublishShowcaseEntry Take the page off the showcase
+	// (POST /projects/{projectId}/showcase/unpublish)
+	UnpublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// ListProjectSteps The state of every step and the progress of the project
 	// (GET /projects/{projectId}/steps)
 	ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId)
@@ -2779,6 +3315,24 @@ type ServerInterface interface {
 	// RestoreStepRevision Put an earlier value back
 	// (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
 	RestoreStepRevision(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, revisionId RevisionId, params RestoreStepRevisionParams)
+	// ListShowcase The showcase of published projects
+	// (GET /showcase)
+	ListShowcase(w http.ResponseWriter, r *http.Request, params ListShowcaseParams)
+	// GetShowcaseProject A public project page
+	// (GET /showcase/entries/{slug})
+	GetShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug)
+	// ContactShowcaseProject Ask the team to get in touch
+	// (POST /showcase/entries/{slug}/contact)
+	ContactShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug)
+	// GetShowcaseImage The link preview image of a page (1200×630)
+	// (GET /showcase/entries/{slug}/og.png)
+	GetShowcaseImage(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug)
+	// GetShowcaseFacets Counts for the showcase filters
+	// (GET /showcase/facets)
+	GetShowcaseFacets(w http.ResponseWriter, r *http.Request, params GetShowcaseFacetsParams)
+	// GetShowcaseHighlights Live numbers and featured projects for the landing page
+	// (GET /showcase/highlights)
+	GetShowcaseHighlights(w http.ResponseWriter, r *http.Request)
 	// ListStudyGroups Study groups
 	// (GET /study-groups)
 	ListStudyGroups(w http.ResponseWriter, r *http.Request, params ListStudyGroupsParams)
@@ -2830,6 +3384,18 @@ func (_ Unimplemented) UpdateAiSettings(w http.ResponseWriter, r *http.Request, 
 // GetAiUsage Tokens and estimated cost of AI calls
 // (GET /admin/ai/usage)
 func (_ Unimplemented) GetAiUsage(w http.ResponseWriter, r *http.Request, params GetAiUsageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListContactRequests Contact requests of the university
+// (GET /admin/contacts)
+func (_ Unimplemented) ListContactRequests(w http.ResponseWriter, r *http.Request, params ListContactRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ModerateContactRequest Forward a request to the team or reject it
+// (POST /admin/contacts/{contactId}/moderate)
+func (_ Unimplemented) ModerateContactRequest(w http.ResponseWriter, r *http.Request, contactId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2902,6 +3468,18 @@ func (_ Unimplemented) GetRubric(w http.ResponseWriter, r *http.Request) {
 // UpdateRubric Change the weights of the rubric
 // (PUT /admin/rubric)
 func (_ Unimplemented) UpdateRubric(w http.ResponseWriter, r *http.Request, params UpdateRubricParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListShowcaseReviews Showcase pages for moderation
+// (GET /admin/showcase)
+func (_ Unimplemented) ListShowcaseReviews(w http.ResponseWriter, r *http.Request, params ListShowcaseReviewsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReviewShowcaseEntry Approve or reject a public page
+// (POST /admin/showcase/{projectId}/review)
+func (_ Unimplemented) ReviewShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3145,6 +3723,12 @@ func (_ Unimplemented) UpdateProjectComment(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListProjectContacts Contact requests addressed to the project
+// (GET /projects/{projectId}/contacts)
+func (_ Unimplemented) ListProjectContacts(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListEvaluations Evaluation history of a project
 // (GET /projects/{projectId}/evaluations)
 func (_ Unimplemented) ListEvaluations(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
@@ -3217,6 +3801,42 @@ func (_ Unimplemented) UpdateProjectPresence(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GetShowcaseEntry The project's showcase page as the team edits it
+// (GET /projects/{projectId}/showcase)
+func (_ Unimplemented) GetShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateShowcaseEntry Save the showcase page
+// (PUT /projects/{projectId}/showcase)
+func (_ Unimplemented) UpdateShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateShowcaseEntryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteShowcaseCover Remove the cover image
+// (DELETE /projects/{projectId}/showcase/cover)
+func (_ Unimplemented) DeleteShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetShowcaseCover Upload the cover image
+// (PUT /projects/{projectId}/showcase/cover)
+func (_ Unimplemented) SetShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PublishShowcaseEntry Publish the page
+// (POST /projects/{projectId}/showcase/publish)
+func (_ Unimplemented) PublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UnpublishShowcaseEntry Take the page off the showcase
+// (POST /projects/{projectId}/showcase/unpublish)
+func (_ Unimplemented) UnpublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListProjectSteps The state of every step and the progress of the project
 // (GET /projects/{projectId}/steps)
 func (_ Unimplemented) ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
@@ -3274,6 +3894,42 @@ func (_ Unimplemented) ListStepRevisions(w http.ResponseWriter, r *http.Request,
 // RestoreStepRevision Put an earlier value back
 // (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
 func (_ Unimplemented) RestoreStepRevision(w http.ResponseWriter, r *http.Request, projectId ProjectId, stepKey StepKey, revisionId RevisionId, params RestoreStepRevisionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListShowcase The showcase of published projects
+// (GET /showcase)
+func (_ Unimplemented) ListShowcase(w http.ResponseWriter, r *http.Request, params ListShowcaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetShowcaseProject A public project page
+// (GET /showcase/entries/{slug})
+func (_ Unimplemented) GetShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ContactShowcaseProject Ask the team to get in touch
+// (POST /showcase/entries/{slug}/contact)
+func (_ Unimplemented) ContactShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetShowcaseImage The link preview image of a page (1200×630)
+// (GET /showcase/entries/{slug}/og.png)
+func (_ Unimplemented) GetShowcaseImage(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetShowcaseFacets Counts for the showcase filters
+// (GET /showcase/facets)
+func (_ Unimplemented) GetShowcaseFacets(w http.ResponseWriter, r *http.Request, params GetShowcaseFacetsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetShowcaseHighlights Live numbers and featured projects for the landing page
+// (GET /showcase/highlights)
+func (_ Unimplemented) GetShowcaseHighlights(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3427,6 +4083,65 @@ func (siw *ServerInterfaceWrapper) GetAiUsage(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAiUsage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListContactRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListContactRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListContactRequestsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListContactRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ModerateContactRequest operation middleware
+func (siw *ServerInterfaceWrapper) ModerateContactRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "contactId" -------------
+	var contactId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "contactId", chi.URLParam(r, "contactId"), &contactId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "contactId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ModerateContactRequest(w, r, contactId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3817,6 +4532,65 @@ func (siw *ServerInterfaceWrapper) UpdateRubric(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateRubric(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListShowcaseReviews operation middleware
+func (siw *ServerInterfaceWrapper) ListShowcaseReviews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListShowcaseReviewsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListShowcaseReviews(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewShowcaseEntry operation middleware
+func (siw *ServerInterfaceWrapper) ReviewShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewShowcaseEntry(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4881,6 +5655,32 @@ func (siw *ServerInterfaceWrapper) UpdateProjectComment(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// ListProjectContacts operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectContacts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectContacts(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListEvaluations operation middleware
 func (siw *ServerInterfaceWrapper) ListEvaluations(w http.ResponseWriter, r *http.Request) {
 
@@ -5302,6 +6102,186 @@ func (siw *ServerInterfaceWrapper) UpdateProjectPresence(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateProjectPresence(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetShowcaseEntry operation middleware
+func (siw *ServerInterfaceWrapper) GetShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetShowcaseEntry(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateShowcaseEntry operation middleware
+func (siw *ServerInterfaceWrapper) UpdateShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateShowcaseEntryParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateShowcaseEntry(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteShowcaseCover operation middleware
+func (siw *ServerInterfaceWrapper) DeleteShowcaseCover(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteShowcaseCover(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetShowcaseCover operation middleware
+func (siw *ServerInterfaceWrapper) SetShowcaseCover(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetShowcaseCover(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishShowcaseEntry operation middleware
+func (siw *ServerInterfaceWrapper) PublishShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishShowcaseEntry(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnpublishShowcaseEntry operation middleware
+func (siw *ServerInterfaceWrapper) UnpublishShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnpublishShowcaseEntry(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5779,6 +6759,281 @@ func (siw *ServerInterfaceWrapper) RestoreStepRevision(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RestoreStepRevision(w, r, projectId, stepKey, revisionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListShowcase operation middleware
+func (siw *ServerInterfaceWrapper) ListShowcase(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListShowcaseParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "industry" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "industry", r.URL.Query(), &params.Industry, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "industry"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "industry", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "stage" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "stage", r.URL.Query(), &params.Stage, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "stage"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stage", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "faculty" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "faculty", r.URL.Query(), &params.Faculty, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "faculty"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "faculty", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "year" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "year", r.URL.Query(), &params.Year, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "year"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "year", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "need" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "need", r.URL.Query(), &params.Need, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "need"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "need", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "tag" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag", r.URL.Query(), &params.Tag, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "tag"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListShowcase(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetShowcaseProject operation middleware
+func (siw *ServerInterfaceWrapper) GetShowcaseProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ShowcaseSlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetShowcaseProject(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ContactShowcaseProject operation middleware
+func (siw *ServerInterfaceWrapper) ContactShowcaseProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ShowcaseSlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ContactShowcaseProject(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetShowcaseImage operation middleware
+func (siw *ServerInterfaceWrapper) GetShowcaseImage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ShowcaseSlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", chi.URLParam(r, "slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetShowcaseImage(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetShowcaseFacets operation middleware
+func (siw *ServerInterfaceWrapper) GetShowcaseFacets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetShowcaseFacetsParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetShowcaseFacets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetShowcaseHighlights operation middleware
+func (siw *ServerInterfaceWrapper) GetShowcaseHighlights(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetShowcaseHighlights(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6536,6 +7791,57 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/admin/rubric", wrapper.UpdateRubric)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/showcase", wrapper.GetShowcaseEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/projects/{projectId}/showcase", wrapper.UpdateShowcaseEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{projectId}/showcase/cover", wrapper.DeleteShowcaseCover)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/projects/{projectId}/showcase/cover", wrapper.SetShowcaseCover)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/showcase/publish", wrapper.PublishShowcaseEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{projectId}/showcase/unpublish", wrapper.UnpublishShowcaseEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{projectId}/contacts", wrapper.ListProjectContacts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/showcase", wrapper.ListShowcaseReviews)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/showcase/{projectId}/review", wrapper.ReviewShowcaseEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/contacts", wrapper.ListContactRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/contacts/{contactId}/moderate", wrapper.ModerateContactRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/showcase", wrapper.ListShowcase)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/showcase/facets", wrapper.GetShowcaseFacets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/showcase/highlights", wrapper.GetShowcaseHighlights)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/showcase/entries/{slug}", wrapper.GetShowcaseProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/showcase/entries/{slug}/contact", wrapper.ContactShowcaseProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/showcase/entries/{slug}/og.png", wrapper.GetShowcaseImage)
+	})
 
 	return r
 }
@@ -6736,6 +8042,85 @@ type GetAiUsagedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetAiUsagedefaultApplicationProblemPlusJSONResponse) VisitGetAiUsageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListContactRequestsRequestObject struct {
+	Params ListContactRequestsParams
+}
+
+type ListContactRequestsResponseObject interface {
+	VisitListContactRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListContactRequests200JSONResponse ContactRequestList
+
+func (response ListContactRequests200JSONResponse) VisitListContactRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListContactRequestsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListContactRequestsdefaultApplicationProblemPlusJSONResponse) VisitListContactRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ModerateContactRequestRequestObject struct {
+	ContactId openapi_types.UUID `json:"contactId"`
+	Body      *ModerateContactRequestJSONRequestBody
+}
+
+type ModerateContactRequestResponseObject interface {
+	VisitModerateContactRequestResponse(w http.ResponseWriter) error
+}
+
+type ModerateContactRequest200JSONResponse ContactRequest
+
+func (response ModerateContactRequest200JSONResponse) VisitModerateContactRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ModerateContactRequestdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ModerateContactRequestdefaultApplicationProblemPlusJSONResponse) VisitModerateContactRequestResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -7221,6 +8606,85 @@ type UpdateRubricdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateRubricdefaultApplicationProblemPlusJSONResponse) VisitUpdateRubricResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListShowcaseReviewsRequestObject struct {
+	Params ListShowcaseReviewsParams
+}
+
+type ListShowcaseReviewsResponseObject interface {
+	VisitListShowcaseReviewsResponse(w http.ResponseWriter) error
+}
+
+type ListShowcaseReviews200JSONResponse ShowcaseReviewList
+
+func (response ListShowcaseReviews200JSONResponse) VisitListShowcaseReviewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListShowcaseReviewsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListShowcaseReviewsdefaultApplicationProblemPlusJSONResponse) VisitListShowcaseReviewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewShowcaseEntryRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Body      *ReviewShowcaseEntryJSONRequestBody
+}
+
+type ReviewShowcaseEntryResponseObject interface {
+	VisitReviewShowcaseEntryResponse(w http.ResponseWriter) error
+}
+
+type ReviewShowcaseEntry200JSONResponse ShowcaseEntry
+
+func (response ReviewShowcaseEntry200JSONResponse) VisitReviewShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewShowcaseEntrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReviewShowcaseEntrydefaultApplicationProblemPlusJSONResponse) VisitReviewShowcaseEntryResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8797,6 +10261,45 @@ func (response UpdateProjectCommentdefaultApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type ListProjectContactsRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type ListProjectContactsResponseObject interface {
+	VisitListProjectContactsResponse(w http.ResponseWriter) error
+}
+
+type ListProjectContacts200JSONResponse ContactRequestList
+
+func (response ListProjectContacts200JSONResponse) VisitListProjectContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectContactsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListProjectContactsdefaultApplicationProblemPlusJSONResponse) VisitListProjectContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListEvaluationsRequestObject struct {
 	ProjectId ProjectId `json:"projectId"`
 }
@@ -9274,6 +10777,263 @@ type UpdateProjectPresencedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateProjectPresencedefaultApplicationProblemPlusJSONResponse) VisitUpdateProjectPresenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseEntryRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type GetShowcaseEntryResponseObject interface {
+	VisitGetShowcaseEntryResponse(w http.ResponseWriter) error
+}
+
+type GetShowcaseEntry200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetShowcaseEntry200JSONResponse struct {
+	Body    ShowcaseEntry
+	Headers GetShowcaseEntry200ResponseHeaders
+}
+
+func (response GetShowcaseEntry200JSONResponse) VisitGetShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseEntrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetShowcaseEntrydefaultApplicationProblemPlusJSONResponse) VisitGetShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateShowcaseEntryRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Params    UpdateShowcaseEntryParams
+	Body      *UpdateShowcaseEntryJSONRequestBody
+}
+
+type UpdateShowcaseEntryResponseObject interface {
+	VisitUpdateShowcaseEntryResponse(w http.ResponseWriter) error
+}
+
+type UpdateShowcaseEntry200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateShowcaseEntry200JSONResponse struct {
+	Body    ShowcaseEntry
+	Headers UpdateShowcaseEntry200ResponseHeaders
+}
+
+func (response UpdateShowcaseEntry200JSONResponse) VisitUpdateShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateShowcaseEntrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateShowcaseEntrydefaultApplicationProblemPlusJSONResponse) VisitUpdateShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteShowcaseCoverRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type DeleteShowcaseCoverResponseObject interface {
+	VisitDeleteShowcaseCoverResponse(w http.ResponseWriter) error
+}
+
+type DeleteShowcaseCover200JSONResponse ShowcaseEntry
+
+func (response DeleteShowcaseCover200JSONResponse) VisitDeleteShowcaseCoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteShowcaseCoverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteShowcaseCoverdefaultApplicationProblemPlusJSONResponse) VisitDeleteShowcaseCoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetShowcaseCoverRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+	Body      *multipart.Reader
+}
+
+type SetShowcaseCoverResponseObject interface {
+	VisitSetShowcaseCoverResponse(w http.ResponseWriter) error
+}
+
+type SetShowcaseCover200JSONResponse ShowcaseEntry
+
+func (response SetShowcaseCover200JSONResponse) VisitSetShowcaseCoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetShowcaseCoverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SetShowcaseCoverdefaultApplicationProblemPlusJSONResponse) VisitSetShowcaseCoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishShowcaseEntryRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type PublishShowcaseEntryResponseObject interface {
+	VisitPublishShowcaseEntryResponse(w http.ResponseWriter) error
+}
+
+type PublishShowcaseEntry200JSONResponse ShowcaseEntry
+
+func (response PublishShowcaseEntry200JSONResponse) VisitPublishShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishShowcaseEntrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PublishShowcaseEntrydefaultApplicationProblemPlusJSONResponse) VisitPublishShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnpublishShowcaseEntryRequestObject struct {
+	ProjectId ProjectId `json:"projectId"`
+}
+
+type UnpublishShowcaseEntryResponseObject interface {
+	VisitUnpublishShowcaseEntryResponse(w http.ResponseWriter) error
+}
+
+type UnpublishShowcaseEntry200JSONResponse ShowcaseEntry
+
+func (response UnpublishShowcaseEntry200JSONResponse) VisitUnpublishShowcaseEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnpublishShowcaseEntrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UnpublishShowcaseEntrydefaultApplicationProblemPlusJSONResponse) VisitUnpublishShowcaseEntryResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -9781,6 +11541,246 @@ func (response RestoreStepRevisiondefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListShowcaseRequestObject struct {
+	Params ListShowcaseParams
+}
+
+type ListShowcaseResponseObject interface {
+	VisitListShowcaseResponse(w http.ResponseWriter) error
+}
+
+type ListShowcase200JSONResponse ShowcasePage
+
+func (response ListShowcase200JSONResponse) VisitListShowcaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListShowcasedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListShowcasedefaultApplicationProblemPlusJSONResponse) VisitListShowcaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseProjectRequestObject struct {
+	Slug ShowcaseSlug `json:"slug"`
+}
+
+type GetShowcaseProjectResponseObject interface {
+	VisitGetShowcaseProjectResponse(w http.ResponseWriter) error
+}
+
+type GetShowcaseProject200JSONResponse ShowcaseProject
+
+func (response GetShowcaseProject200JSONResponse) VisitGetShowcaseProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetShowcaseProjectdefaultApplicationProblemPlusJSONResponse) VisitGetShowcaseProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContactShowcaseProjectRequestObject struct {
+	Slug ShowcaseSlug `json:"slug"`
+	Body *ContactShowcaseProjectJSONRequestBody
+}
+
+type ContactShowcaseProjectResponseObject interface {
+	VisitContactShowcaseProjectResponse(w http.ResponseWriter) error
+}
+
+type ContactShowcaseProject202JSONResponse ContactAccepted
+
+func (response ContactShowcaseProject202JSONResponse) VisitContactShowcaseProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ContactShowcaseProjectdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ContactShowcaseProjectdefaultApplicationProblemPlusJSONResponse) VisitContactShowcaseProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseImageRequestObject struct {
+	Slug ShowcaseSlug `json:"slug"`
+}
+
+type GetShowcaseImageResponseObject interface {
+	VisitGetShowcaseImageResponse(w http.ResponseWriter) error
+}
+
+type GetShowcaseImage200ImagepngResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetShowcaseImage200ImagepngResponse) VisitGetShowcaseImageResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "image/png")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetShowcaseImagedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetShowcaseImagedefaultApplicationProblemPlusJSONResponse) VisitGetShowcaseImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseFacetsRequestObject struct {
+	Params GetShowcaseFacetsParams
+}
+
+type GetShowcaseFacetsResponseObject interface {
+	VisitGetShowcaseFacetsResponse(w http.ResponseWriter) error
+}
+
+type GetShowcaseFacets200JSONResponse ShowcaseFacets
+
+func (response GetShowcaseFacets200JSONResponse) VisitGetShowcaseFacetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseFacetsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetShowcaseFacetsdefaultApplicationProblemPlusJSONResponse) VisitGetShowcaseFacetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseHighlightsRequestObject struct {
+}
+
+type GetShowcaseHighlightsResponseObject interface {
+	VisitGetShowcaseHighlightsResponse(w http.ResponseWriter) error
+}
+
+type GetShowcaseHighlights200JSONResponse ShowcaseHighlights
+
+func (response GetShowcaseHighlights200JSONResponse) VisitGetShowcaseHighlightsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetShowcaseHighlightsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetShowcaseHighlightsdefaultApplicationProblemPlusJSONResponse) VisitGetShowcaseHighlightsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListStudyGroupsRequestObject struct {
 	Params ListStudyGroupsParams
 }
@@ -10135,6 +12135,12 @@ type StrictServerInterface interface {
 	// GetAiUsage Tokens and estimated cost of AI calls
 	// (GET /admin/ai/usage)
 	GetAiUsage(ctx context.Context, request GetAiUsageRequestObject) (GetAiUsageResponseObject, error)
+	// ListContactRequests Contact requests of the university
+	// (GET /admin/contacts)
+	ListContactRequests(ctx context.Context, request ListContactRequestsRequestObject) (ListContactRequestsResponseObject, error)
+	// ModerateContactRequest Forward a request to the team or reject it
+	// (POST /admin/contacts/{contactId}/moderate)
+	ModerateContactRequest(ctx context.Context, request ModerateContactRequestRequestObject) (ModerateContactRequestResponseObject, error)
 	// CreateImport Upload a CSV or XLSX file for import
 	// (POST /admin/imports)
 	CreateImport(ctx context.Context, request CreateImportRequestObject) (CreateImportResponseObject, error)
@@ -10171,6 +12177,12 @@ type StrictServerInterface interface {
 	// UpdateRubric Change the weights of the rubric
 	// (PUT /admin/rubric)
 	UpdateRubric(ctx context.Context, request UpdateRubricRequestObject) (UpdateRubricResponseObject, error)
+	// ListShowcaseReviews Showcase pages for moderation
+	// (GET /admin/showcase)
+	ListShowcaseReviews(ctx context.Context, request ListShowcaseReviewsRequestObject) (ListShowcaseReviewsResponseObject, error)
+	// ReviewShowcaseEntry Approve or reject a public page
+	// (POST /admin/showcase/{projectId}/review)
+	ReviewShowcaseEntry(ctx context.Context, request ReviewShowcaseEntryRequestObject) (ReviewShowcaseEntryResponseObject, error)
 	// GetAiStatus AI availability for the signed-in member
 	// (GET /ai/status)
 	GetAiStatus(ctx context.Context, request GetAiStatusRequestObject) (GetAiStatusResponseObject, error)
@@ -10291,6 +12303,9 @@ type StrictServerInterface interface {
 	// UpdateProjectComment Edit or resolve a comment
 	// (PATCH /projects/{projectId}/comments/{commentId})
 	UpdateProjectComment(ctx context.Context, request UpdateProjectCommentRequestObject) (UpdateProjectCommentResponseObject, error)
+	// ListProjectContacts Contact requests addressed to the project
+	// (GET /projects/{projectId}/contacts)
+	ListProjectContacts(ctx context.Context, request ListProjectContactsRequestObject) (ListProjectContactsResponseObject, error)
 	// ListEvaluations Evaluation history of a project
 	// (GET /projects/{projectId}/evaluations)
 	ListEvaluations(ctx context.Context, request ListEvaluationsRequestObject) (ListEvaluationsResponseObject, error)
@@ -10327,6 +12342,24 @@ type StrictServerInterface interface {
 	// UpdateProjectPresence Report being in the project and see who else is
 	// (POST /projects/{projectId}/presence)
 	UpdateProjectPresence(ctx context.Context, request UpdateProjectPresenceRequestObject) (UpdateProjectPresenceResponseObject, error)
+	// GetShowcaseEntry The project's showcase page as the team edits it
+	// (GET /projects/{projectId}/showcase)
+	GetShowcaseEntry(ctx context.Context, request GetShowcaseEntryRequestObject) (GetShowcaseEntryResponseObject, error)
+	// UpdateShowcaseEntry Save the showcase page
+	// (PUT /projects/{projectId}/showcase)
+	UpdateShowcaseEntry(ctx context.Context, request UpdateShowcaseEntryRequestObject) (UpdateShowcaseEntryResponseObject, error)
+	// DeleteShowcaseCover Remove the cover image
+	// (DELETE /projects/{projectId}/showcase/cover)
+	DeleteShowcaseCover(ctx context.Context, request DeleteShowcaseCoverRequestObject) (DeleteShowcaseCoverResponseObject, error)
+	// SetShowcaseCover Upload the cover image
+	// (PUT /projects/{projectId}/showcase/cover)
+	SetShowcaseCover(ctx context.Context, request SetShowcaseCoverRequestObject) (SetShowcaseCoverResponseObject, error)
+	// PublishShowcaseEntry Publish the page
+	// (POST /projects/{projectId}/showcase/publish)
+	PublishShowcaseEntry(ctx context.Context, request PublishShowcaseEntryRequestObject) (PublishShowcaseEntryResponseObject, error)
+	// UnpublishShowcaseEntry Take the page off the showcase
+	// (POST /projects/{projectId}/showcase/unpublish)
+	UnpublishShowcaseEntry(ctx context.Context, request UnpublishShowcaseEntryRequestObject) (UnpublishShowcaseEntryResponseObject, error)
 	// ListProjectSteps The state of every step and the progress of the project
 	// (GET /projects/{projectId}/steps)
 	ListProjectSteps(ctx context.Context, request ListProjectStepsRequestObject) (ListProjectStepsResponseObject, error)
@@ -10357,6 +12390,24 @@ type StrictServerInterface interface {
 	// RestoreStepRevision Put an earlier value back
 	// (POST /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore)
 	RestoreStepRevision(ctx context.Context, request RestoreStepRevisionRequestObject) (RestoreStepRevisionResponseObject, error)
+	// ListShowcase The showcase of published projects
+	// (GET /showcase)
+	ListShowcase(ctx context.Context, request ListShowcaseRequestObject) (ListShowcaseResponseObject, error)
+	// GetShowcaseProject A public project page
+	// (GET /showcase/entries/{slug})
+	GetShowcaseProject(ctx context.Context, request GetShowcaseProjectRequestObject) (GetShowcaseProjectResponseObject, error)
+	// ContactShowcaseProject Ask the team to get in touch
+	// (POST /showcase/entries/{slug}/contact)
+	ContactShowcaseProject(ctx context.Context, request ContactShowcaseProjectRequestObject) (ContactShowcaseProjectResponseObject, error)
+	// GetShowcaseImage The link preview image of a page (1200×630)
+	// (GET /showcase/entries/{slug}/og.png)
+	GetShowcaseImage(ctx context.Context, request GetShowcaseImageRequestObject) (GetShowcaseImageResponseObject, error)
+	// GetShowcaseFacets Counts for the showcase filters
+	// (GET /showcase/facets)
+	GetShowcaseFacets(ctx context.Context, request GetShowcaseFacetsRequestObject) (GetShowcaseFacetsResponseObject, error)
+	// GetShowcaseHighlights Live numbers and featured projects for the landing page
+	// (GET /showcase/highlights)
+	GetShowcaseHighlights(ctx context.Context, request GetShowcaseHighlightsRequestObject) (GetShowcaseHighlightsResponseObject, error)
 	// ListStudyGroups Study groups
 	// (GET /study-groups)
 	ListStudyGroups(ctx context.Context, request ListStudyGroupsRequestObject) (ListStudyGroupsResponseObject, error)
@@ -10529,6 +12580,65 @@ func (sh *strictHandler) GetAiUsage(w http.ResponseWriter, r *http.Request, para
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAiUsageResponseObject); ok {
 		if err := validResponse.VisitGetAiUsageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListContactRequests operation middleware
+func (sh *strictHandler) ListContactRequests(w http.ResponseWriter, r *http.Request, params ListContactRequestsParams) {
+	var request ListContactRequestsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListContactRequests(ctx, request.(ListContactRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListContactRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListContactRequestsResponseObject); ok {
+		if err := validResponse.VisitListContactRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ModerateContactRequest operation middleware
+func (sh *strictHandler) ModerateContactRequest(w http.ResponseWriter, r *http.Request, contactId openapi_types.UUID) {
+	var request ModerateContactRequestRequestObject
+
+	request.ContactId = contactId
+
+	var body ModerateContactRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ModerateContactRequest(ctx, request.(ModerateContactRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ModerateContactRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ModerateContactRequestResponseObject); ok {
+		if err := validResponse.VisitModerateContactRequestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -10863,6 +12973,65 @@ func (sh *strictHandler) UpdateRubric(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateRubricResponseObject); ok {
 		if err := validResponse.VisitUpdateRubricResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListShowcaseReviews operation middleware
+func (sh *strictHandler) ListShowcaseReviews(w http.ResponseWriter, r *http.Request, params ListShowcaseReviewsParams) {
+	var request ListShowcaseReviewsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListShowcaseReviews(ctx, request.(ListShowcaseReviewsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListShowcaseReviews")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListShowcaseReviewsResponseObject); ok {
+		if err := validResponse.VisitListShowcaseReviewsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewShowcaseEntry operation middleware
+func (sh *strictHandler) ReviewShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request ReviewShowcaseEntryRequestObject
+
+	request.ProjectId = projectId
+
+	var body ReviewShowcaseEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewShowcaseEntry(ctx, request.(ReviewShowcaseEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewShowcaseEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewShowcaseEntryResponseObject); ok {
+		if err := validResponse.VisitReviewShowcaseEntryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -11984,6 +14153,32 @@ func (sh *strictHandler) UpdateProjectComment(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// ListProjectContacts operation middleware
+func (sh *strictHandler) ListProjectContacts(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request ListProjectContactsRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectContacts(ctx, request.(ListProjectContactsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectContacts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectContactsResponseObject); ok {
+		if err := validResponse.VisitListProjectContactsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListEvaluations operation middleware
 func (sh *strictHandler) ListEvaluations(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request ListEvaluationsRequestObject
@@ -12340,6 +14535,177 @@ func (sh *strictHandler) UpdateProjectPresence(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// GetShowcaseEntry operation middleware
+func (sh *strictHandler) GetShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request GetShowcaseEntryRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetShowcaseEntry(ctx, request.(GetShowcaseEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetShowcaseEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetShowcaseEntryResponseObject); ok {
+		if err := validResponse.VisitGetShowcaseEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateShowcaseEntry operation middleware
+func (sh *strictHandler) UpdateShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId, params UpdateShowcaseEntryParams) {
+	var request UpdateShowcaseEntryRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	var body UpdateShowcaseEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateShowcaseEntry(ctx, request.(UpdateShowcaseEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateShowcaseEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateShowcaseEntryResponseObject); ok {
+		if err := validResponse.VisitUpdateShowcaseEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteShowcaseCover operation middleware
+func (sh *strictHandler) DeleteShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request DeleteShowcaseCoverRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteShowcaseCover(ctx, request.(DeleteShowcaseCoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteShowcaseCover")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteShowcaseCoverResponseObject); ok {
+		if err := validResponse.VisitDeleteShowcaseCoverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetShowcaseCover operation middleware
+func (sh *strictHandler) SetShowcaseCover(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request SetShowcaseCoverRequestObject
+
+	request.ProjectId = projectId
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetShowcaseCover(ctx, request.(SetShowcaseCoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetShowcaseCover")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetShowcaseCoverResponseObject); ok {
+		if err := validResponse.VisitSetShowcaseCoverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishShowcaseEntry operation middleware
+func (sh *strictHandler) PublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request PublishShowcaseEntryRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishShowcaseEntry(ctx, request.(PublishShowcaseEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishShowcaseEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishShowcaseEntryResponseObject); ok {
+		if err := validResponse.VisitPublishShowcaseEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnpublishShowcaseEntry operation middleware
+func (sh *strictHandler) UnpublishShowcaseEntry(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
+	var request UnpublishShowcaseEntryRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnpublishShowcaseEntry(ctx, request.(UnpublishShowcaseEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnpublishShowcaseEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnpublishShowcaseEntryResponseObject); ok {
+		if err := validResponse.VisitUnpublishShowcaseEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListProjectSteps operation middleware
 func (sh *strictHandler) ListProjectSteps(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request ListProjectStepsRequestObject
@@ -12635,6 +15001,167 @@ func (sh *strictHandler) RestoreStepRevision(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// ListShowcase operation middleware
+func (sh *strictHandler) ListShowcase(w http.ResponseWriter, r *http.Request, params ListShowcaseParams) {
+	var request ListShowcaseRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListShowcase(ctx, request.(ListShowcaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListShowcase")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListShowcaseResponseObject); ok {
+		if err := validResponse.VisitListShowcaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetShowcaseProject operation middleware
+func (sh *strictHandler) GetShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	var request GetShowcaseProjectRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetShowcaseProject(ctx, request.(GetShowcaseProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetShowcaseProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetShowcaseProjectResponseObject); ok {
+		if err := validResponse.VisitGetShowcaseProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ContactShowcaseProject operation middleware
+func (sh *strictHandler) ContactShowcaseProject(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	var request ContactShowcaseProjectRequestObject
+
+	request.Slug = slug
+
+	var body ContactShowcaseProjectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ContactShowcaseProject(ctx, request.(ContactShowcaseProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ContactShowcaseProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ContactShowcaseProjectResponseObject); ok {
+		if err := validResponse.VisitContactShowcaseProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetShowcaseImage operation middleware
+func (sh *strictHandler) GetShowcaseImage(w http.ResponseWriter, r *http.Request, slug ShowcaseSlug) {
+	var request GetShowcaseImageRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetShowcaseImage(ctx, request.(GetShowcaseImageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetShowcaseImage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetShowcaseImageResponseObject); ok {
+		if err := validResponse.VisitGetShowcaseImageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetShowcaseFacets operation middleware
+func (sh *strictHandler) GetShowcaseFacets(w http.ResponseWriter, r *http.Request, params GetShowcaseFacetsParams) {
+	var request GetShowcaseFacetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetShowcaseFacets(ctx, request.(GetShowcaseFacetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetShowcaseFacets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetShowcaseFacetsResponseObject); ok {
+		if err := validResponse.VisitGetShowcaseFacetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetShowcaseHighlights operation middleware
+func (sh *strictHandler) GetShowcaseHighlights(w http.ResponseWriter, r *http.Request) {
+	var request GetShowcaseHighlightsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetShowcaseHighlights(ctx, request.(GetShowcaseHighlightsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetShowcaseHighlights")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetShowcaseHighlightsResponseObject); ok {
+		if err := validResponse.VisitGetShowcaseHighlightsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListStudyGroups operation middleware
 func (sh *strictHandler) ListStudyGroups(w http.ResponseWriter, r *http.Request, params ListStudyGroupsParams) {
 	var request ListStudyGroupsRequestObject
@@ -12869,290 +15396,335 @@ func (sh *strictHandler) GetCurrentTenant(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"Fdggsa3DYf1XtoZDdd5K9YYPbz/8/wEAAP//",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

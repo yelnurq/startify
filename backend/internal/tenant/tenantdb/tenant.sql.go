@@ -188,6 +188,51 @@ func (q *Queries) ListEnabledOidcProviders(ctx context.Context, tenantID uuid.UU
 	return items, nil
 }
 
+const listTenantsByIDs = `-- name: ListTenantsByIDs :many
+SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id,
+       coalesce((SELECT d.domain FROM tenant_domains d WHERE d.tenant_id = t.id AND d.is_primary LIMIT 1), '')::text AS primary_domain
+  FROM tenants t
+ WHERE t.id = ANY($1::uuid[])
+`
+
+type ListTenantsByIDsRow struct {
+	ID            uuid.UUID
+	Slug          string
+	Name          json.RawMessage
+	ShortName     json.RawMessage
+	PrimaryColor  string
+	LogoFileID    *uuid.UUID
+	PrimaryDomain string
+}
+
+func (q *Queries) ListTenantsByIDs(ctx context.Context, ids []uuid.UUID) ([]ListTenantsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTenantsByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTenantsByIDsRow{}
+	for rows.Next() {
+		var i ListTenantsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.ShortName,
+			&i.PrimaryColor,
+			&i.LogoFileID,
+			&i.PrimaryDomain,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertTenant = `-- name: UpsertTenant :one
 INSERT INTO tenants (slug, name, short_name, default_locale, primary_color)
 VALUES ($1, $2, $3, $4, $5)

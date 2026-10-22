@@ -1,5 +1,5 @@
 // Package gotenberg converts documents with a Gotenberg server: HTML pages
-// into PDF (Chromium) and office files into PDF (LibreOffice).
+// into PDF or images (Chromium) and office files into PDF (LibreOffice).
 package gotenberg
 
 import (
@@ -10,6 +10,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,6 +46,15 @@ func (c *Client) HTMLToPDF(ctx context.Context, html []byte, page Page) ([]byte,
 		fields["preferCssPageSize"] = "true"
 	}
 	return c.convert(ctx, "/forms/chromium/convert/html", "index.html", html, fields)
+}
+
+// HTMLToPNG takes a screenshot of a self-contained HTML page of the given
+// size in CSS pixels.
+func (c *Client) HTMLToPNG(ctx context.Context, html []byte, width, height int) ([]byte, error) {
+	fields := map[string]string{
+		"width": strconv.Itoa(width), "height": strconv.Itoa(height), "clip": "true", "format": "png", "optimizeForSpeed": "true",
+	}
+	return c.convert(ctx, "/forms/chromium/screenshot/html", "index.html", html, fields)
 }
 
 // OfficeToPDF converts a document such as PPTX or DOCX.

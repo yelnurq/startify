@@ -322,6 +322,27 @@ func (s *Service) MemberIDs(ctx context.Context, projectID uuid.UUID) (map[uuid.
 	return out, nil
 }
 
+// Count counts the projects of the university (a public figure of the
+// landing page).
+func (s *Service) Count(ctx context.Context) (int, error) {
+	var n int64
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		n, err = s.q(ctx).CountProjects(ctx)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("project: count: %w", err)
+	}
+	return int(n), nil
+}
+
+// SetVisibility records who can see the project (called by the showcase in
+// its transaction).
+func (s *Service) SetVisibility(ctx context.Context, projectID uuid.UUID, visibility string) error {
+	return s.q(ctx).SetVisibility(ctx, projectdb.SetVisibilityParams{ID: projectID, Visibility: visibility})
+}
+
 // SetProgress stores the denormalised progress (called by the incubator in
 // its transaction).
 func (s *Service) SetProgress(ctx context.Context, projectID uuid.UUID, completed int, current string) error {

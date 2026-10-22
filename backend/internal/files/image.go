@@ -170,3 +170,93 @@ func tiffOrientation(t []byte) int {
 	}
 	return 1
 }
+
+// Cover limits: covers are 16:9.
+const (
+	CoverWidth    = 1600
+	CoverHeight   = 900
+	coverMinWidth = 480
+)
+
+// ProcessCover turns an uploaded picture into a 16:9 JPEG of at most
+// CoverWidth×CoverHeight: it applies the EXIF orientation, crops the centre,
+// scales it and re-encodes it without metadata.
+func ProcessCover(data []byte) ([]byte, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, apperr.New(apperr.KindValidation, "files.unsupported_type",
+			"upload a JPEG, PNG, WebP or GIF image")
+	}
+	if cfg.Width*cfg.Height > avatarMaxPixels {
+		return nil, apperr.New(apperr.KindValidation, "files.image_too_large", "the image has too many pixels").
+			WithParams(map[string]any{"max_megapixels": avatarMaxPixels / 1_000_000})
+	}
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, apperr.New(apperr.KindValidation, "files.image_invalid", "the image is damaged")
+	}
+	src := image.NewRGBA(img.Bounds())
+	xdraw.Draw(src, src.Bounds(), img, img.Bounds().Min, xdraw.Src)
+	oriented := src
+	if format == "jpeg" {
+		oriented = orientRect(src, jpegOrientation(data))
+	}
+	b := oriented.Bounds()
+	if max(b.Dx(), b.Dy()) < coverMinWidth {
+		return nil, apperr.New(apperr.KindValidation, "files.image_too_small", "the image is too small").
+			WithParams(map[string]any{"min_pixels": coverMinWidth})
+	}
+	// The largest 16:9 rectangle in the centre.
+	w, h := b.Dx(), b.Dx()*CoverHeight/CoverWidth
+	if h > b.Dy() {
+		w, h = b.Dy()*CoverWidth/CoverHeight, b.Dy()
+	}
+	x0, y0 := b.Min.X+(b.Dx()-w)/2, b.Min.Y+(b.Dy()-h)/2
+	outW := min(w, CoverWidth)
+	outH := outW * CoverHeight / CoverWidth
+	dst := image.NewRGBA(image.Rect(0, 0, outW, outH))
+	xdraw.Draw(dst, dst.Bounds(), image.NewUniform(color.White), image.Point{}, xdraw.Src)
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), oriented, image.Rect(x0, y0, x0+w, y0+h), xdraw.Over, nil)
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 85}); err != nil {
+		return nil, apperr.Internal(err)
+	}
+	return buf.Bytes(), nil
+}
+
+// orientRect applies an EXIF orientation (1-8) to an image of any shape;
+// orientations 5-8 swap width and height.
+func orientRect(src *image.RGBA, orientation int) *image.RGBA {
+	if orientation <= 1 || orientation > 8 {
+		return src
+	}
+	w, h := src.Bounds().Dx(), src.Bounds().Dy()
+	dw, dh := w, h
+	if orientation >= 5 {
+		dw, dh = h, w
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, dw, dh))
+	for y := range dh {
+		for x := range dw {
+			var sx, sy int
+			switch orientation {
+			case 2:
+				sx, sy = w-1-x, y
+			case 3:
+				sx, sy = w-1-x, h-1-y
+			case 4:
+				sx, sy = x, h-1-y
+			case 5:
+				sx, sy = y, x
+			case 6:
+				sx, sy = y, h-1-x
+			case 7:
+				sx, sy = w-1-y, h-1-x
+			case 8:
+				sx, sy = w-1-y, x
+			}
+			dst.SetRGBA(x, y, src.RGBAAt(src.Bounds().Min.X+sx, src.Bounds().Min.Y+sy))
+		}
+	}
+	return dst
+}

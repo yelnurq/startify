@@ -35,6 +35,18 @@ func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countStudents = `-- name: CountStudents :one
+SELECT count(*) FROM memberships
+ WHERE tenant_id = app_current_tenant() AND 'student' = ANY(roles) AND status = 'active'
+`
+
+func (q *Queries) CountStudents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countStudents)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMembership = `-- name: CreateMembership :one
 INSERT INTO memberships (tenant_id, user_id, roles, status, consent_version, consent_at)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -349,6 +361,45 @@ func (q *Queries) ListMembers(ctx context.Context, arg ListMembersParams) ([]Lis
 			&i.Course,
 			&i.JoinedAt,
 			&i.LastActiveAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecipients = `-- name: ListRecipients :many
+SELECT u.id, u.email, u.full_name, u.locale
+  FROM users u
+  JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant() AND m.status = 'active'
+ WHERE u.id = ANY($1::uuid[]) AND u.status = 'active'
+`
+
+type ListRecipientsRow struct {
+	ID       uuid.UUID
+	Email    string
+	FullName string
+	Locale   string
+}
+
+func (q *Queries) ListRecipients(ctx context.Context, ids []uuid.UUID) ([]ListRecipientsRow, error) {
+	rows, err := q.db.Query(ctx, listRecipients, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecipientsRow{}
+	for rows.Next() {
+		var i ListRecipientsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.FullName,
+			&i.Locale,
 		); err != nil {
 			return nil, err
 		}

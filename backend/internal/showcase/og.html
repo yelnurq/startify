@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+    background: #FAFBFC; color: #0B1220; position: relative;
+  }
+  .band { position: absolute; inset: 0 auto 0 0; width: 18px; background: {{.Color}}; }
+  .glow {
+    position: absolute; right: -160px; top: -200px; width: 760px; height: 760px; border-radius: 50%;
+    background: radial-gradient(circle, {{.Color}}33 0%, {{.Color}}00 70%);
+  }
+  .content { position: absolute; left: 82px; top: 64px; bottom: 64px; width: 640px;
+    display: flex; flex-direction: column; }
+  .university { display: flex; align-items: center; gap: 14px; font-size: 26px; font-weight: 600; color: #374151; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: {{.Color}}; }
+  h1 { margin-top: 40px; font-size: {{if gt .TitleLength 40}}50px{{else if gt .TitleLength 18}}58px{{else}}66px{{end}}; line-height: 1.08; font-weight: 800;
+    letter-spacing: -0.02em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .tagline { margin-top: 22px; font-size: 28px; line-height: 1.35; color: #4B5563;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .chips { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip { font-size: 22px; font-weight: 600; padding: 10px 20px; border-radius: 999px; background: #EEF1F5; color: #1F2937; }
+  .score { background: {{.Color}}; color: #fff; }
+  .cover { position: absolute; right: 64px; top: 64px; width: 408px; height: 502px; border-radius: 28px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(11, 18, 32, 0.18); }
+  .cover img { width: 100%; height: 100%; object-fit: cover; }
+  .route { position: absolute; right: 72px; top: 92px; width: 400px; height: 400px; }
+  .route path { fill: none; stroke: #D5DCE5; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 2 16; }
+  .route .done { fill: {{.Color}}; }
+  .route .todo { fill: #FFFFFF; stroke: #D5DCE5; stroke-width: 5; }
+  .route .now { fill: {{.Color}}; stroke: #FFFFFF; stroke-width: 8; }
+  .route .halo { fill: {{.Color}}; opacity: 0.18; }
+  .route text { font-size: 22px; font-weight: 700; fill: #374151; }
+  .brand { position: absolute; right: {{if .Cover}}500px{{else}}64px{{end}}; bottom: 64px; font-size: 24px; font-weight: 800;
+    letter-spacing: 0.02em; color: #9CA3AF; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="band"></div>
+  <div class="content">
+    <div class="university"><span class="dot"></span>{{.University}}</div>
+    <h1>{{.Title}}</h1>
+    {{if .Tagline}}<p class="tagline">{{.Tagline}}</p>{{end}}
+    <div class="chips">
+      <span class="chip">{{.Stage}}</span>
+      <span class="chip">{{.Industry}}</span>
+      {{if .Score}}<span class="chip score">{{.ScoreLabel}} {{.Score}}/100{{if .Level}} · {{.Level}}{{end}}</span>{{end}}
+    </div>
+  </div>
+  {{if .Cover}}<div class="cover"><img src="{{.Cover}}" alt=""></div>{{else}}
+  <svg class="route" viewBox="0 0 400 400" aria-hidden="true">
+    <path d="M40 350 C 140 350, 120 250, 200 250 S 260 150, 320 150 S 360 60, 360 40"/>
+    {{range .Route}}
+      {{if .Current}}<circle class="halo" cx="{{.X}}" cy="{{.Y}}" r="34"/><circle class="now" cx="{{.X}}" cy="{{.Y}}" r="18"/>
+      {{else if .Done}}<circle class="done" cx="{{.X}}" cy="{{.Y}}" r="13"/>
+      {{else}}<circle class="todo" cx="{{.X}}" cy="{{.Y}}" r="12"/>{{end}}
+      <text x="{{.LabelX}}" y="{{.LabelY}}" text-anchor="{{.Anchor}}">{{.Label}}</text>
+    {{end}}
+  </svg>{{end}}
+  <div class="brand">QADAM</div>
+</body>
+</html>

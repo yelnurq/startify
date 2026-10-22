@@ -34,6 +34,7 @@ var tenantTables = []string{
 	"projects", "project_members", "project_step_data", "project_revisions", "project_comments",
 	"ai_conversations", "ai_messages", "project_materials",
 	"evaluation_rubrics", "evaluations", "evaluation_criteria_scores", "evaluation_overrides",
+	"contact_requests",
 }
 
 // counter counts the rows a data scope can see.
@@ -146,6 +147,20 @@ func TestDemoIsIdempotentAndIsolated(t *testing.T) {
 		if n := c.rows(ctx, table); n != 0 {
 			t.Errorf("%s: %d rows visible without a tenant", table, n)
 		}
+	}
+	// Showcase pages are tenant data too, except published public pages:
+	// the national showcase reads them from every university.
+	public := 0
+	for _, page := range KazUTBShowcase {
+		if page.Public && page.Status == "published" {
+			public++
+		}
+	}
+	if n := c.rows(k, "showcase_entries"); n != len(KazUTBShowcase) {
+		t.Fatalf("kazutb showcase pages after two runs: %d", n)
+	}
+	if theirs, none := c.rows(s, "showcase_entries"), c.rows(ctx, "showcase_entries"); theirs != public || none != public {
+		t.Fatalf("showcase pages outside kazutb: sandbox %d, no tenant %d, want the %d public ones", theirs, none, public)
 	}
 	if c.rows(s, "memberships") != 1 || c.rows(s, "faculties") != 0 {
 		t.Fatal("sandbox sees KazUTB data")
