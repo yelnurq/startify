@@ -24,6 +24,8 @@ import {
   Card,
   cn,
   EmptyState,
+  Illustration,
+  type IllustrationName,
   ProgressRing,
   SkeletonText,
   StageTrack,
@@ -184,6 +186,14 @@ function ActivityRow({
   );
 }
 
+/** Drawings of the incubator's stages, as on the landing page. */
+const STAGE_ART: Record<string, IllustrationName> = {
+  idea: 'idea',
+  market: 'target',
+  product: 'lab',
+  launch: 'pitch',
+};
+
 /** The project at a glance: stages, the next step, milestones, activity, materials. */
 export function ProjectOverview({
   project,
@@ -200,6 +210,8 @@ export function ProjectOverview({
   const progress = project.progress;
   const current = findStep(template, progress.current_step);
   const allDone = progress.completed_steps >= progress.total_steps;
+  const activeStage = progress.stages.find((s) => s.completed < s.total)?.key;
+  const stageArt = allDone ? 'rocket' : (STAGE_ART[activeStage ?? ''] ?? 'idea');
   const stages = template.stages.map((stage) => {
     const p = progress.stages.find((s) => s.key === stage.key);
     return {
@@ -219,8 +231,8 @@ export function ProjectOverview({
         {project.tagline && <p className="text-lg text-fg-muted">{project.tagline}</p>}
       </header>
 
-      <Card className="overflow-hidden">
-        <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-[auto_1fr] sm:items-center">
+      <Card className="@container overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-[auto_1fr] sm:items-center @2xl:grid-cols-[auto_1fr_11rem]">
           <ProgressRing value={progress.percent} size={96} stroke={8} label={t('nav.progress')}>
             <span className="text-lg">{progress.percent}%</span>
           </ProgressRing>
@@ -247,6 +259,7 @@ export function ProjectOverview({
               </span>
             )}
           </div>
+          <Illustration name={stageArt} className="hidden w-44 @2xl:block" />
         </div>
         <div className="border-t border-border bg-surface-raised px-6 py-4">
           <StageTrack stages={stages} label={t('overview.stages')} />

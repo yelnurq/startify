@@ -1,7 +1,8 @@
 /*
- * Qadam illustration set for empty states and onboarding. One visual grammar:
- * a soft background blob, objects drawn with a 2.5px ink outline, sky blue and
- * gold accents from the flag, small four-point sparkles. Colours come from the
+ * Qadam illustration set for empty states, onboarding and the stories of the
+ * pages. One visual grammar: a soft background blob, objects drawn with a
+ * 2.5px ink outline, teal and gold accents of the university's palette, small
+ * four-point sparkles. Colours come from the
  * .illustration palette in base.css, so every drawing adapts to the theme.
  */
 import type { ReactNode } from 'react';
@@ -400,6 +401,470 @@ export function CertificateIllustration({ className }: IllustrationProps) {
   );
 }
 
+/** Launch: a rocket lifts off above the clouds. */
+export function RocketIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <g stroke={LINE} strokeWidth="2.5" strokeLinecap="round">
+        <path d="M86 44v14" />
+        <path d="M154 34v12" />
+        <path d="M74 80v8" />
+        <path d="M168 72v10" />
+      </g>
+      <g transform="translate(120 70)">
+        <path d="M0-50c15 12 20 34 16 60H-16c-4-26 1-48 16-60Z" fill={PAPER} {...stroke} />
+        <circle cy="-18" r="8" fill={BRAND} {...stroke} />
+        <path d="M-16 0l-14 22 15-2" fill={BRAND} {...stroke} />
+        <path d="M16 0l14 22-15-2" fill={BRAND} {...stroke} />
+        <path d="M-9 12c1 13 5 23 9 30c4-7 8-17 9-30Z" fill={GOLD} {...stroke} strokeWidth={2} />
+      </g>
+      <path
+        d="M66 150c-9 0-15-6-15-13s6-12 13-12c2-8 9-13 17-13c9 0 16 6 17 14c7 0 12 5 12 12s-5 12-12 12Z"
+        fill={PAPER}
+        {...stroke}
+      />
+      <path
+        d="M150 150c-7 0-12-5-12-11s5-11 11-11c2-7 8-11 15-11c8 0 14 6 15 13c6 0 10 4 10 10s-4 10-10 10Z"
+        fill={TINT_SOFT}
+        {...stroke}
+      />
+      <Sparkle x={196} y={40} s={0.9} />
+      <Sparkle x={46} y={60} s={0.6} fill={BRAND} />
+      <Sparkle x={200} y={104} s={0.6} />
+    </Frame>
+  );
+}
+
+/** The market: an arrow in the bullseye. */
+export function TargetIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cx={112} cy={158} rx={42} />
+      <path d="M98 140l-9 16M126 140l9 16" {...stroke} />
+      <circle cx="112" cy="92" r="50" fill={PAPER} {...stroke} />
+      <circle cx="112" cy="92" r="36" fill={TINT} {...stroke} />
+      <circle cx="112" cy="92" r="22" fill={PAPER} {...stroke} />
+      <circle cx="112" cy="92" r="9" fill={GOLD} {...stroke} />
+      <path d="M114 90l58-40" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+      <path d="M168 53l2-17 9 9Z" fill={BRAND} {...stroke} strokeWidth={2} />
+      <path d="M168 53l17-3-8 10Z" fill={BRAND} {...stroke} strokeWidth={2} />
+      <Sparkle x={58} y={40} s={0.8} />
+      <Sparkle x={196} y={120} s={0.7} fill={BRAND} />
+      <Sparkle x={190} y={84} s={0.5} />
+    </Frame>
+  );
+}
+
+/** Partnership: the university and a company agree. */
+export function PartnersIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <Ground cy={152} rx={78} />
+      <path d="M46 148V98l28-18 28 18v50Z" fill={PAPER} {...stroke} />
+      <path
+        d="M60 110v30M74 110v30M88 110v30"
+        stroke={LINE}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path d="M74 80V64" {...stroke} />
+      <path d="M74 64h14l-4 5 4 5H74" fill={GOLD} {...stroke} strokeWidth={2} />
+      <path d="M162 108v-8a5 5 0 0 1 5-5h12a5 5 0 0 1 5 5v8" {...stroke} />
+      <rect x="146" y="106" width="54" height="42" rx="8" fill={TINT_SOFT} {...stroke} />
+      <path d="M146 124h54" stroke={INK} strokeWidth="2.5" />
+      <rect x="167" y="119" width="12" height="10" rx="2" fill={GOLD} {...stroke} strokeWidth={2} />
+      <path
+        d="M104 120c12-24 30-24 42 0"
+        stroke={LINE}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray="2 7"
+      />
+      <circle cx="124" cy="86" r="16" fill={BRAND} stroke={PAPER} strokeWidth="3" />
+      <path
+        d="M117 86l5 5 9-10"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Sparkle x={200} y={70} s={0.8} />
+      <Sparkle x={40} y={66} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** The university: a campus building with columns and a flag. */
+export function UniversityIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <path d="M120 44V24" {...stroke} />
+      <path d="M120 24h18l-4 6 4 6h-18" fill={BRAND} {...stroke} strokeWidth={2} />
+      <path d="M52 78l68-34 68 34Z" fill={TINT} {...stroke} />
+      <circle cx="120" cy="64" r="7" fill={GOLD} {...stroke} strokeWidth={2} />
+      <rect x="58" y="78" width="124" height="10" rx="2" fill={PAPER} {...stroke} />
+      <rect x="68" y="88" width="12" height="46" rx="2" fill={PAPER} {...stroke} />
+      <rect x="92" y="88" width="12" height="46" rx="2" fill={PAPER} {...stroke} />
+      <rect x="136" y="88" width="12" height="46" rx="2" fill={PAPER} {...stroke} />
+      <rect x="160" y="88" width="12" height="46" rx="2" fill={PAPER} {...stroke} />
+      <path d="M112 134v-22a8 8 0 0 1 16 0v22" fill={GOLD_SOFT} {...stroke} />
+      <rect x="50" y="134" width="140" height="10" rx="2" fill={PAPER} {...stroke} />
+      <rect x="42" y="144" width="156" height="9" rx="2" fill={SOFT} {...stroke} />
+      <Sparkle x={196} y={52} s={0.8} />
+      <Sparkle x={42} y={56} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Demo Day: a pitch deck on stage under a spotlight. */
+export function PitchIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <path d="M120 24l-52 124h104Z" fill={GOLD_SOFT} />
+      <path d="M110 14h20l-4 10h-12Z" fill={INK} />
+      <path d="M96 114l-12 36M144 114l12 36M120 114v30" {...stroke} />
+      <rect x="62" y="40" width="116" height="74" rx="8" fill={PAPER} {...stroke} />
+      <rect x="78" y="52" width="40" height="6" rx="3" fill={LINE} />
+      <rect x="78" y="86" width="12" height="16" rx="2" fill={TINT} />
+      <rect x="96" y="76" width="12" height="26" rx="2" fill={TINT} />
+      <rect x="114" y="66" width="12" height="36" rx="2" fill={BRAND} />
+      <path
+        d="M136 98l11-14 10 6 10-18"
+        stroke={GOLD}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="54" y="148" width="132" height="8" rx="3" fill={SOFT} {...stroke} />
+      <Sparkle x={198} y={56} s={0.8} />
+      <Sparkle x={42} y={86} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Deadlines: a calendar with a marked day and a clock. */
+export function CalendarIllustration({ className }: IllustrationProps) {
+  const cells = [68, 90, 112, 134];
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cx={112} cy={156} rx={58} />
+      <rect x="52" y="44" width="116" height="104" rx="12" fill={PAPER} {...stroke} />
+      <path d="M52 56a12 12 0 0 1 12-12h92a12 12 0 0 1 12 12v12H52Z" fill={BRAND} {...stroke} />
+      <path d="M80 34v18M140 34v18" {...stroke} strokeWidth={4} />
+      {[82, 102, 122].map((y) =>
+        cells.map((x) => (
+          <rect
+            key={`${x}-${y}`}
+            x={x}
+            y={y}
+            width="14"
+            height="11"
+            rx="3"
+            fill={x === 112 && y === 102 ? GOLD : LINE}
+          />
+        )),
+      )}
+      <circle cx="170" cy="124" r="24" fill={TINT_SOFT} {...stroke} />
+      <path d="M170 110v14l9 6" {...stroke} />
+      <Sparkle x={196} y={64} s={0.8} />
+      <Sparkle x={40} y={110} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Security: a shield with a lock. */
+export function ShieldIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <Ground cy={158} rx={42} />
+      <path d="M120 28l46 16v34c0 34-20 56-46 68c-26-12-46-34-46-68V44Z" fill={PAPER} {...stroke} />
+      <path d="M120 42l32 11v25c0 24-13 40-32 50c-19-10-32-26-32-50V53Z" fill={TINT} />
+      <path d="M110 80v-7a10 10 0 0 1 20 0v7" {...stroke} />
+      <rect x="104" y="80" width="32" height="26" rx="5" fill={GOLD} {...stroke} />
+      <circle cx="120" cy="91" r="3.5" fill={INK} />
+      <path d="M120 94v5" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+      <Sparkle x={186} y={50} s={0.8} />
+      <Sparkle x={54} y={110} s={0.6} fill={BRAND} />
+      <Sparkle x={190} y={118} s={0.5} />
+    </Frame>
+  );
+}
+
+/** The route of a project: a map with a path and a pin. */
+export function RouteIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <path d="M44 62l48-14 56 14 48-14v90l-48 14-56-14-48 14Z" fill={PAPER} {...stroke} />
+      <path d="M92 48v90M148 62v90" stroke={LINE} strokeWidth="2.5" />
+      <path
+        d="M62 128c14-6 22-24 38-22s22 22 40 14s20-30 34-36"
+        stroke={BRAND}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeDasharray="2 8"
+      />
+      <circle cx="62" cy="128" r="5" fill={GOLD} {...stroke} strokeWidth={2} />
+      <path
+        d="M176 94c-10-12-16-20-16-28a16 16 0 0 1 32 0c0 8-6 16-16 28Z"
+        fill={GOLD}
+        {...stroke}
+      />
+      <circle cx="176" cy="66" r="6" fill={PAPER} {...stroke} strokeWidth={2} />
+      <Sparkle x={206} y={34} s={0.8} />
+      <Sparkle x={40} y={40} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** A good fit: two puzzle pieces come together. */
+export function PuzzleIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <Ground cy={154} rx={56} />
+      <path d="M58 70h44v16a10 10 0 0 1 0 20v16H58Z" fill={TINT} {...stroke} />
+      <g transform="translate(10 -12) rotate(8 144 96)">
+        <path d="M124 70h44v52h-44v-16a10 10 0 0 0 0-20Z" fill={GOLD_SOFT} {...stroke} />
+        <circle cx="146" cy="96" r="5" fill={GOLD} />
+      </g>
+      <circle cx="80" cy="96" r="5" fill={BRAND} />
+      <g stroke={LINE} strokeWidth="2.5" strokeLinecap="round">
+        <path d="M184 52l8-6" />
+        <path d="M188 68h9" />
+        <path d="M180 38l3-9" />
+      </g>
+      <Sparkle x={120} y={40} s={0.8} />
+      <Sparkle x={46} y={136} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Grants and investment: coins, a note and a rising arrow. */
+export function FundingIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cx={112} cy={156} rx={64} />
+      <g transform="rotate(-12 174 74)">
+        <rect x="142" y="56" width="64" height="38" rx="6" fill={TINT_SOFT} {...stroke} />
+        <circle cx="174" cy="75" r="9" fill={PAPER} {...stroke} strokeWidth={2} />
+        <path d="M150 64h8M190 86h8" stroke={LINE} strokeWidth="2.5" strokeLinecap="round" />
+      </g>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <rect
+          key={`b${String(i)}`}
+          x="98"
+          y={138 - i * 11}
+          width="46"
+          height="13"
+          rx="6.5"
+          fill={GOLD}
+          {...stroke}
+        />
+      ))}
+      {[0, 1, 2, 3].map((i) => (
+        <rect
+          key={`a${String(i)}`}
+          x="56"
+          y={138 - i * 11}
+          width="46"
+          height="13"
+          rx="6.5"
+          fill={GOLD}
+          {...stroke}
+        />
+      ))}
+      <path d="M176 144v-38" stroke={BRAND} strokeWidth="4" strokeLinecap="round" />
+      <path
+        d="M165 116l11-12 11 12"
+        stroke={BRAND}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Sparkle x={48} y={84} s={0.8} />
+      <Sparkle x={206} y={128} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** The startup passport: a document with a photo, a score and a QR code. */
+export function PassportIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cy={156} rx={58} />
+      <rect x="56" y="40" width="128" height="106" rx="12" fill={PAPER} {...stroke} />
+      <path d="M56 52a12 12 0 0 1 12-12h104a12 12 0 0 1 12 12v8H56Z" fill={BRAND} {...stroke} />
+      <rect x="70" y="72" width="34" height="42" rx="6" fill={TINT} {...stroke} />
+      <circle cx="87" cy="87" r="6" fill={PAPER} {...stroke} strokeWidth={2} />
+      <path d="M77 110c1-7 5-10 10-10s9 3 10 10" fill={PAPER} {...stroke} strokeWidth={2} />
+      <rect x="114" y="74" width="54" height="6" rx="3" fill={LINE} />
+      <rect x="114" y="88" width="40" height="6" rx="3" fill={LINE} />
+      <rect x="114" y="102" width="28" height="10" rx="5" fill={GOLD} />
+      <rect x="70" y="126" width="62" height="6" rx="3" fill={LINE} />
+      <rect
+        x="146"
+        y="112"
+        width="26"
+        height="26"
+        rx="3"
+        stroke={INK}
+        strokeWidth="2"
+        fill={PAPER}
+      />
+      <rect x="150" y="116" width="7" height="7" rx="1" fill={INK} />
+      <rect x="161" y="116" width="7" height="7" rx="1" fill={INK} />
+      <rect x="150" y="127" width="7" height="7" rx="1" fill={INK} />
+      <rect x="162" y="128" width="4" height="4" rx="1" fill={BRAND} />
+      <Sparkle x={200} y={46} s={0.8} />
+      <Sparkle x={42} y={120} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** The prototype: a flask with bubbles and a gear. */
+export function LabIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <Ground cx={116} cy={156} rx={46} />
+      <path
+        d="M108 42h24v32l28 56a12 12 0 0 1-10.7 17.4H90.7A12 12 0 0 1 80 130l28-56Z"
+        fill={PAPER}
+        {...stroke}
+      />
+      <path d="M93 112h54l11 20a8 8 0 0 1-7 12H89a8 8 0 0 1-7-12Z" fill={BRAND} opacity="0.85" />
+      <circle cx="106" cy="126" r="4" fill={PAPER} />
+      <circle cx="124" cy="132" r="3" fill={PAPER} />
+      <circle cx="134" cy="120" r="2.5" fill={PAPER} />
+      <rect x="102" y="34" width="36" height="9" rx="4.5" fill={SOFT} {...stroke} />
+      <circle cx="114" cy="22" r="4" stroke={BRAND} strokeWidth="2.5" />
+      <circle cx="128" cy="14" r="2.5" stroke={BRAND} strokeWidth="2.5" />
+      <g transform="translate(176 70)">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+          <rect
+            key={angle}
+            x="-3.5"
+            y="-21"
+            width="7"
+            height="9"
+            rx="1.5"
+            fill={GOLD}
+            transform={`rotate(${String(angle)})`}
+            {...stroke}
+            strokeWidth={2}
+          />
+        ))}
+        <circle r="14" fill={GOLD_SOFT} {...stroke} />
+        <circle r="5" fill={PAPER} {...stroke} strokeWidth={2} />
+      </g>
+      <Sparkle x={58} y={58} s={0.8} />
+      <Sparkle x={196} y={124} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Live voting: a ballot drops into a box. */
+export function VoteIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cy={158} rx={58} />
+      <path d="M66 96h108v52a8 8 0 0 1-8 8H74a8 8 0 0 1-8-8Z" fill={TINT} {...stroke} />
+      <g transform="rotate(-8 120 64)">
+        <rect x="98" y="34" width="44" height="58" rx="5" fill={PAPER} {...stroke} />
+        <path
+          d="M108 60l7 7 14-15"
+          stroke={SUCCESS}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <rect x="58" y="86" width="124" height="14" rx="4" fill={PAPER} {...stroke} />
+      <rect x="98" y="91" width="44" height="4" rx="2" fill={INK} />
+      <circle cx="120" cy="128" r="13" fill={GOLD} {...stroke} strokeWidth={2} />
+      <Sparkle x={120} y={128} s={0.9} fill="#fff" />
+      <Sparkle x={196} y={50} s={0.8} />
+      <Sparkle x={44} y={64} s={0.6} fill={BRAND} />
+    </Frame>
+  );
+}
+
+/** Traction: a seedling grows next to a rising line. */
+export function GrowthIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob />
+      <Ground cx={112} cy={156} rx={46} />
+      <path
+        d="M146 132l16-20 12 6 20-28"
+        stroke={BRAND}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M184 88l11-3-1 11"
+        stroke={BRAND}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M112 112V62" stroke={SUCCESS} strokeWidth="3.5" strokeLinecap="round" />
+      <path
+        d="M112 90c-4-15-17-21-31-19c2 15 15 23 31 19Z"
+        fill={SUCCESS}
+        {...stroke}
+        strokeWidth={2}
+      />
+      <path
+        d="M112 74c4-15 17-21 31-19c-2 15-15 23-31 19Z"
+        fill={SUCCESS}
+        {...stroke}
+        strokeWidth={2}
+      />
+      <circle cx="112" cy="58" r="7" fill={GOLD_SOFT} {...stroke} strokeWidth={2} />
+      <path d="M90 120h44l-6 34h-32Z" fill={GOLD} {...stroke} />
+      <rect x="85" y="110" width="54" height="12" rx="3" fill={GOLD} {...stroke} />
+      <Sparkle x={60} y={46} s={0.8} />
+      <Sparkle x={50} y={118} s={0.6} fill={BRAND} />
+      <Sparkle x={168} y={40} s={0.6} />
+    </Frame>
+  );
+}
+
+/** Announcements: a megaphone with sound waves. */
+export function MegaphoneIllustration({ className }: IllustrationProps) {
+  return (
+    <Frame className={className}>
+      <Blob variant={1} />
+      <Ground cx={110} cy={156} rx={50} />
+      <g transform="rotate(-14 112 96)">
+        <path d="M96 104l8 30h14l-6-26" fill={GOLD} {...stroke} strokeWidth={2} />
+        <rect x="62" y="80" width="20" height="32" rx="6" fill={BRAND} {...stroke} />
+        <path d="M80 82l70-32v92l-70-32Z" fill={PAPER} {...stroke} />
+        <ellipse cx="150" cy="96" rx="9" ry="46" fill={TINT} {...stroke} />
+      </g>
+      <g stroke={GOLD} strokeWidth="3.5" strokeLinecap="round">
+        <path d="M178 54c8 8 10 18 8 28" />
+        <path d="M192 40c12 12 16 30 12 46" />
+      </g>
+      <Sparkle x={52} y={52} s={0.8} fill={BRAND} />
+      <Sparkle x={200} y={120} s={0.6} />
+    </Frame>
+  );
+}
+
 export const illustrations = {
   idea: IdeaIllustration,
   projects: ProjectsIllustration,
@@ -411,6 +876,27 @@ export const illustrations = {
   mentor: MentorIllustration,
   error: ErrorIllustration,
   certificate: CertificateIllustration,
+  rocket: RocketIllustration,
+  target: TargetIllustration,
+  partners: PartnersIllustration,
+  university: UniversityIllustration,
+  pitch: PitchIllustration,
+  calendar: CalendarIllustration,
+  shield: ShieldIllustration,
+  route: RouteIllustration,
+  puzzle: PuzzleIllustration,
+  funding: FundingIllustration,
+  passport: PassportIllustration,
+  lab: LabIllustration,
+  vote: VoteIllustration,
+  growth: GrowthIllustration,
+  megaphone: MegaphoneIllustration,
 } as const;
 
 export type IllustrationName = keyof typeof illustrations;
+
+/** An illustration of the set by its name. */
+export function Illustration({ name, className }: { name: IllustrationName; className?: string }) {
+  const Drawing = illustrations[name];
+  return <Drawing className={className} />;
+}

@@ -21,6 +21,8 @@ import {
   celebrateStage,
   cn,
   Field,
+  Illustration,
+  type IllustrationName,
   Input,
   LanguageSwitcher,
   Logo,
@@ -67,6 +69,7 @@ import {
   type OnboardingRequest,
   type StepContext,
   type StepErrors,
+  type StepKey,
 } from './steps';
 
 const INTERESTS = [
@@ -142,6 +145,15 @@ interface StepProps {
 }
 
 /** Four short steps after the first sign-in: language, studies, interests, idea. */
+
+/** A drawing for each step of onboarding. */
+const STEP_ART: Record<StepKey, IllustrationName> = {
+  language: 'route',
+  study: 'university',
+  interests: 'puzzle',
+  idea: 'idea',
+};
+
 export function OnboardingPage({ session }: { session: Session }) {
   const { t, i18n } = useTranslation(['onboarding', 'common']);
   const navigate = useNavigate();
@@ -259,25 +271,31 @@ export function OnboardingPage({ session }: { session: Session }) {
                       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                       className="flex flex-col gap-6"
                     >
-                      <div className="flex flex-col gap-2">
-                        <h1
-                          tabIndex={-1}
-                          ref={(element) => {
-                            if (element && moved.current) element.focus();
-                          }}
-                          className="font-display text-2xl font-bold text-ink outline-none sm:text-3xl"
-                        >
-                          {key === 'language'
-                            ? t('language.title', { name: session.user.full_name })
-                            : key === 'study'
-                              ? t(student ? 'study.title' : 'study.titleStaff')
-                              : t(`${key}.title`)}
-                        </h1>
-                        <p className="text-fg-muted">
-                          {key === 'study'
-                            ? t(student ? 'study.subtitle' : 'study.subtitleStaff')
-                            : t(`${key}.subtitle`)}
-                        </p>
+                      <div className="flex items-center justify-between gap-6">
+                        <div className="flex flex-col gap-2">
+                          <h1
+                            tabIndex={-1}
+                            ref={(element) => {
+                              if (element && moved.current) element.focus();
+                            }}
+                            className="font-display text-2xl font-bold text-ink outline-none sm:text-3xl"
+                          >
+                            {key === 'language'
+                              ? t('language.title', { name: session.user.full_name })
+                              : key === 'study'
+                                ? t(student ? 'study.title' : 'study.titleStaff')
+                                : t(`${key}.title`)}
+                          </h1>
+                          <p className="text-fg-muted">
+                            {key === 'study'
+                              ? t(student ? 'study.subtitle' : 'study.subtitleStaff')
+                              : t(`${key}.subtitle`)}
+                          </p>
+                        </div>
+                        <Illustration
+                          name={STEP_ART[key]}
+                          className="hidden w-32 shrink-0 sm:block"
+                        />
                       </div>
                       {key === 'language' && <LanguageStep {...props} />}
                       {key === 'study' && (

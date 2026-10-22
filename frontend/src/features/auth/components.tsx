@@ -12,7 +12,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AuthLayout } from '@/app/layouts/auth-layout';
-import { Callout, cn, Input, Kicker, Logo } from '@/design-system';
+import { Callout, cn, Illustration, Input, Kicker, Logo } from '@/design-system';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import { tenantQuery } from './api';
@@ -32,6 +32,9 @@ function AuthAside() {
         />
       </Link>
       <div className="my-auto flex max-w-lg flex-col gap-6">
+        <div className="w-fit rounded-card bg-surface p-3 shadow-lg">
+          <Illustration name="rocket" className="w-44" />
+        </div>
         <Kicker tone="light">{t('aside.cardEyebrow')}</Kicker>
         <h2 className="font-display text-5xl leading-tight font-extrabold">
           {t('aside.headline')}

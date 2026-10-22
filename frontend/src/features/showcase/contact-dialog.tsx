@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   Field,
+  Illustration,
   Input,
   Select,
   SelectContent,
@@ -137,6 +138,7 @@ export function ContactDialog({ open, onOpenChange, slug, title }: ContactDialog
                   : t('contact.success.pending')}
               </DialogDescription>
             </DialogHeader>
+            <Illustration name="partners" className="mx-auto mt-2 w-52" />
             <DialogFooter className="mt-6">
               <Button
                 onClick={() => {

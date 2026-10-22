@@ -21,6 +21,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Illustration,
   ProgressRing,
   Skeleton,
   SkeletonText,
@@ -63,26 +64,29 @@ export function DashboardPage({ session }: { session: Session }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-fg-subtle first-letter:uppercase">
-            {format.dateTime(now, { dateStyle: 'full' })}
-          </p>
-          <h1 className="font-display text-3xl font-bold text-balance text-ink">
-            {t(`dashboard.greeting.${partOfDay(now.getHours())}`, {
-              name: firstName(session.user.full_name),
-            })}
-          </h1>
+      <header className="flex items-center justify-between gap-6 rounded-card border border-border bg-surface px-6 py-5">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-fg-subtle first-letter:uppercase">
+              {format.dateTime(now, { dateStyle: 'full' })}
+            </p>
+            <h1 className="font-display text-3xl font-bold text-balance text-ink">
+              {t(`dashboard.greeting.${partOfDay(now.getHours())}`, {
+                name: firstName(session.user.full_name),
+              })}
+            </h1>
+          </div>
+          <ul className="flex flex-wrap gap-2" aria-label={t('dashboard.roles')}>
+            {roles.map((role) => (
+              <li key={role}>
+                <Badge tone={role === 'student' ? 'primary' : 'gold'}>
+                  {t(`common:roles.${role}`)}
+                </Badge>
+              </li>
+            ))}
+          </ul>
         </div>
-        <ul className="flex flex-wrap gap-2" aria-label={t('dashboard.roles')}>
-          {roles.map((role) => (
-            <li key={role}>
-              <Badge tone={role === 'student' ? 'primary' : 'gold'}>
-                {t(`common:roles.${role}`)}
-              </Badge>
-            </li>
-          ))}
-        </ul>
+        <Illustration name="route" className="hidden w-44 shrink-0 md:block" />
       </header>
 
       {!session.user.email_verified && <VerifyEmailBanner email={session.user.email} />}

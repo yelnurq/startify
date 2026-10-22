@@ -23,8 +23,8 @@ import {
   AnimatedNumber,
   BrandMark,
   Button,
-  ChartIllustration,
   IdeaIllustration,
+  Illustration,
   Input,
   Kicker,
   Skeleton,
@@ -32,7 +32,6 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  TrophyIllustration,
 } from '@/design-system';
 import { sessionQuery, tenantQuery } from '@/features/auth/api';
 import { showcaseHighlightsQuery } from '@/features/showcase/api';
@@ -42,10 +41,10 @@ import { useFormatters } from '@/shared/i18n/format';
 import { useLocalized } from '@/shared/i18n/localized';
 
 const STAGES = [
-  { key: 'idea', icon: Lightbulb, steps: ['s1', 's2', 's3', 's4'] },
-  { key: 'market', icon: ChartPie, steps: ['s5', 's6', 's7', 's8'] },
-  { key: 'product', icon: FlaskConical, steps: ['s9', 's10', 's11', 's12'] },
-  { key: 'launch', icon: Presentation, steps: ['s13', 's14'] },
+  { key: 'idea', icon: Lightbulb, art: 'idea', steps: ['s1', 's2', 's3', 's4'] },
+  { key: 'market', icon: ChartPie, art: 'target', steps: ['s5', 's6', 's7', 's8'] },
+  { key: 'product', icon: FlaskConical, art: 'lab', steps: ['s9', 's10', 's11', 's12'] },
+  { key: 'launch', icon: Presentation, art: 'pitch', steps: ['s13', 's14'] },
 ] as const;
 
 const STEP_NUMBERS: Record<(typeof STAGES)[number]['steps'][number], number> = {
@@ -222,6 +221,7 @@ function Numbers() {
             {t('counters.title', { university })}
           </h2>
           <p className="leading-relaxed text-fg-muted">{t('counters.text')}</p>
+          <Illustration name="growth" className="hidden max-w-48 lg:block" />
         </div>
         <dl className="grid grid-cols-2 gap-y-8 sm:grid-cols-4">
           {COUNTERS.map((key) => (
@@ -277,10 +277,10 @@ function HowItWorks() {
           </ul>
         </div>
         <ol className="flex flex-col">
-          {STAGES.map(({ key, icon: Icon, steps }, index) => (
+          {STAGES.map(({ key, icon: Icon, art, steps }, index) => (
             <li
               key={key}
-              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-border py-8 first:border-t-0 first:pt-0"
+              className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-border py-8 first:border-t-0 first:pt-0 xl:grid-cols-[auto_minmax(0,1fr)_9rem]"
             >
               <span
                 aria-hidden
@@ -309,6 +309,7 @@ function HowItWorks() {
                   ))}
                 </ul>
               </div>
+              <Illustration name={art} className="hidden w-36 self-center xl:block" />
             </li>
           ))}
         </ol>
@@ -418,8 +419,8 @@ function useAudienceFromHash(): [Audience, (value: Audience) => void] {
 
 const AUDIENCE_ART: Record<Audience, ReactNode> = {
   students: <IdeaIllustration className="w-full max-w-xs" />,
-  universities: <ChartIllustration className="w-full max-w-xs" />,
-  partners: <TrophyIllustration className="w-full max-w-xs" />,
+  universities: <Illustration name="university" className="w-full max-w-xs" />,
+  partners: <Illustration name="partners" className="w-full max-w-xs" />,
 };
 
 function Audiences({ signedIn }: { signedIn: boolean }) {

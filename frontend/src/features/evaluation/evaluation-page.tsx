@@ -29,6 +29,7 @@ import {
   Checkbox,
   cn,
   EmptyState,
+  Illustration,
   Progress,
   RadarChart,
   ScoreGauge,
@@ -224,9 +225,7 @@ function RunningEvaluation({ evaluation }: { evaluation: Evaluation }) {
   const active = evaluation.status === 'pending' ? 0 : 1;
   return (
     <Card className="items-center gap-6 px-6 py-10 text-center" aria-live="polite">
-      <span className="relative grid size-16 place-items-center rounded-full bg-primary-soft text-brand">
-        <Spinner className="size-8" />
-      </span>
+      <Illustration name="lab" className="w-48" />
       <div className="flex max-w-md flex-col gap-2">
         <h2 className="font-display text-xl font-bold text-ink">{t('running.title')}</h2>
         <p className="text-sm text-fg-muted">{t('running.text')}</p>

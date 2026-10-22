@@ -417,8 +417,8 @@
     }
   },
   "empty": {
-    "title": "Empty states",
-    "lead": "An empty screen explains why it is empty and offers the next step. The illustrations share one style and adapt to the theme.",
+    "title": "Illustrations and empty states",
+    "lead": "25 illustrations in one style — for empty screens, onboarding and telling the story of the platform; on a screen, the Illustration component with a name. An empty screen explains why it is empty and offers the next step. The illustrations follow the theme.",
     "exampleTitle": "You don't have any projects yet",
     "exampleDescription": "Start with a problem you want to solve. The AI mentor will guide you through 14 steps — from idea to pitch.",
     "exampleAction": "Create project",
@@ -433,7 +433,22 @@
       "chart": "No data",
       "mentor": "Mentorship",
       "error": "Error",
-      "certificate": "Certificates"
+      "certificate": "Certificates",
+      "rocket": "Launch",
+      "target": "Market and goals",
+      "partners": "Partnership",
+      "university": "University",
+      "pitch": "Pitch and Demo Day",
+      "calendar": "Deadlines",
+      "shield": "Security",
+      "route": "Project route",
+      "puzzle": "Team fit",
+      "funding": "Grants and investment",
+      "passport": "Startup passport",
+      "lab": "Prototype and MVP",
+      "vote": "Voting",
+      "growth": "Growth and traction",
+      "megaphone": "Announcements"
     }
   },
   "layouts": {

@@ -104,7 +104,7 @@ export function MaterialsPanel({
         {query.isSuccess && query.data.length === 0 && (
           <EmptyState
             size="sm"
-            illustration="certificate"
+            illustration="passport"
             title={t('materials.empty')}
             description={t('materials.emptyText')}
           />

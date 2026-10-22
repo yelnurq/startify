@@ -17,6 +17,7 @@ import {
   CardTitle,
   ConfirmDialog,
   Field,
+  Illustration,
   SkeletonText,
   toast,
 } from '@/design-system';
@@ -40,9 +41,12 @@ export function SecurityPage() {
   const { t } = useTranslation('app');
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-bold text-ink">{t('security.title')}</h1>
-        <p className="text-fg-muted">{t('security.subtitle')}</p>
+      <header className="flex items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-display text-3xl font-bold text-ink">{t('security.title')}</h1>
+          <p className="text-fg-muted">{t('security.subtitle')}</p>
+        </div>
+        <Illustration name="shield" className="hidden w-36 shrink-0 sm:block" />
       </header>
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <SessionsCard />
