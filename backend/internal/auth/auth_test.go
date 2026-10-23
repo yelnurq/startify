@@ -174,13 +174,26 @@ func TestCSRFMiddleware(t *testing.T) {
 
 func TestSafeRedirect(t *testing.T) {
 	for in, want := range map[string]string{
-		"/team":                 "/team",
-		"/profiles/aru?tab=1":   "/profiles/aru?tab=1",
-		"//evil.example":        "/",
-		`/\evil.example`:        "/",
-		"https://evil.example/": "/",
-		"team":                  "/",
-		"/ok\r\nSet-Cookie: x":  "/",
+		"/team":                      "/team",
+		"/profiles/aru?tab=1":        "/profiles/aru?tab=1",
+		"/app/projects/1#step":       "/app/projects/1#step",
+		"  /app  ":                   "/app",
+		"//evil.example":             "/",
+		`/\evil.example`:             "/",
+		`/app\..\..\evil.example`:    "/",
+		"https://evil.example/":      "/",
+		"HTTPS:evil.example":         "/",
+		"javascript:alert(1)":        "/",
+		"team":                       "/",
+		"":                           "/",
+		"?next=/x":                   "/",
+		"/ok\r\nSet-Cookie: x":       "/",
+		"/\t/evil.example":           "/",
+		"/\n/evil.example":           "/",
+		"/\x00/evil.example":         "/",
+		"/\u0085/evil.example":       "/",
+		"/%2F/evil.example":          "/",
+		"/x?u=https://evil.example/": "/x?u=https://evil.example/",
 	} {
 		v := in
 		if got := safeRedirect(&v); got != want {

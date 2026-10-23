@@ -112,11 +112,32 @@ export function hasRole(session: Session | null | undefined, ...roles: Role[]): 
   return Boolean(session && roles.some((role) => session.membership.roles.includes(role)));
 }
 
-/** A same-site path to return to after sign-in; anything else is ignored. */
+const PROBE_ORIGIN = 'https://qadam.invalid';
+
+/** Control characters and backslashes: browsers drop or reinterpret them in addresses. */
+function hasUnsafeCharacter(value: string): boolean {
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (ch === '\\' || code < 0x20 || (code >= 0x7f && code <= 0x9f)) return true;
+  }
+  return false;
+}
+
+/**
+ * A same-site path to return to after sign-in; anything else is ignored. Only
+ * a path that starts with a single slash passes: browsers drop tabs and line
+ * breaks ("/\t/evil.example" becomes "//evil.example") and read "\" as "/".
+ */
 export function safeRedirect(target: unknown): string | undefined {
-  if (typeof target !== 'string') return undefined;
-  if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\'))
+  if (typeof target !== 'string' || hasUnsafeCharacter(target)) return undefined;
+  if (!target.startsWith('/') || target.startsWith('//')) return undefined;
+  let url: URL;
+  try {
+    url = new URL(target, PROBE_ORIGIN);
+  } catch {
     return undefined;
+  }
+  if (url.origin !== PROBE_ORIGIN || url.pathname.startsWith('//')) return undefined;
   return target;
 }
 

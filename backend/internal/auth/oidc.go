@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
@@ -120,13 +121,21 @@ func (s *Service) oidcSetup(ctx context.Context, providerID uuid.UUID) (oidcSetu
 	}, nil
 }
 
-// safeRedirect keeps post-sign-in redirects on this site.
+// safeRedirect keeps post-sign-in redirects on this site: only a path that
+// starts with a single slash, without scheme, host, backslash or control
+// characters. Browsers drop tabs and line breaks from addresses and read a
+// backslash as a slash, so "/\t/evil.example" would lead to //evil.example.
 func safeRedirect(r *string) string {
 	if r == nil {
 		return "/"
 	}
 	v := strings.TrimSpace(*r)
-	if !strings.HasPrefix(v, "/") || strings.HasPrefix(v, "//") || strings.HasPrefix(v, `/\`) || strings.ContainsAny(v, "\r\n") {
+	if strings.ContainsFunc(v, func(c rune) bool { return c == '\\' || unicode.IsControl(c) }) {
+		return "/"
+	}
+	u, err := url.Parse(v)
+	if err != nil || u.Scheme != "" || u.Host != "" || u.User != nil || u.Opaque != "" ||
+		!strings.HasPrefix(v, "/") || !strings.HasPrefix(u.Path, "/") || strings.HasPrefix(u.Path, "//") {
 		return "/"
 	}
 	return v
