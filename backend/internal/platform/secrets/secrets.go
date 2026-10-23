@@ -20,6 +20,9 @@ const (
 	PurposeOneTimeCode = "qadam/one-time-code/v1"
 	PurposeSealing     = "qadam/sealing/v1"
 	PurposeOIDCState   = "qadam/oidc-state/v1"
+	// PurposeDirectoryTest signs the proof of a successful directory
+	// connection check.
+	PurposeDirectoryTest = "qadam/directory-test/v1"
 )
 
 // Keyring holds the master secret.

@@ -1009,6 +1009,81 @@ func (s *Service) Join(ctx context.Context, userID uuid.UUID, roles []string, st
 	return m, nil
 }
 
+// SyncRoles replaces the member's roles that an outside source manages (the
+// university directory) with the ones it assigns, keeping every other role
+// (inside the transaction of ctx). A member left without roles gets fallback;
+// the last administrator of the university keeps tenant_admin. A change is
+// audited and invalidates access tokens carrying the old roles; it reports
+// whether the roles changed.
+func (s *Service) SyncRoles(ctx context.Context, userID uuid.UUID, managed, assigned []string, fallback string) (bool, error) {
+	q := s.q(ctx)
+	m, err := q.GetMembership(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("user: sync roles: %w", err)
+	}
+	next := syncedRoles(m.Roles, managed, assigned, fallback)
+	admin := string(authz.RoleTenantAdmin)
+	dropsAdmin := func(roles []string) bool {
+		return m.Status == StatusActive && slices.Contains(m.Roles, admin) && !slices.Contains(roles, admin)
+	}
+	var admins []uuid.UUID
+	if dropsAdmin(next) {
+		// Locked in the order every change of administrators uses (UpdateMember).
+		if admins, err = q.LockAdmins(ctx); err != nil {
+			return false, fmt.Errorf("user: sync roles: %w", err)
+		}
+	}
+	if m, err = q.LockMembership(ctx, userID); err != nil {
+		return false, fmt.Errorf("user: sync roles: %w", err)
+	}
+	next = syncedRoles(m.Roles, managed, assigned, fallback)
+	if dropsAdmin(next) && (admins == nil || (slices.Contains(admins, userID) && len(admins) <= 1)) {
+		// The university must keep an administrator; without the lock taken
+		// above (roles changed meanwhile) the safe answer is the same.
+		slog.WarnContext(ctx, "directory sync keeps the last administrator", slog.String("user", userID.String()))
+		next = normalizeRoles(append(next, admin))
+	}
+	if slices.Equal(normalizeRoles(m.Roles), next) {
+		return false, nil
+	}
+	after, err := q.UpdateMembershipAccess(ctx, userdb.UpdateMembershipAccessParams{Roles: next, UserID: userID})
+	if err != nil {
+		return false, fmt.Errorf("user: sync roles: %w", err)
+	}
+	if err := s.audit.Record(ctx, audit.Event{
+		Action: "member.roles_synced", ActorID: userID, TargetType: "user", TargetID: userID.String(),
+		Metadata: map[string]any{"roles_before": m.Roles, "roles_after": after.Roles, "source": "directory"},
+	}); err != nil {
+		return false, err
+	}
+	if err := s.revoker.RolesChanged(ctx, after.TenantID, userID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// syncedRoles keeps the roles outside managed and adds the assigned ones.
+func syncedRoles(current, managed, assigned []string, fallback string) []string {
+	next := slices.DeleteFunc(slices.Clone(current), func(r string) bool { return slices.Contains(managed, r) })
+	next = append(next, assigned...)
+	if len(next) == 0 && fallback != "" {
+		next = append(next, fallback)
+	}
+	return normalizeRoles(next)
+}
+
+// normalizeRoles orders known roles as authz.AllRoles does and drops
+// duplicates, so equal sets compare equal.
+func normalizeRoles(roles []string) []string {
+	out := make([]string, 0, len(roles))
+	for _, r := range authz.AllRoles {
+		if slices.Contains(roles, string(r)) {
+			out = append(out, string(r))
+		}
+	}
+	return out
+}
+
 // Study is the place of study of a member.
 type Study struct {
 	FacultyID    *uuid.UUID

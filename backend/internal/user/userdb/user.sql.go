@@ -429,6 +429,34 @@ func (q *Queries) LockAdmins(ctx context.Context) ([]uuid.UUID, error) {
 	return items, nil
 }
 
+const lockMembership = `-- name: LockMembership :one
+SELECT tenant_id, user_id, roles, status, faculty_id, department_id, group_id, study_level, course, onboarded_at, consent_version, consent_at, joined_at, last_active_at, created_at, updated_at FROM memberships WHERE tenant_id = app_current_tenant() AND user_id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockMembership(ctx context.Context, userID uuid.UUID) (Membership, error) {
+	row := q.db.QueryRow(ctx, lockMembership, userID)
+	var i Membership
+	err := row.Scan(
+		&i.TenantID,
+		&i.UserID,
+		&i.Roles,
+		&i.Status,
+		&i.FacultyID,
+		&i.DepartmentID,
+		&i.GroupID,
+		&i.StudyLevel,
+		&i.Course,
+		&i.OnboardedAt,
+		&i.ConsentVersion,
+		&i.ConsentAt,
+		&i.JoinedAt,
+		&i.LastActiveAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const searchPeople = `-- name: SearchPeople :many
 SELECT u.id, u.full_name, u.avatar_file_id, m.roles, m.faculty_id, p.public_slug, coalesce(p.is_public, false)::boolean AS is_public
   FROM memberships m

@@ -79,7 +79,8 @@ export type Namespace =
   | 'ai'
   | 'incubator'
   | 'evaluation'
-  | 'showcase';
+  | 'showcase'
+  | 'directory';
 
 /** Loads namespaces before a route renders, so no screen flashes raw keys. */
 export async function loadNamespaces(...namespaces: Namespace[]): Promise<void> {

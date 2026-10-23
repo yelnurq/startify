@@ -19,15 +19,11 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/yelnurq/startify/backend/internal/apigen"
-	"github.com/yelnurq/startify/backend/internal/audit"
-	"github.com/yelnurq/startify/backend/internal/auth/authdb"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
-	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/tenant/tenantdb"
-	"github.com/yelnurq/startify/backend/internal/user"
 )
 
 const oidcStateTTL = 10 * time.Minute
@@ -233,128 +229,20 @@ func (s *Service) CompleteOIDC(ctx context.Context, providerID uuid.UUID, stateC
 		return nil, "", errOIDC
 	}
 	verified := claims.EmailVerified != nil && *claims.EmailVerified
-	identity := "oidc:" + providerID.String()
-
-	t, err := tenancy.Require(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	var cookies []*http.Cookie
-	var revoked []uuid.UUID
-	err = s.db.Tx(ctx, func(ctx context.Context) error {
-		q := s.q(ctx)
-		u, err := q.GetIdentityUser(ctx, authdb.GetIdentityUserParams{Provider: identity, Subject: idt.Subject})
-		if db.IsNoRows(err) {
-			u, revoked, err = s.linkOIDC(ctx, setup.provider, email, verified, claims.fullName(), t.Locale)
-			if err != nil {
-				return err
-			}
-			if err := q.CreateIdentity(ctx, authdb.CreateIdentityParams{UserID: u.ID, Provider: identity, Subject: idt.Subject}); err != nil {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-		if _, ok, err := s.users.Membership(ctx, u.ID); err != nil {
-			return err
-		} else if !ok {
-			if !setup.provider.AutoProvision {
-				return errNotMember
-			}
-			// Members provisioned by the university's own identity provider
-			// are processed under the university's legal basis (D-023).
-			if _, err := s.users.Join(ctx, u.ID, []string{string(authz.RoleStudent)}, user.StatusActive, nil); err != nil {
-				return err
-			}
-		}
-		if err := s.users.EnsureProfile(ctx, u.ID, u.FullName); err != nil {
-			return err
-		}
-		if err := s.admit(ctx, u); err != nil {
-			return err
-		}
-		if verified {
-			if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
-				return err
-			}
-		}
-		if err := q.TouchIdentity(ctx, authdb.TouchIdentityParams{UserID: u.ID, Provider: identity}); err != nil {
-			return err
-		}
-		if err := s.audit.Record(ctx, audit.Event{
-			Action: "auth.login", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
-			Metadata: map[string]any{"method": "oidc", "provider": providerID.String()},
-		}); err != nil {
-			return err
-		}
-		cookies, err = s.startSession(ctx, u.ID, u.IsSuperAdmin)
-		return err
+	_, cookies, err := s.SignInExternal(ctx, External{
+		Provider: "oidc:" + providerID.String(), Subject: idt.Subject, Email: email, FullName: claims.fullName(),
+		Vouched: verified, Verified: verified, AutoProvision: setup.provider.AutoProvision,
+		Method: "oidc", Metadata: map[string]any{"provider": providerID.String()},
 	})
 	if err != nil {
-		return nil, "", err
-	}
-	if err := s.revocations.deny(ctx, revoked...); err != nil {
 		return nil, "", err
 	}
 	return append([]*http.Cookie{s.cookies.oidcCleared()}, cookies...), st.Redirect, nil
 }
 
-// linkOIDC finds the account of a first single sign-on by e-mail, or creates
-// it (inside the transaction of ctx). An existing account is linked only when
-// the provider vouches for the address, and only when the account is already
-// a member of this university or its address is on one of the university's
-// e-mail domains: an identity provider speaks for its own university, not
-// for accounts of others (audit С-5).
-//
-// Linking proves control of the address. An account whose e-mail was never
-// verified may have been registered by a stranger, so its password goes and
-// its sessions end in every university; the revoked sessions are returned
-// for the deny-list.
-func (s *Service) linkOIDC(ctx context.Context, prov tenantdb.TenantOidcProvider, email string, verified bool, name, locale string) (authdb.User, []uuid.UUID, error) {
-	q := s.q(ctx)
-	u, err := q.GetUserByEmail(ctx, email)
-	switch {
-	case err == nil:
-		if !verified {
-			return u, nil, errOIDC
-		}
-		if err := s.mayLinkSSO(ctx, u.ID, email); err != nil {
-			return u, nil, err
-		}
-		if u.EmailVerifiedAt != nil {
-			return u, nil, nil
-		}
-		if err := q.DeletePasswordIdentity(ctx, u.ID); err != nil {
-			return u, nil, err
-		}
-		sids, err := s.revokeEverywhere(ctx, u.ID, "sso_linked", nil)
-		if err != nil {
-			return u, nil, err
-		}
-		if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
-			return u, nil, err
-		}
-		return u, sids, nil
-	case !db.IsNoRows(err):
-		return u, nil, err
-	case !prov.AutoProvision:
-		return u, nil, errNotMember
-	}
-	var verifiedAt *time.Time
-	if verified {
-		now := s.now()
-		verifiedAt = &now
-	}
-	if len([]rune(name)) < 2 {
-		name = email
-	}
-	u, err = q.CreateUser(ctx, authdb.CreateUserParams{Email: email, FullName: name, Locale: locale, EmailVerifiedAt: verifiedAt})
-	return u, nil, err
-}
-
 // mayLinkSSO allows linking an existing account to this university's
-// identity provider: the account is a member here, or its address is on one
-// of the university's e-mail domains.
+// identity provider or directory: the account is a member here, or its
+// address is on one of the university's e-mail domains.
 func (s *Service) mayLinkSSO(ctx context.Context, userID uuid.UUID, email string) error {
 	if _, member, err := s.users.Membership(ctx, userID); err != nil || member {
 		return err

@@ -6,6 +6,7 @@ import type app from '@/locales/ru/app.json';
 import type auth from '@/locales/ru/auth.json';
 import type common from '@/locales/ru/common.json';
 import type design from '@/locales/ru/design.json';
+import type directory from '@/locales/ru/directory.json';
 import type evaluation from '@/locales/ru/evaluation.json';
 import type incubator from '@/locales/ru/incubator.json';
 import type landing from '@/locales/ru/landing.json';
@@ -31,6 +32,7 @@ declare module 'i18next' {
       incubator: typeof incubator;
       evaluation: typeof evaluation;
       showcase: typeof showcase;
+      directory: typeof directory;
     };
     returnNull: false;
   }

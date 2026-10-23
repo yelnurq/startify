@@ -18,6 +18,7 @@ var errCSRF = apperr.Forbidden("auth.csrf_failed", "the request did not come fro
 // session must not block signing in again. Sec-Fetch-Site and Origin still apply.
 var signInPaths = map[string]bool{
 	"/api/v1/auth/login":           true,
+	"/api/v1/auth/directory/login": true,
 	"/api/v1/auth/register":        true,
 	"/api/v1/auth/otp/request":     true,
 	"/api/v1/auth/otp/verify":      true,

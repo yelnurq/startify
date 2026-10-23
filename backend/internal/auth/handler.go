@@ -56,6 +56,15 @@ func (h *Handler) Login(ctx context.Context, req apigen.LoginRequestObject) (api
 	return cookieResponse{status: http.StatusOK, cookies: cookies, body: session}, nil
 }
 
+// DirectoryLogin implements apigen.StrictServerInterface.
+func (h *Handler) DirectoryLogin(ctx context.Context, req apigen.DirectoryLoginRequestObject) (apigen.DirectoryLoginResponseObject, error) {
+	session, cookies, err := h.svc.DirectoryLogin(ctx, *req.Body)
+	if err != nil {
+		return nil, err
+	}
+	return cookieResponse{status: http.StatusOK, cookies: cookies, body: session}, nil
+}
+
 // RequestLoginCode implements apigen.StrictServerInterface.
 func (h *Handler) RequestLoginCode(ctx context.Context, req apigen.RequestLoginCodeRequestObject) (apigen.RequestLoginCodeResponseObject, error) {
 	if err := h.svc.RequestLoginCode(ctx, *req.Body); err != nil {

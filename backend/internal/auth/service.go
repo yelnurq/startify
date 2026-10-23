@@ -107,6 +107,7 @@ type Service struct {
 	audit       *audit.Logger
 	cookies     cookieJar
 	oidc        *oidcProviders
+	directory   DirectoryAuthenticator
 	now         func() time.Time
 	// answerFloor is the least time of answers that must not reveal whether
 	// an address has an account (see holdAnswer).
@@ -511,6 +512,10 @@ func (s *Service) joinExisting(ctx context.Context, u authdb.User, email, passwo
 func domainAllowed(email string, domains []string) bool {
 	return len(domains) == 0 || domainListed(email, domains)
 }
+
+// DomainListed reports whether the address is on one of the university's
+// e-mail domains (or their subdomains).
+func DomainListed(email string, domains []string) bool { return domainListed(email, domains) }
 
 // domainListed reports whether the address is on one of the domains (or
 // their subdomains).

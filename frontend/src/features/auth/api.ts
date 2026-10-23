@@ -58,6 +58,16 @@ export function useSignIn() {
   });
 }
 
+/** Signs in with the login and password of the university directory. */
+export function useDirectorySignIn() {
+  const store = useStoreSession();
+  return useMutation({
+    mutationFn: (body: components['schemas']['DirectoryLoginRequest']) =>
+      unwrap(api.POST('/auth/directory/login', { body })),
+    onSuccess: store,
+  });
+}
+
 export function useRegister() {
   const store = useStoreSession();
   const submission = useIdempotencyKey();

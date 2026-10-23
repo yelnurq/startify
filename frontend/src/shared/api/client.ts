@@ -50,6 +50,7 @@ const REFRESHED_AT_KEY = 'qadam.auth.refreshedAt';
 // session: refreshing and retrying them would be wrong.
 const NO_REFRESH = new Set([
   '/auth/login',
+  '/auth/directory/login',
   '/auth/register',
   '/auth/otp/request',
   '/auth/otp/verify',

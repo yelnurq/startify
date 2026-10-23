@@ -119,6 +119,8 @@ func problemResponse(r *http.Request, err error, cookies []*http.Cookie) cookieR
 
 func (c cookieResponse) VisitLoginResponse(w http.ResponseWriter) error { return c.write(w) }
 
+func (c cookieResponse) VisitDirectoryLoginResponse(w http.ResponseWriter) error { return c.write(w) }
+
 func (c cookieResponse) VisitRegisterResponse(w http.ResponseWriter) error { return c.write(w) }
 
 func (c cookieResponse) VisitVerifyLoginCodeResponse(w http.ResponseWriter) error { return c.write(w) }

@@ -258,6 +258,16 @@
     "contact": {
       "not_found": "Contact request not found",
       "already_moderated": "The request has already been handled — refresh the list"
+    },
+    "directory": {
+      "disabled": "Sign-in with the university directory is not turned on. Sign in with your e-mail.",
+      "unavailable": "The university directory is not answering. Try again later or sign in with your e-mail.",
+      "not_allowed": "This university account may not sign in to Qadam. Contact the university administrator.",
+      "email_missing": "Your university account has no e-mail address in the directory. Contact the university administrator.",
+      "password_expired": "Your password has expired. Change it in the university's systems and sign in again.",
+      "account_disabled": "The university account is disabled. Contact the university's IT department.",
+      "test_required": "First check the connection with these settings successfully, then turn sign-in on.",
+      "too_many_tests": "Too many checks. Try again in {{retry_after_seconds}} s."
     }
   },
   "roles": {
@@ -301,7 +311,14 @@
     "duplicate": "This value is repeated",
     "external_not_allowed": "External providers are switched off: “Local models only” is on",
     "sum": "The total must be {{expected}}; now {{actual}}",
-    "not_supported": "The provider does not support this feature"
+    "not_supported": "The provider does not support this feature",
+    "ldap_url": "An address like ldaps://server:636 or ldap://server:389",
+    "ldap_dn": "Not a valid DN, e.g. OU=Students,DC=kazutb,DC=local",
+    "ldap_filter": "Not a valid LDAP filter: check the parentheses",
+    "ldap_placeholder": "The filter must contain {username}: the login takes its place",
+    "ldap_attribute": "An LDAP attribute name: Latin letters, digits and hyphens",
+    "pem": "Paste the certificate in PEM format (-----BEGIN CERTIFICATE-----)",
+    "plain_ldap": "Unencrypted connections are not allowed: use ldaps:// or turn on StartTLS"
   },
   "tags": {
     "add": "Add",

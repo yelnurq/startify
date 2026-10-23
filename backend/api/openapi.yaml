@@ -46,6 +46,8 @@ tags:
     description: The "looking for teammates" board.
   - name: admin
     description: University administration (tenant administrators).
+  - name: directory
+    description: Sign-in through the university directory (Active Directory or LDAP) - settings and checks.
   - name: ai
     description: Language models - status, university settings, usage, connection check.
   - name: knowledge
@@ -488,6 +490,43 @@ paths:
             Location:
               schema:
                 type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/directory/login:
+    post:
+      operationId: directoryLogin
+      tags: [auth]
+      summary: Sign in with the account of the university directory
+      description: |
+        Login and password of the university's Active Directory or another LDAP directory, when the
+        university enabled it (`directory_login.enabled` of `GET /tenant`). An empty or blank password
+        is refused before the directory is contacted. The account is found by its directory identity;
+        a first sign-in links an existing account with the same address under the rules of single
+        sign-on (a member of this university or an address on its e-mail domains), otherwise creates
+        one when the university allows it. Errors: `auth.invalid_credentials` (401: unknown login,
+        wrong password or a login that matches several entries), `directory.disabled` (404),
+        `directory.not_allowed`, `directory.email_missing`, `directory.password_expired`,
+        `directory.account_disabled`, `auth.sso_link_denied`, `auth.not_a_member`,
+        `auth.account_suspended` (403), 422 (empty login or password), `auth.too_many_attempts` (429),
+        `directory.unavailable` (503).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryLoginRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1120,6 +1159,111 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AiUsageReport"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory:
+    get:
+      operationId: getDirectorySettings
+      tags: [directory]
+      summary: Directory sign-in settings of the university
+      description: |
+        Requires `tenant_admin`. Before the first save the defaults of Active Directory are
+        returned (`configured: false`). The bind password is never returned: `has_bind_password`
+        tells whether one is stored.
+      responses:
+        "200":
+          description: The settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorySettings"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateDirectorySettings
+      tags: [directory]
+      summary: Save the directory sign-in settings
+      description: |
+        Requires `tenant_admin`. Addresses must be `ldaps://` or `ldap://` (plain `ldap://` without
+        StartTLS only outside production), DNs and the filter must parse, the filter must contain
+        `{username}`. An empty or absent `bind_password` keeps the stored one. Turning sign-in on,
+        or changing the connection while it is on, needs `test_proof` from a successful
+        `POST /admin/directory/test` of the same connection (`directory.test_required`, 422).
+        Audited without secrets.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectorySettingsUpdate"
+      responses:
+        "200":
+          description: The saved settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorySettings"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory/test:
+    post:
+      operationId: testDirectoryConnection
+      tags: [directory]
+      summary: Check the connection to the directory
+      description: |
+        Requires `tenant_admin`. Uses the settings of the form (not saved yet) with the stored bind
+        password unless a new one is given. Steps are reported separately: connection, TLS, bind of
+        the service account, search in the base DN, the directory server (RootDSE). A successful check
+        returns `proof` for `test_proof` of the update. At most 30 checks a minute
+        (`directory.too_many_tests`, 429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectorySettingsUpdate"
+      responses:
+        "200":
+          description: The result of every step.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectoryConnectionTest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory/test-user:
+    post:
+      operationId: testDirectoryUser
+      tags: [directory]
+      summary: Look a user up in the directory without a password
+      description: |
+        Requires `tenant_admin`. Finds the user with the settings of the form and shows what Qadam
+        would make of the entry: DN, login, e-mail, name, identifier, groups, roles, and whether
+        sign-in would be allowed. Shares the limit of `POST /admin/directory/test`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryUserTestRequest"
+      responses:
+        "200":
+          description: What was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectoryUserTest"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -3041,6 +3185,384 @@ components:
           format: uuid
         name:
           $ref: "#/components/schemas/LocalizedText"
+    DirectoryLogin:
+      type: object
+      additionalProperties: false
+      description: Sign-in with the account of the university directory (`POST /auth/directory/login`).
+      required: [enabled, label, username_hint]
+      properties:
+        enabled:
+          type: boolean
+        label:
+          description: Name of the sign-in option ("Учётная запись КазУТБ"); null - the default name.
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        username_hint:
+          description: Hint under the login field ("Логин как в Outlook - ivanov.a").
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+    DirectoryLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          maxLength: 256
+          description: The login in the directory; Active Directory also accepts `user@domain` and `DOMAIN\user`.
+        password:
+          type: string
+          maxLength: 256
+    DirectoryPreset:
+      type: string
+      enum: [active_directory, openldap, freeipa, custom]
+      description: The kind of directory; its defaults fill the filter and the attributes.
+    DirectoryRoleMapping:
+      type: object
+      additionalProperties: false
+      required: [group_dn, role]
+      properties:
+        group_dn:
+          type: string
+          maxLength: 1024
+        role:
+          $ref: "#/components/schemas/Role"
+    DirectoryConfig:
+      type: object
+      description: The settings of directory sign-in an administrator edits.
+      required:
+        - enabled
+        - preset
+        - url
+        - start_tls
+        - ca_cert_pem
+        - timeout_seconds
+        - bind_dn
+        - user_base_dn
+        - user_filter
+        - login_attr
+        - email_attr
+        - email_fallback_attr
+        - name_attr
+        - given_name_attr
+        - surname_attr
+        - id_attr
+        - groups_attr
+        - nested_groups
+        - role_mappings
+        - default_role
+        - required_group_dn
+        - auto_provision
+        - sync_roles
+        - login_label
+        - username_hint
+      properties:
+        enabled:
+          type: boolean
+        preset:
+          $ref: "#/components/schemas/DirectoryPreset"
+        url:
+          type: string
+          maxLength: 1000
+          description: One or more `ldaps://host:636` or `ldap://host:389` addresses separated by spaces, tried in order.
+          examples: ["ldaps://dc01.kazutb.local:636 ldaps://dc02.kazutb.local:636"]
+        start_tls:
+          type: boolean
+          description: Upgrade `ldap://` connections with StartTLS.
+        ca_cert_pem:
+          type: [string, "null"]
+          maxLength: 65536
+          description: Certificate (PEM) of the university's certification authority, when it is not a public one.
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          maximum: 60
+        bind_dn:
+          type: string
+          maxLength: 1024
+          examples: ["CN=qadam-svc,OU=Service Accounts,DC=kazutb,DC=local"]
+        user_base_dn:
+          type: string
+          maxLength: 1024
+          examples: ["OU=Students,DC=kazutb,DC=local"]
+        user_filter:
+          type: string
+          maxLength: 1024
+          description: LDAP filter with the `{username}` placeholder (the login is escaped).
+        login_attr:
+          type: string
+          maxLength: 64
+        email_attr:
+          type: string
+          maxLength: 64
+        email_fallback_attr:
+          type: [string, "null"]
+          maxLength: 64
+          description: Read when the e-mail attribute is empty (`userPrincipalName` in Active Directory).
+        name_attr:
+          type: string
+          maxLength: 64
+        given_name_attr:
+          type: [string, "null"]
+          maxLength: 64
+        surname_attr:
+          type: [string, "null"]
+          maxLength: 64
+        id_attr:
+          type: string
+          maxLength: 64
+          description: Permanent identifier of an entry (`objectGUID`, `entryUUID`, `ipaUniqueID`); the DN when the entry has none.
+        groups_attr:
+          type: string
+          maxLength: 64
+        nested_groups:
+          type: boolean
+        role_mappings:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/DirectoryRoleMapping"
+        default_role:
+          $ref: "#/components/schemas/Role"
+        required_group_dn:
+          type: [string, "null"]
+          maxLength: 1024
+          description: Only members of this group (nested ones too, when enabled) may sign in.
+        auto_provision:
+          type: boolean
+          description: Create accounts and memberships on the first sign-in.
+        sync_roles:
+          type: boolean
+          description: On every sign-in replace the roles named in `role_mappings`; other roles stay.
+        login_label:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        username_hint:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+    DirectorySettings:
+      allOf:
+        - $ref: "#/components/schemas/DirectoryConfig"
+        - type: object
+          required: [has_bind_password, configured, plain_ldap_allowed, presets]
+          properties:
+            has_bind_password:
+              type: boolean
+              description: A bind password is stored (it is never returned).
+            configured:
+              type: boolean
+              description: The settings were saved at least once.
+            plain_ldap_allowed:
+              type: boolean
+              description: This installation accepts `ldap://` without StartTLS (never in production).
+            presets:
+              type: array
+              description: Defaults of every kind of directory, for switching the kind in the form.
+              items:
+                $ref: "#/components/schemas/DirectoryPresetDefaults"
+    DirectoryPresetDefaults:
+      type: object
+      additionalProperties: false
+      required:
+        - preset
+        - user_filter
+        - login_attr
+        - email_attr
+        - email_fallback_attr
+        - name_attr
+        - given_name_attr
+        - surname_attr
+        - id_attr
+        - groups_attr
+        - nested_groups
+        - base_dn_example
+      properties:
+        preset:
+          $ref: "#/components/schemas/DirectoryPreset"
+        user_filter:
+          type: string
+        login_attr:
+          type: string
+        email_attr:
+          type: string
+        email_fallback_attr:
+          type: [string, "null"]
+        name_attr:
+          type: string
+        given_name_attr:
+          type: [string, "null"]
+        surname_attr:
+          type: [string, "null"]
+        id_attr:
+          type: string
+        groups_attr:
+          type: string
+        nested_groups:
+          type: boolean
+        base_dn_example:
+          type: string
+    DirectorySettingsUpdate:
+      allOf:
+        - $ref: "#/components/schemas/DirectoryConfig"
+        - type: object
+          properties:
+            bind_password:
+              type: string
+              maxLength: 256
+              writeOnly: true
+              description: A new bind password; empty or absent keeps the stored one.
+            test_proof:
+              type: string
+              maxLength: 256
+              description: "`proof` of a successful connection test of these settings."
+    DirectoryTestStep:
+      type: object
+      additionalProperties: false
+      required: [step, status, code, detail]
+      properties:
+        step:
+          type: string
+          enum: [connect, tls, bind, search, server]
+        status:
+          type: string
+          enum: [ok, warning, failed, skipped]
+        code:
+          type: [string, "null"]
+          description: |
+            Reason for the administrator (translated by the client): `dns`, `refused`, `timeout`,
+            `unreachable`, `tls_unknown_authority`, `tls_hostname`, `tls_expired`, `tls_expiring`,
+            `tls_handshake`, `start_tls_failed`, `plain`, `plain_not_allowed`, `invalid_credentials`,
+            `bind_password_missing`, `no_such_object`, `insufficient_access`, `no_entries`,
+            `unwilling_to_perform`, `strong_auth_required`, `protocol`, `unknown`.
+        detail:
+          type: [string, "null"]
+          description: Technical detail for the administrator (the server's message); never a secret.
+        server:
+          type: [string, "null"]
+          description: The address the step used.
+        certificate:
+          anyOf:
+            - $ref: "#/components/schemas/DirectoryCertificate"
+            - type: "null"
+        count:
+          type: [integer, "null"]
+          description: Entries the search found (counted up to 1).
+        vendor:
+          type: [string, "null"]
+        naming_contexts:
+          type: array
+          items:
+            type: string
+    DirectoryCertificate:
+      type: object
+      additionalProperties: false
+      required: [subject, issuer, not_after, dns_names]
+      properties:
+        subject:
+          type: string
+        issuer:
+          type: string
+        not_after:
+          type: string
+          format: date-time
+        dns_names:
+          type: array
+          items:
+            type: string
+    DirectoryConnectionTest:
+      type: object
+      additionalProperties: false
+      required: [ok, steps, proof]
+      properties:
+        ok:
+          type: boolean
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/DirectoryTestStep"
+        proof:
+          type: [string, "null"]
+          description: Present when every step passed; send it back as `test_proof` to turn sign-in on.
+    DirectoryUserTestRequest:
+      type: object
+      additionalProperties: false
+      required: [settings, username]
+      properties:
+        settings:
+          $ref: "#/components/schemas/DirectorySettingsUpdate"
+        username:
+          type: string
+          maxLength: 256
+    DirectoryUserTest:
+      type: object
+      additionalProperties: false
+      required: [found, code, steps, user]
+      properties:
+        found:
+          type: boolean
+        code:
+          type: [string, "null"]
+          description: "Why nothing was found: `not_found`, `ambiguous` (several entries match), `connection` (see `steps`)."
+        steps:
+          type: array
+          description: The connection steps; shown when the connection failed.
+          items:
+            $ref: "#/components/schemas/DirectoryTestStep"
+        user:
+          anyOf:
+            - $ref: "#/components/schemas/DirectoryUserInfo"
+            - type: "null"
+    DirectoryUserInfo:
+      type: object
+      additionalProperties: false
+      required: [dn, login, email, full_name, subject, groups, roles, sign_in]
+      properties:
+        dn:
+          type: string
+        login:
+          type: string
+        email:
+          type: [string, "null"]
+        full_name:
+          type: string
+        subject:
+          type: string
+          description: The permanent identifier the account is linked by.
+        groups:
+          type: array
+          items:
+            type: string
+        roles:
+          type: array
+          description: Roles Qadam would give a new member (and set on every sign-in with `sync_roles`).
+          items:
+            $ref: "#/components/schemas/Role"
+        sign_in:
+          $ref: "#/components/schemas/DirectorySignInCheck"
+    DirectorySignInCheck:
+      type: object
+      additionalProperties: false
+      required: [allowed, outcome, reasons]
+      properties:
+        allowed:
+          type: boolean
+        outcome:
+          type: string
+          enum: [existing, link, create, denied]
+          description: "`existing` - already linked; `link` - an account with the e-mail is linked; `create` - a new account."
+        reasons:
+          type: array
+          description: |
+            Refusals (`required_group`, `email_missing`, `link_denied`, `auto_provision_off`,
+            `suspended`) and notes (`email_unverified` - a new account gets an unconfirmed address,
+            `default_role` - no group is mapped, `joins` - the account becomes a member).
+          items:
+            type: string
+            enum: [required_group, email_missing, link_denied, auto_provision_off, suspended, email_unverified, default_role, joins]
     Tenant:
       type: object
       additionalProperties: false
@@ -3056,6 +3578,7 @@ components:
         - self_signup
         - email_domains
         - sso_providers
+        - directory_login
         - consent
         - ip_policy
       properties:
@@ -3092,6 +3615,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SsoProvider"
+        directory_login:
+          $ref: "#/components/schemas/DirectoryLogin"
         consent:
           $ref: "#/components/schemas/ConsentPolicy"
         ip_policy:

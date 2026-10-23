@@ -40,6 +40,7 @@ const tenant: Tenant = {
   self_signup: true,
   email_domains: ['kazutb.edu.kz'],
   sso_providers: [],
+  directory_login: { enabled: false, label: null, username_hint: null },
   consent: { version: '2026-09', text: { ru: 'Согласие на обработку персональных данных.' } },
   ip_policy: null,
 };

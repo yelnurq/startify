@@ -15,7 +15,8 @@
     "aiUsage": "AI usage",
     "rubric": "Evaluation rubric",
     "showcaseReview": "Showcase review",
-    "contacts": "Contact requests"
+    "contacts": "Contact requests",
+    "directory": "Directory sign-in"
   },
   "titles": {
     "home": "Home",
@@ -30,7 +31,8 @@
     "projects": "Projects",
     "rubric": "Evaluation rubric",
     "showcaseReview": "Showcase review",
-    "contacts": "Showcase contact requests"
+    "contacts": "Showcase contact requests",
+    "directory": "Directory sign-in"
   },
   "user": {
     "menu": "User menu"

@@ -18,6 +18,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/audit"
 	"github.com/yelnurq/startify/backend/internal/auth"
+	"github.com/yelnurq/startify/backend/internal/directory"
 	"github.com/yelnurq/startify/backend/internal/evaluation"
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/imports"
@@ -82,6 +83,7 @@ type (
 	incubatorHandler  = incubator.Handler
 	evaluationHandler = evaluation.Handler
 	showcaseHandler   = showcase.Handler
+	directoryHandler  = directory.Handler
 )
 
 // server composes the module handlers into the generated strict interface.
@@ -101,6 +103,7 @@ type server struct {
 	*incubatorHandler
 	*evaluationHandler
 	*showcaseHandler
+	*directoryHandler
 }
 
 var _ apigen.StrictServerInterface = (*server)(nil)
@@ -120,6 +123,7 @@ type Services struct {
 	Incubator   *incubator.Service
 	Evaluations *evaluation.Service
 	Showcase    *showcase.Service
+	Directory   *directory.Service
 }
 
 func (a *API) services(ctx context.Context) (*Services, error) {
@@ -156,6 +160,9 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,
 	})
+	directorySvc := directory.NewService(directory.Deps{
+		DB: a.DB, Keys: keys, Auth: authSvc, Tenants: tenants, Audit: auditLog, Limiter: limiter, Production: cfg.IsProduction(),
+	})
 	// The mock provider answers incubator and evaluation prompts like a
 	// mentor and a reviewer would.
 	incubator.RegisterMock()
@@ -191,6 +198,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	projects.UseTeamListener(showcaseSvc)
 	return &Services{
 		Showcase:    showcaseSvc,
+		Directory:   directorySvc,
 		AI:          gateway,
 		Knowledge:   knowledgeSvc,
 		Projects:    projects,
@@ -249,7 +257,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 
 	srv := &server{
 		systemHandler:  system.NewHandler(a.Config.App.DefaultLocale),
-		tenantHandler:  tenant.NewHandler(svc.Tenants),
+		tenantHandler:  tenant.NewHandler(svc.Tenants, svc.Directory),
 		authHandler:    auth.NewHandler(svc.Auth),
 		userHandler:    user.NewHandler(svc.Users),
 		orgHandler:     org.NewHandler(svc.Org),
@@ -268,6 +276,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 		incubatorHandler:  incubator.NewHandler(svc.Incubator),
 		evaluationHandler: evaluation.NewHandler(svc.Evaluations),
 		showcaseHandler:   showcase.NewHandler(svc.Showcase),
+		directoryHandler:  directory.NewHandler(svc.Directory),
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {

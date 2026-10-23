@@ -1,0 +1,124 @@
+# Demo directory of KazUTB (development only). Users match the demo people of
+# the README but have their own directory passwords (README, "Демо-каталог").
+# Groups are groupOfUniqueNames: the memberOf overlay of the image fills the
+# memberOf attribute of their members, nested groups included (innovation is
+# a member of staff).
+
+dn: ou=Service Accounts,dc=kazutb,dc=local
+objectClass: organizationalUnit
+ou: Service Accounts
+
+dn: ou=Staff,dc=kazutb,dc=local
+objectClass: organizationalUnit
+ou: Staff
+
+dn: ou=Students,dc=kazutb,dc=local
+objectClass: organizationalUnit
+ou: Students
+
+dn: ou=Groups,dc=kazutb,dc=local
+objectClass: organizationalUnit
+ou: Groups
+
+# Read-only account Qadam searches the directory with. Password: Qadam-Ldap-Bind-2026
+dn: cn=qadam-svc,ou=Service Accounts,dc=kazutb,dc=local
+objectClass: applicationProcess
+objectClass: simpleSecurityObject
+cn: qadam-svc
+description: Qadam: read-only search of users and groups
+userPassword: {SSHA}yu/kHCACwLn3NlV8+pBG+Ut/fXAZCRgkCYb5Zg==
+
+# Password: Erlan-Ldap-2026
+dn: uid=seitkaziev.e,ou=Staff,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: seitkaziev.e
+cn: Ерлан Сейтқазиев
+displayName: Ерлан Сейтқазиев
+givenName: Ерлан
+sn: Сейтқазиев
+mail: admin@qadam.test
+title: Офис коммерциализации
+userPassword: {SSHA}46ploywJ8TYDISv5AQDXUZpjXWiLDadFejE28Q==
+
+# Password: Dinara-Ldap-2026
+dn: uid=abenova.d,ou=Staff,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: abenova.d
+cn: Динара Әбенова
+displayName: Динара Әбенова
+givenName: Динара
+sn: Әбенова
+mail: innovation@qadam.test
+userPassword: {SSHA}vR9NGAUjnILBCwl0mdwixtwdDM37DhV7Flnf6A==
+
+# Password: Gulnar-Ldap-2026
+dn: uid=kassymova.g,ou=Staff,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: kassymova.g
+cn: Гүлнар Қасымова
+displayName: Гүлнар Қасымова
+givenName: Гүлнар
+sn: Қасымова
+mail: gulnar@qadam.test
+userPassword: {SSHA}h/ofn3BelOxDtrP6spT7uGUbZAkyI4zlIvdV2g==
+
+# Password: Aigerim-Ldap-2026
+dn: uid=sarsenova.a,ou=Students,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: sarsenova.a
+cn: Айгерім Сәрсенова
+displayName: Айгерім Сәрсенова
+givenName: Айгерім
+sn: Сәрсенова
+mail: aigerim@qadam.test
+userPassword: {SSHA}hNp/mJmHQ1OCRGLllZjq4fvRnqsi86k+/PCxWQ==
+
+# Password: Nurlan-Ldap-2026
+dn: uid=zhumabekov.n,ou=Students,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: zhumabekov.n
+cn: Нұрлан Жұмабеков
+displayName: Нұрлан Жұмабеков
+givenName: Нұрлан
+sn: Жұмабеков
+mail: nurlan@qadam.test
+userPassword: {SSHA}EnnFxUOKK5YC7zODubnP1yxUhi3wdkyFBPSyJA==
+
+# Has no Qadam account yet: the first sign-in creates one. Password: Nursultan-Ldap-2026
+dn: uid=akhmetov.n,ou=Students,dc=kazutb,dc=local
+objectClass: inetOrgPerson
+uid: akhmetov.n
+cn: Нұрсұлтан Ахметов
+displayName: Нұрсұлтан Ахметов
+givenName: Нұрсұлтан
+sn: Ахметов
+mail: nursultan.akhmetov@qadam.test
+userPassword: {SSHA}jJMlXR1RCSdq/nnw2pAJYc1ooaRR+PWiycsDjA==
+
+dn: cn=students,ou=Groups,dc=kazutb,dc=local
+objectClass: groupOfUniqueNames
+cn: students
+description: Students of KazUTB
+uniqueMember: uid=sarsenova.a,ou=Students,dc=kazutb,dc=local
+uniqueMember: uid=zhumabekov.n,ou=Students,dc=kazutb,dc=local
+uniqueMember: uid=akhmetov.n,ou=Students,dc=kazutb,dc=local
+
+dn: cn=innovation,ou=Groups,dc=kazutb,dc=local
+objectClass: groupOfUniqueNames
+cn: innovation
+description: Office of commercialisation and innovation
+uniqueMember: uid=abenova.d,ou=Staff,dc=kazutb,dc=local
+
+dn: cn=staff,ou=Groups,dc=kazutb,dc=local
+objectClass: groupOfUniqueNames
+cn: staff
+description: Teaching and administrative staff (includes the innovation group)
+uniqueMember: uid=seitkaziev.e,ou=Staff,dc=kazutb,dc=local
+uniqueMember: uid=kassymova.g,ou=Staff,dc=kazutb,dc=local
+uniqueMember: cn=innovation,ou=Groups,dc=kazutb,dc=local
+
+dn: cn=admins,ou=Groups,dc=kazutb,dc=local
+objectClass: groupOfUniqueNames
+cn: admins
+description: Administrators of Qadam
+uniqueMember: uid=seitkaziev.e,ou=Staff,dc=kazutb,dc=local
