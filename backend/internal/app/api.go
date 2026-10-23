@@ -220,6 +220,10 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("app: %w", err)
 	}
+	streams, uploads, err := specRoutes()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	r := chi.NewRouter()
 	r.Use(
@@ -271,10 +275,10 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 		ResponseErrorHandlerFunc: httpx.WriteError,
 	})
 
-	r.Route("/api/v1", func(api chi.Router) {
+	r.Route(apiBase, func(api chi.Router) {
 		api.Use(
-			httpx.Timeout(a.Config.HTTP.RequestTimeout),
-			httpx.MaxBody(a.Config.HTTP.MaxBodyBytes, a.Config.Files.MaxBytes+1<<20),
+			httpx.Timeout(a.Config.HTTP.RequestTimeout, streams),
+			httpx.MaxBody(a.Config.HTTP.MaxBodyBytes, a.Config.Files.MaxBytes+1<<20, uploads),
 			httpx.KeepRequest,
 			svc.Tenants.Middleware,
 			auth.CSRF,
@@ -300,7 +304,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 	// /showcase, sitemap.xml and robots.txt here); no sign-in, so they show
 	// only public pages.
 	r.Group(func(seo chi.Router) {
-		seo.Use(httpx.Timeout(a.Config.HTTP.RequestTimeout), httpx.KeepRequest, svc.Tenants.Middleware)
+		seo.Use(httpx.Timeout(a.Config.HTTP.RequestTimeout, httpx.Routes{}), httpx.KeepRequest, svc.Tenants.Middleware)
 		svc.Showcase.SEORoutes(seo)
 	})
 

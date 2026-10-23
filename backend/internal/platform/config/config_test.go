@@ -25,7 +25,7 @@ func TestFromEnvironDefaults(t *testing.T) {
 	if cfg.Env != EnvDevelopment {
 		t.Errorf("Env = %q, want development", cfg.Env)
 	}
-	if cfg.HTTP.Addr != ":8080" || cfg.HTTP.ReadHeaderTimeout != 5*time.Second {
+	if cfg.HTTP.Addr != ":8080" || cfg.HTTP.ReadHeaderTimeout != 5*time.Second || cfg.HTTP.WriteTimeout != 5*time.Minute {
 		t.Errorf("unexpected HTTP defaults: %+v", cfg.HTTP)
 	}
 	if cfg.Database.MigrateURL != cfg.Database.URL {
@@ -109,6 +109,13 @@ func TestProductionHardening(t *testing.T) {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error should mention %q, got: %v", want, err)
 		}
+	}
+}
+
+func TestWriteTimeoutCoversRequestTimeout(t *testing.T) {
+	_, err := FromEnviron(append(validEnviron(), "QADAM_HTTP_WRITE_TIMEOUT=10s", "QADAM_HTTP_REQUEST_TIMEOUT=30s"))
+	if err == nil || !strings.Contains(err.Error(), "QADAM_HTTP_WRITE_TIMEOUT must not be shorter") {
+		t.Fatalf("expected write timeout error, got %v", err)
 	}
 }
 

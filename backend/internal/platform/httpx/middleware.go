@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"mime"
 	"net"
 	"net/http"
 	"net/netip"
@@ -192,13 +191,14 @@ func SecurityHeaders(hsts bool) func(http.Handler) http.Handler {
 	}
 }
 
-// MaxBody limits the request body size; multipart uploads may be as large as
-// uploadLimit (handlers enforce the limit of each kind of file).
-func MaxBody(limit, uploadLimit int64) func(http.Handler) http.Handler {
+// MaxBody limits the request body size. Requests to the upload routes may be
+// as large as uploadLimit (handlers enforce the limit of each kind of file);
+// the route decides, not the Content-Type header, which any client can set.
+func MaxBody(limit, uploadLimit int64, uploads Routes) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			n := limit
-			if mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err == nil && mt == "multipart/form-data" {
+			if uploads.Match(r) {
 				n = uploadLimit
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, n)
@@ -221,12 +221,14 @@ func RequestFrom(ctx context.Context) (*http.Request, bool) {
 	return r, ok
 }
 
-// Timeout bounds the request context. Server-sent event streams are exempt:
-// they hold the connection open on purpose and manage their own lifetime.
-func Timeout(d time.Duration) func(http.Handler) http.Handler {
+// Timeout bounds the request context. The event-stream routes are exempt:
+// they hold the connection open on purpose, end with the model call and set
+// their own write deadlines (NewSSE). The route decides, not the Accept
+// header, so a client cannot lift the timeout of any other endpoint.
+func Timeout(d time.Duration, streams Routes) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.Contains(r.Header.Get("Accept"), "text/event-stream") {
+			if streams.Match(r) {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -235,4 +237,50 @@ func Timeout(d time.Duration) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// Routes matches requests against route templates such as
+// "POST /api/v1/projects/{projectId}/steps/{stepKey}/mentor", where a {name}
+// segment stands for any non-empty segment.
+type Routes struct {
+	byMethod map[string][][]string
+}
+
+// NewRoutes parses "METHOD /path" templates.
+func NewRoutes(templates ...string) Routes {
+	rs := Routes{byMethod: map[string][][]string{}}
+	for _, t := range templates {
+		method, path, _ := strings.Cut(t, " ")
+		rs.byMethod[method] = append(rs.byMethod[method], strings.Split(path, "/"))
+	}
+	return rs
+}
+
+// Match reports whether the request fits one of the templates. Like chi, it
+// compares the escaped path when the request has one.
+func (rs Routes) Match(r *http.Request) bool {
+	templates := rs.byMethod[r.Method]
+	if len(templates) == 0 {
+		return false
+	}
+	path := r.URL.RawPath
+	if path == "" {
+		path = r.URL.Path
+	}
+	segments := strings.Split(path, "/")
+	return slices.ContainsFunc(templates, func(template []string) bool {
+		if len(template) != len(segments) {
+			return false
+		}
+		for i, s := range template {
+			if strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}") {
+				if segments[i] == "" {
+					return false
+				}
+			} else if s != segments[i] {
+				return false
+			}
+		}
+		return true
+	})
 }

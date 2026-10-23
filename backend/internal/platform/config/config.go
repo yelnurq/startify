@@ -151,8 +151,11 @@ type HTTP struct {
 	Addr              string        `koanf:"addr"`
 	ReadHeaderTimeout time.Duration `koanf:"read_header_timeout"`
 	ReadTimeout       time.Duration `koanf:"read_timeout"`
-	IdleTimeout       time.Duration `koanf:"idle_timeout"`
-	ShutdownTimeout   time.Duration `koanf:"shutdown_timeout"`
+	// WriteTimeout bounds writing a response to a slow client, file downloads
+	// included; event streams set a deadline per event instead.
+	WriteTimeout    time.Duration `koanf:"write_timeout"`
+	IdleTimeout     time.Duration `koanf:"idle_timeout"`
+	ShutdownTimeout time.Duration `koanf:"shutdown_timeout"`
 	// RequestTimeout bounds non-streaming requests; streaming endpoints manage their own deadlines.
 	RequestTimeout time.Duration `koanf:"request_timeout"`
 	MaxBodyBytes   int64         `koanf:"max_body_bytes"`
@@ -210,6 +213,7 @@ func defaults() map[string]any {
 		"http.addr":                     ":8080",
 		"http.read_header_timeout":      "5s",
 		"http.read_timeout":             "60s",
+		"http.write_timeout":            "5m",
 		"http.idle_timeout":             "120s",
 		"http.shutdown_timeout":         "20s",
 		"http.request_timeout":          "30s",
@@ -337,6 +341,7 @@ func (c *Config) Validate() error {
 	}{
 		{"QADAM_HTTP_READ_HEADER_TIMEOUT", c.HTTP.ReadHeaderTimeout},
 		{"QADAM_HTTP_READ_TIMEOUT", c.HTTP.ReadTimeout},
+		{"QADAM_HTTP_WRITE_TIMEOUT", c.HTTP.WriteTimeout},
 		{"QADAM_HTTP_IDLE_TIMEOUT", c.HTTP.IdleTimeout},
 		{"QADAM_HTTP_SHUTDOWN_TIMEOUT", c.HTTP.ShutdownTimeout},
 		{"QADAM_HTTP_REQUEST_TIMEOUT", c.HTTP.RequestTimeout},
@@ -344,6 +349,9 @@ func (c *Config) Validate() error {
 		if d.value <= 0 {
 			fail("%s must be a positive duration", d.name)
 		}
+	}
+	if c.HTTP.WriteTimeout < c.HTTP.RequestTimeout {
+		fail("QADAM_HTTP_WRITE_TIMEOUT must not be shorter than QADAM_HTTP_REQUEST_TIMEOUT")
 	}
 	if c.HTTP.MaxBodyBytes < 1024 {
 		fail("QADAM_HTTP_MAX_BODY_BYTES must be at least 1024")

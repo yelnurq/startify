@@ -73,8 +73,10 @@ func TestWriteErrorValidationAndRetryAfter(t *testing.T) {
 	}
 }
 
+var uploadRoutes = NewRoutes("PUT /api/v1/me/avatar", "POST /api/v1/projects/{projectId}/files")
+
 func TestMaxBodyProducesTooLarge(t *testing.T) {
-	h := MaxBody(1024, 8192)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := MaxBody(1024, 8192, uploadRoutes)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := make([]byte, 4096)
 		_, err := r.Body.Read(buf)
 		for err == nil {
@@ -82,7 +84,9 @@ func TestMaxBodyProducesTooLarge(t *testing.T) {
 		}
 		WriteError(w, r, err)
 	}))
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("x", 4096)))
+	// A multipart Content-Type does not lift the limit outside the upload routes.
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/projects", strings.NewReader(strings.Repeat("x", 4096)))
+	req.Header.Set("Content-Type", "multipart/form-data; boundary=x")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if p := decodeProblem(t, rec); p.Status != http.StatusRequestEntityTooLarge || p.Code != "request.too_large" {
@@ -92,14 +96,45 @@ func TestMaxBodyProducesTooLarge(t *testing.T) {
 
 func TestMaxBodyAllowsLargerUploads(t *testing.T) {
 	var read int64
-	h := MaxBody(1024, 8192)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	h := MaxBody(1024, 8192, uploadRoutes)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		read, _ = io.Copy(io.Discard, r.Body)
 	}))
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("x", 4096)))
-	req.Header.Set("Content-Type", "multipart/form-data; boundary=x")
-	h.ServeHTTP(httptest.NewRecorder(), req)
-	if read != 4096 {
-		t.Fatalf("multipart body cut at %d bytes", read)
+	for _, path := range []string{"/api/v1/me/avatar", "/api/v1/projects/0198/files"} {
+		method := http.MethodPost
+		if strings.HasSuffix(path, "avatar") {
+			method = http.MethodPut
+		}
+		read = 0
+		req := httptest.NewRequest(method, path, strings.NewReader(strings.Repeat("x", 4096)))
+		req.Header.Set("Content-Type", "multipart/form-data; boundary=x")
+		h.ServeHTTP(httptest.NewRecorder(), req)
+		if read != 4096 {
+			t.Fatalf("%s: upload cut at %d bytes", path, read)
+		}
+	}
+}
+
+func TestRoutesMatch(t *testing.T) {
+	rs := NewRoutes("POST /api/v1/projects/{projectId}/steps/{stepKey}/mentor", "GET /api/v1/meta")
+	for _, c := range []struct {
+		method, target string
+		want           bool
+	}{
+		{http.MethodPost, "/api/v1/projects/0198/steps/problem/mentor", true},
+		{http.MethodGet, "/api/v1/projects/0198/steps/problem/mentor", false},
+		{http.MethodPost, "/api/v1/projects//steps/problem/mentor", false},
+		{http.MethodPost, "/api/v1/projects/0198/steps/problem/mentor/", false},
+		{http.MethodPost, "/api/v1/projects/0198/steps/problem", false},
+		{http.MethodGet, "/api/v1/meta", true},
+		{http.MethodGet, "/api/v1/meta?x=1", true},
+		{http.MethodGet, "/api/v1/metadata", false},
+	} {
+		if got := rs.Match(httptest.NewRequest(c.method, c.target, http.NoBody)); got != c.want {
+			t.Errorf("%s %s: %v, want %v", c.method, c.target, got, c.want)
+		}
+	}
+	if NewRoutes().Match(httptest.NewRequest(http.MethodGet, "/", http.NoBody)) {
+		t.Fatal("an empty set matches nothing")
 	}
 }
 
@@ -166,19 +201,59 @@ func TestRecovererReturnsProblem(t *testing.T) {
 	}
 }
 
-func TestTimeoutSkipsEventStreams(t *testing.T) {
+func TestTimeoutSkipsEventStreamRoutes(t *testing.T) {
 	var hasDeadline bool
-	h := Timeout(time.Second)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	h := Timeout(time.Second, NewRoutes("POST /api/v1/admin/ai/check"))(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		_, hasDeadline = r.Context().Deadline()
 	}))
-	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/projects", http.NoBody)
 	h.ServeHTTP(httptest.NewRecorder(), req)
 	if !hasDeadline {
 		t.Fatal("regular request must get a deadline")
 	}
+	// The Accept header does not lift the timeout of other endpoints.
 	req.Header.Set("Accept", "text/event-stream")
 	h.ServeHTTP(httptest.NewRecorder(), req)
+	if !hasDeadline {
+		t.Fatal("Accept: text/event-stream must not lift the timeout")
+	}
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/admin/ai/check", http.NoBody))
 	if hasDeadline {
-		t.Fatal("event stream must not get a deadline")
+		t.Fatal("event-stream route must not get a deadline")
+	}
+}
+
+// An event stream outlives the server's read and write timeouts: the read
+// deadline would cancel the request context, the write deadline would cut
+// the response.
+func TestSSEOutlivesServerTimeouts(t *testing.T) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		sse := NewSSE(w)
+		for i := range 4 {
+			time.Sleep(100 * time.Millisecond)
+			if r.Context().Err() != nil {
+				_ = sse.Event("error", "request context cancelled")
+				return
+			}
+			if sse.Event("tick", i) != nil {
+				return
+			}
+		}
+		_ = sse.Event("done", true)
+	}))
+	srv.Config.ReadTimeout = 150 * time.Millisecond
+	srv.Config.WriteTimeout = 150 * time.Millisecond
+	srv.Start()
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL, "application/json", strings.NewReader(`{"q":"?"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, _ := io.ReadAll(resp.Body)
+	if !strings.Contains(string(body), "event: done") {
+		t.Fatalf("stream cut short:\n%s", body)
 	}
 }
