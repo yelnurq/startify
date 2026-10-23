@@ -55,7 +55,8 @@ declare module '@tanstack/react-router' {
       | 'projects'
       | 'rubric'
       | 'showcaseReview'
-      | 'contacts';
+      | 'contacts'
+      | 'directory';
     /** The page brings its own columns: no content padding (project workspace). */
     bleed?: boolean;
   }

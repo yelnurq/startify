@@ -1,0 +1,210 @@
+{
+  "title": "Directory sign-in",
+  "subtitle": "Students and staff sign in to Qadam with their university login and password, from Active Directory or another LDAP directory.",
+  "status": {
+    "on": "On",
+    "off": "Off"
+  },
+  "guide": {
+    "title": "How to connect",
+    "subtitle": "Five steps. The full guide for the university administrator is in the platform documentation.",
+    "steps": {
+      "ask": "Ask the IT department for the address of a domain controller, the certificate of its certification authority, a read-only service account and the organisational units (OU) of students and staff.",
+      "preset": "Choose the kind of directory: the filter and attributes get typical values.",
+      "connection": "Fill in the connection, the service account and the search base.",
+      "test": "Check the connection and one user.",
+      "enable": "Turn sign-in on and save: the sign-in page gets a tab of the university."
+    }
+  },
+  "preset": {
+    "title": "Kind of directory",
+    "subtitle": "Changing the kind fills the search filter and the attributes with typical values.",
+    "names": {
+      "active_directory": "Active Directory",
+      "openldap": "OpenLDAP",
+      "freeipa": "FreeIPA",
+      "custom": "Other"
+    },
+    "texts": {
+      "active_directory": "Microsoft Active Directory: sAMAccountName login, nested groups.",
+      "openldap": "OpenLDAP with the memberOf overlay: uid login.",
+      "freeipa": "FreeIPA and Red Hat IdM: users in cn=users,cn=accounts.",
+      "custom": "Any LDAP server: the filter and attributes are set by hand."
+    },
+    "confirmTitle": "Replace the filter and attributes?",
+    "confirmText": "You changed the filter or the attributes. The kind “{{name}}” replaces them with its own values.",
+    "confirm": "Replace"
+  },
+  "connection": {
+    "title": "Connection",
+    "subtitle": "The address of a domain controller or LDAP server, and encryption.",
+    "url": "Server address",
+    "urlHint": "For example, ldaps://dc01.kazutb.local:636. Several addresses separated by spaces are fallbacks, tried in order.",
+    "startTls": "StartTLS",
+    "startTlsHint": "Encrypt an ldap:// connection (port 389) before signing in. Not needed for ldaps://.",
+    "ca": "Certificate of the certification authority",
+    "caHint": "If the server certificate was issued by the university's own certification authority, paste the certificate of that authority in PEM format.",
+    "timeout": "Timeout",
+    "timeoutHint": "How many seconds to wait for the server (1 to 60).",
+    "seconds": "s",
+    "plainTitle": "Unencrypted connection",
+    "plainText": "Passwords would cross the network in clear text. This is only for trying things out: in production Qadam refuses to save such settings. Use ldaps:// or StartTLS."
+  },
+  "account": {
+    "title": "Service account",
+    "subtitle": "A read-only account Qadam searches users and groups with.",
+    "bindDn": "Account DN",
+    "bindDnHint": "For example, CN=qadam-svc,OU=Service Accounts,DC=kazutb,DC=local.",
+    "password": "Password",
+    "passwordSet": "A password is set: leave the field empty to keep it",
+    "passwordHint": "Stored encrypted and never shown."
+  },
+  "search": {
+    "title": "User search",
+    "subtitle": "Where to look for accounts and how to find them by login.",
+    "baseDn": "Search base",
+    "baseDnHint": "For example, {{example}}. Nested organisational units are searched too.",
+    "filter": "Filter",
+    "filterHint": "{username} is replaced with the login the person typed; special characters are escaped.",
+    "attributes": "Attributes",
+    "loginAttr": "Login",
+    "emailAttr": "E-mail",
+    "emailFallbackAttr": "Fallback e-mail",
+    "nameAttr": "Full name",
+    "givenNameAttr": "Given name",
+    "surnameAttr": "Surname",
+    "idAttr": "Permanent identifier",
+    "idAttrHint": "Stays the same when an account is renamed: objectGUID, entryUUID or ipaUniqueID.",
+    "groupsAttr": "Groups",
+    "nestedGroups": "Follow nested groups",
+    "nestedGroupsHint": "A member of a group inside another group gets the roles of both."
+  },
+  "roles": {
+    "title": "Roles",
+    "subtitle": "Which Qadam roles members of directory groups get.",
+    "groupDn": "Group DN",
+    "role": "Role",
+    "add": "Add a group",
+    "remove": "Remove the row",
+    "empty": "No groups are mapped: everyone gets the default role.",
+    "defaultRole": "Default role",
+    "defaultRoleHint": "For people in none of the listed groups.",
+    "requiredGroup": "Required group",
+    "requiredGroupHint": "When set, only its members can sign in.",
+    "autoProvision": "Create accounts on the first sign-in",
+    "autoProvisionHint": "Otherwise only people who already have an account in this university can sign in.",
+    "syncRoles": "Update roles at every sign-in",
+    "syncRolesHint": "The listed roles follow the directory groups; roles given by hand and not listed stay as they are."
+  },
+  "page": {
+    "title": "Sign-in page",
+    "subtitle": "How directory sign-in is named on the sign-in page. An empty field means the default text.",
+    "label": "Name",
+    "hint": "Hint under the login",
+    "languages": {
+      "kk": "Қазақша",
+      "ru": "Русский",
+      "en": "English"
+    }
+  },
+  "check": {
+    "title": "Check and turn on",
+    "subtitle": "Checks use the settings of the form, even unsaved ones.",
+    "connection": "Check the connection",
+    "user": "Check a user",
+    "passed": "The connection works",
+    "failed": "The connection failed",
+    "stale": "The connection settings changed after the check: check again.",
+    "enable": "Turn on directory sign-in",
+    "enableHint": "The sign-in page gets a tab “{{label}}”.",
+    "enableNeedsTest": "To turn sign-in on, first check the connection with the current settings successfully.",
+    "changedNeedsTest": "The connection changed: check it, or the changes will not be saved.",
+    "certificate": "Certificate {{subject}}, issued by {{issuer}}, valid until {{date}}",
+    "found": "The filter finds users",
+    "vendor": "Server: {{vendor}}",
+    "namingContexts": "Directory partitions",
+    "useAsBase": "Use as the search base"
+  },
+  "steps": {
+    "connect": "Connecting to the server",
+    "tls": "Encryption (TLS)",
+    "bind": "Service account sign-in",
+    "search": "Search in the base",
+    "server": "Directory server"
+  },
+  "statuses": {
+    "ok": "Done",
+    "warning": "Attention",
+    "failed": "Error",
+    "skipped": "Not checked"
+  },
+  "reasons": {
+    "dns": "The server name is not in DNS. Check the address or use an IP address.",
+    "refused": "The server refused the connection. Check the port (636 for ldaps://, 389 for ldap://) and that the directory service runs.",
+    "timeout": "The server did not answer in time. Check that the firewall lets Qadam reach the domain controller.",
+    "unreachable": "The server's network cannot be reached. Check routing and the firewall.",
+    "tls_unknown_authority": "Qadam does not trust the server certificate: paste the certificate of the university's certification authority.",
+    "tls_hostname": "The certificate is for another name. Use the server name of the certificate in the address (for example, dc01.kazutb.local), not an IP address.",
+    "tls_expired": "The server certificate has expired. Ask the IT department to renew it.",
+    "tls_expiring": "The server certificate expires soon: remind the IT department to renew it.",
+    "tls_handshake": "Encryption could not be set up. Check the port: ldaps:// usually 636, StartTLS 389.",
+    "start_tls_failed": "The server did not accept StartTLS. Use ldaps:// and port 636.",
+    "plain": "Unencrypted connection: passwords travel in clear text. Allowed for trying things out only.",
+    "plain_not_allowed": "Unencrypted connections are not allowed: use ldaps:// or turn on StartTLS.",
+    "invalid_credentials": "The DN or the password of the service account is wrong.",
+    "bind_password_missing": "Enter the password of the service account.",
+    "no_such_object": "The directory has no such entry. Check the DN, for example OU=Students,DC=kazutb,DC=local.",
+    "insufficient_access": "The service account may not read. Ask the IT department for read access to users and groups.",
+    "no_entries": "The filter found no users. Check the filter and the search base.",
+    "unwilling_to_perform": "The server refused the operation. Check that the account is not disabled.",
+    "strong_auth_required": "The server requires encryption: use ldaps:// or StartTLS.",
+    "referral": "This entry lives on another server. Use a search base in the domain of this controller.",
+    "protocol": "The server did not answer in LDAP. Check the address and the port.",
+    "unknown": "Unknown error: details below."
+  },
+  "userCheck": {
+    "title": "Check a user",
+    "subtitle": "We find the user without a password and show what happens when they sign in.",
+    "username": "Login",
+    "find": "Find",
+    "codes": {
+      "not_found": "No such user. Check the login, the search base and the filter.",
+      "ambiguous": "Several entries match the login: narrow the filter or the search base. This user cannot sign in.",
+      "connection": "Could not connect to the directory: see the steps of the check."
+    },
+    "dn": "DN",
+    "login": "Login",
+    "email": "E-mail",
+    "noEmail": "none",
+    "name": "Name",
+    "subject": "Identifier",
+    "groups": "Groups",
+    "noGroups": "In no groups",
+    "roles": "Roles in Qadam",
+    "allowed": "Sign-in will be allowed",
+    "denied": "Sign-in will be refused",
+    "outcomes": {
+      "existing": "The account is already linked to the directory.",
+      "link": "The existing account with this e-mail will be linked to the directory.",
+      "create": "A new account is created at the first sign-in.",
+      "denied": "Sign-in will be refused."
+    },
+    "reasons": {
+      "required_group": "The user is not in the required group.",
+      "email_missing": "The user has no e-mail in the directory: fill it in or choose another e-mail attribute.",
+      "link_denied": "The account with this e-mail belongs to another university and cannot be linked.",
+      "auto_provision_off": "There is no account, and creating accounts at the first sign-in is off.",
+      "suspended": "The member is blocked in Qadam.",
+      "email_unverified": "The e-mail is not on the university's domains: a new account gets an unconfirmed address.",
+      "default_role": "No group is mapped: the default role is given.",
+      "joins": "The account becomes a member of the university."
+    }
+  },
+  "save": {
+    "saved": "Settings saved",
+    "unsaved": "There are unsaved changes",
+    "staleTitle": "Another administrator changed the settings",
+    "staleText": "Load them again: your changes were not saved.",
+    "reload": "Load again"
+  }
+}

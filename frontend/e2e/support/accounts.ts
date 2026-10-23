@@ -31,9 +31,21 @@ export function uniqueEmail(prefix: string): string {
   return `e2e.${prefix}.${salt}@qadam.test`;
 }
 
+/**
+ * On the sign-in page, switches to e-mail sign-in when the university also
+ * offers its directory (that tab comes first then).
+ */
+export async function chooseEmailSignIn(page: Page) {
+  // The tabs appear once the settings of the university have loaded.
+  await page.waitForLoadState('networkidle');
+  const email = page.getByRole('radio', { name: 'Почта', exact: true });
+  if (await email.isVisible()) await email.click();
+}
+
 /** Fills in and submits the sign-in form. */
 export async function submitSignIn(page: Page, email: string, password = DEMO_PASSWORD) {
   await page.goto('/login');
+  await chooseEmailSignIn(page);
   await page.getByLabel('Электронная почта').fill(email);
   await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();

@@ -42,6 +42,7 @@ const tenant: Tenant = {
   self_signup: true,
   email_domains: [],
   sso_providers: [],
+  directory_login: { enabled: false, label: null, username_hint: null },
   consent: { version: '2026-09', text: { ru: 'Согласие.' } },
   ip_policy: null,
 };
@@ -98,5 +99,48 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Отправить письмо ещё раз' }));
     expect(await screen.findByRole('button', { name: 'Письмо отправлено' })).toBeDisabled();
     expect(resent).toEqual({ email: 'aru@kazutb.edu.kz' });
+  });
+
+  it('offers the university directory first when the university turned it on', async () => {
+    let sent: unknown;
+    server.use(
+      http.get('*/api/v1/tenant', () =>
+        HttpResponse.json({
+          ...tenant,
+          directory_login: {
+            enabled: true,
+            label: { ru: 'Учётная запись КазУТБ' },
+            username_hint: { ru: 'Логин как в Outlook: ivanov.a' },
+          },
+        }),
+      ),
+      http.post('*/api/v1/auth/directory/login', async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(
+          {
+            type: 'about:blank',
+            title: 'Unauthorized',
+            status: 401,
+            code: 'auth.invalid_credentials',
+          },
+          { status: 401, headers: { 'Content-Type': 'application/problem+json' } },
+        );
+      }),
+    );
+    const user = await renderPage();
+    expect(await screen.findByRole('radio', { name: 'Учётная запись КазУТБ' })).toBeChecked();
+    expect(screen.getByText('Логин как в Outlook: ivanov.a')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Логин'), 'ivanov.a');
+    await user.type(screen.getByLabelText('Пароль'), 'Kazutb-Directory-1');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
+
+    expect(await screen.findByText('Неверный логин или пароль.')).toBeInTheDocument();
+    expect(sent).toEqual({ username: 'ivanov.a', password: 'Kazutb-Directory-1' });
+
+    // E-mail sign-in stays one click away, with the code and SSO.
+    await user.click(screen.getByRole('radio', { name: 'Почта' }));
+    expect(screen.getByLabelText('Электронная почта')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Войти по коду из письма' })).toBeInTheDocument();
+    expect(screen.queryByText('Неверный логин или пароль.')).not.toBeInTheDocument();
   });
 });

@@ -381,6 +381,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/directory/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with the account of the university directory
+         * @description Login and password of the university's Active Directory or another LDAP directory, when the
+         *     university enabled it (`directory_login.enabled` of `GET /tenant`). An empty or blank password
+         *     is refused before the directory is contacted. The account is found by its directory identity;
+         *     a first sign-in links an existing account with the same address under the rules of single
+         *     sign-on (a member of this university or an address on its e-mail domains), otherwise creates
+         *     one when the university allows it. Errors: `auth.invalid_credentials` (401: unknown login,
+         *     wrong password or a login that matches several entries), `directory.disabled` (404),
+         *     `directory.not_allowed`, `directory.email_missing`, `directory.password_expired`,
+         *     `directory.account_disabled`, `auth.sso_link_denied`, `auth.not_a_member`,
+         *     `auth.account_suspended` (403), 422 (empty login or password), `auth.too_many_attempts` (429),
+         *     `directory.unavailable` (503).
+         */
+        post: operations["directoryLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -794,6 +824,83 @@ export interface paths {
         get: operations["getAiUsage"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Directory sign-in settings of the university
+         * @description Requires `tenant_admin`. Before the first save the defaults of Active Directory are
+         *     returned (`configured: false`). The bind password is never returned: `has_bind_password`
+         *     tells whether one is stored.
+         */
+        get: operations["getDirectorySettings"];
+        /**
+         * Save the directory sign-in settings
+         * @description Requires `tenant_admin`. Addresses must be `ldaps://` or `ldap://` (plain `ldap://` without
+         *     StartTLS only outside production), DNs and the filter must parse, the filter must contain
+         *     `{username}`. An empty or absent `bind_password` keeps the stored one. Turning sign-in on,
+         *     or changing the connection while it is on, needs `test_proof` from a successful
+         *     `POST /admin/directory/test` of the same connection (`directory.test_required`, 422).
+         *     Audited without secrets.
+         */
+        put: operations["updateDirectorySettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/directory/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the connection to the directory
+         * @description Requires `tenant_admin`. Uses the settings of the form (not saved yet) with the stored bind
+         *     password unless a new one is given. Steps are reported separately: connection, TLS, bind of
+         *     the service account, search in the base DN, the directory server (RootDSE). A successful check
+         *     returns `proof` for `test_proof` of the update. At most 30 checks a minute
+         *     (`directory.too_many_tests`, 429).
+         */
+        post: operations["testDirectoryConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/directory/test-user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Look a user up in the directory without a password
+         * @description Requires `tenant_admin`. Finds the user with the settings of the form and shows what Qadam
+         *     would make of the entry: DN, login, e-mail, name, identifier, groups, roles, and whether
+         *     sign-in would be allowed. Shares the limit of `POST /admin/directory/test`.
+         */
+        post: operations["testDirectoryUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1965,6 +2072,174 @@ export interface components {
             id: string;
             name: components["schemas"]["LocalizedText"];
         };
+        /** @description Sign-in with the account of the university directory (`POST /auth/directory/login`). */
+        DirectoryLogin: {
+            enabled: boolean;
+            /** @description Name of the sign-in option ("Учётная запись КазУТБ"); null - the default name. */
+            label: components["schemas"]["LocalizedText"] | null;
+            /** @description Hint under the login field ("Логин как в Outlook - ivanov.a"). */
+            username_hint: components["schemas"]["LocalizedText"] | null;
+        };
+        DirectoryLoginRequest: {
+            /** @description The login in the directory; Active Directory also accepts `user@domain` and `DOMAIN\user`. */
+            username: string;
+            password: string;
+        };
+        /**
+         * @description The kind of directory; its defaults fill the filter and the attributes.
+         * @enum {string}
+         */
+        DirectoryPreset: "active_directory" | "openldap" | "freeipa" | "custom";
+        DirectoryRoleMapping: {
+            group_dn: string;
+            role: components["schemas"]["Role"];
+        };
+        /** @description The settings of directory sign-in an administrator edits. */
+        DirectoryConfig: {
+            enabled: boolean;
+            preset: components["schemas"]["DirectoryPreset"];
+            /**
+             * @description One or more `ldaps://host:636` or `ldap://host:389` addresses separated by spaces, tried in order.
+             * @example ldaps://dc01.kazutb.local:636 ldaps://dc02.kazutb.local:636
+             */
+            url: string;
+            /** @description Upgrade `ldap://` connections with StartTLS. */
+            start_tls: boolean;
+            /** @description Certificate (PEM) of the university's certification authority, when it is not a public one. */
+            ca_cert_pem: string | null;
+            timeout_seconds: number;
+            /** @example CN=qadam-svc,OU=Service Accounts,DC=kazutb,DC=local */
+            bind_dn: string;
+            /** @example OU=Students,DC=kazutb,DC=local */
+            user_base_dn: string;
+            /** @description LDAP filter with the `{username}` placeholder (the login is escaped). */
+            user_filter: string;
+            login_attr: string;
+            email_attr: string;
+            /** @description Read when the e-mail attribute is empty (`userPrincipalName` in Active Directory). */
+            email_fallback_attr: string | null;
+            name_attr: string;
+            given_name_attr: string | null;
+            surname_attr: string | null;
+            /** @description Permanent identifier of an entry (`objectGUID`, `entryUUID`, `ipaUniqueID`); the DN when the entry has none. */
+            id_attr: string;
+            groups_attr: string;
+            nested_groups: boolean;
+            role_mappings: components["schemas"]["DirectoryRoleMapping"][];
+            default_role: components["schemas"]["Role"];
+            /** @description Only members of this group (nested ones too, when enabled) may sign in. */
+            required_group_dn: string | null;
+            /** @description Create accounts and memberships on the first sign-in. */
+            auto_provision: boolean;
+            /** @description On every sign-in replace the roles named in `role_mappings`; other roles stay. */
+            sync_roles: boolean;
+            login_label: components["schemas"]["LocalizedText"] | null;
+            username_hint: components["schemas"]["LocalizedText"] | null;
+        };
+        DirectorySettings: components["schemas"]["DirectoryConfig"] & {
+            /** @description A bind password is stored (it is never returned). */
+            has_bind_password: boolean;
+            /** @description The settings were saved at least once. */
+            configured: boolean;
+            /** @description This installation accepts `ldap://` without StartTLS (never in production). */
+            plain_ldap_allowed: boolean;
+            /** @description Defaults of every kind of directory, for switching the kind in the form. */
+            presets: components["schemas"]["DirectoryPresetDefaults"][];
+        };
+        DirectoryPresetDefaults: {
+            preset: components["schemas"]["DirectoryPreset"];
+            user_filter: string;
+            login_attr: string;
+            email_attr: string;
+            email_fallback_attr: string | null;
+            name_attr: string;
+            given_name_attr: string | null;
+            surname_attr: string | null;
+            id_attr: string;
+            groups_attr: string;
+            nested_groups: boolean;
+            base_dn_example: string;
+        };
+        DirectorySettingsUpdate: components["schemas"]["DirectoryConfig"] & {
+            /** @description A new bind password; empty or absent keeps the stored one. */
+            bind_password?: string;
+            /** @description `proof` of a successful connection test of these settings. */
+            test_proof?: string;
+        };
+        DirectoryTestStep: {
+            /** @enum {string} */
+            step: "connect" | "tls" | "bind" | "search" | "server";
+            /** @enum {string} */
+            status: "ok" | "warning" | "failed" | "skipped";
+            /**
+             * @description Reason for the administrator (translated by the client): `dns`, `refused`, `timeout`,
+             *     `unreachable`, `tls_unknown_authority`, `tls_hostname`, `tls_expired`, `tls_expiring`,
+             *     `tls_handshake`, `start_tls_failed`, `plain`, `plain_not_allowed`, `invalid_credentials`,
+             *     `bind_password_missing`, `no_such_object`, `insufficient_access`, `no_entries`,
+             *     `unwilling_to_perform`, `strong_auth_required`, `protocol`, `unknown`.
+             */
+            code: string | null;
+            /** @description Technical detail for the administrator (the server's message); never a secret. */
+            detail: string | null;
+            /** @description The address the step used. */
+            server?: string | null;
+            certificate?: components["schemas"]["DirectoryCertificate"] | null;
+            /** @description Entries the search found (counted up to 1). */
+            count?: number | null;
+            vendor?: string | null;
+            naming_contexts?: string[];
+        };
+        DirectoryCertificate: {
+            subject: string;
+            issuer: string;
+            /** Format: date-time */
+            not_after: string;
+            dns_names: string[];
+        };
+        DirectoryConnectionTest: {
+            ok: boolean;
+            steps: components["schemas"]["DirectoryTestStep"][];
+            /** @description Present when every step passed; send it back as `test_proof` to turn sign-in on. */
+            proof: string | null;
+        };
+        DirectoryUserTestRequest: {
+            settings: components["schemas"]["DirectorySettingsUpdate"];
+            username: string;
+        };
+        DirectoryUserTest: {
+            found: boolean;
+            /** @description Why nothing was found: `not_found`, `ambiguous` (several entries match), `connection` (see `steps`). */
+            code: string | null;
+            /** @description The connection steps; shown when the connection failed. */
+            steps: components["schemas"]["DirectoryTestStep"][];
+            user: components["schemas"]["DirectoryUserInfo"] | null;
+        };
+        DirectoryUserInfo: {
+            dn: string;
+            login: string;
+            email: string | null;
+            full_name: string;
+            /** @description The permanent identifier the account is linked by. */
+            subject: string;
+            groups: string[];
+            /** @description Roles Qadam would give a new member (and set on every sign-in with `sync_roles`). */
+            roles: components["schemas"]["Role"][];
+            sign_in: components["schemas"]["DirectorySignInCheck"];
+        };
+        DirectorySignInCheck: {
+            allowed: boolean;
+            /**
+             * @description `existing` - already linked; `link` - an account with the e-mail is linked; `create` - a new account.
+             * @enum {string}
+             */
+            outcome: "existing" | "link" | "create" | "denied";
+            /**
+             * @description Refusals (`required_group`, `email_missing`, `link_denied`, `auto_provision_off`,
+             *     `suspended`) and notes (`email_unverified` - a new account gets an unconfirmed address,
+             *     `default_role` - no group is mapped, `joins` - the account becomes a member).
+             */
+            reasons: ("required_group" | "email_missing" | "link_denied" | "auto_provision_off" | "suspended" | "email_unverified" | "default_role" | "joins")[];
+        };
         Tenant: {
             /** Format: uuid */
             id: string;
@@ -1983,6 +2258,7 @@ export interface components {
             /** @description Allowed e-mail domains for self sign-up; empty means any. */
             email_domains: string[];
             sso_providers: components["schemas"]["SsoProvider"][];
+            directory_login: components["schemas"]["DirectoryLogin"];
             consent: components["schemas"]["ConsentPolicy"];
             ip_policy: components["schemas"]["IpPolicy"] | null;
         };
@@ -3526,6 +3802,32 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    directoryLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectoryLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed in; session cookies are set. */
+            200: {
+                headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -4182,6 +4484,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiUsageReport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getDirectorySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorySettings"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateDirectorySettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorySettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description The saved settings. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorySettings"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    testDirectoryConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorySettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description The result of every step. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryConnectionTest"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    testDirectoryUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectoryUserTestRequest"];
+            };
+        };
+        responses: {
+            /** @description What was found. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryUserTest"];
                 };
             };
             default: components["responses"]["Problem"];

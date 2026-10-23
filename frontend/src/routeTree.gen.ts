@@ -29,6 +29,7 @@ import { Route as ShowcaseSlugRouteImport } from './app/routes/showcase/$slug'
 import { Route as TeamRequestIdRouteImport } from './app/routes/team/$requestId'
 import { Route as USlugRouteImport } from './app/routes/u/$slug'
 import { Route as AppAdminContactsRouteImport } from './app/routes/app/admin/contacts'
+import { Route as AppAdminDirectoryRouteImport } from './app/routes/app/admin/directory'
 import { Route as AppAdminImportRouteImport } from './app/routes/app/admin/import'
 import { Route as AppAdminKnowledgeRouteImport } from './app/routes/app/admin/knowledge'
 import { Route as AppAdminMembersRouteImport } from './app/routes/app/admin/members'
@@ -146,6 +147,11 @@ const AppAdminContactsRoute = AppAdminContactsRouteImport.update({
   path: '/admin/contacts',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminDirectoryRoute = AppAdminDirectoryRouteImport.update({
+  id: '/admin/directory',
+  path: '/admin/directory',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminImportRoute = AppAdminImportRouteImport.update({
   id: '/admin/import',
   path: '/admin/import',
@@ -253,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/showcase/': typeof ShowcaseIndexRoute
   '/app/admin/contacts': typeof AppAdminContactsRoute
+  '/app/admin/directory': typeof AppAdminDirectoryRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/showcase': typeof ShowcaseIndexRoute
   '/app/admin/contacts': typeof AppAdminContactsRoute
+  '/app/admin/directory': typeof AppAdminDirectoryRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/showcase/': typeof ShowcaseIndexRoute
   '/app/admin/contacts': typeof AppAdminContactsRoute
+  '/app/admin/directory': typeof AppAdminDirectoryRoute
   '/app/admin/import': typeof AppAdminImportRoute
   '/app/admin/knowledge': typeof AppAdminKnowledgeRoute
   '/app/admin/members': typeof AppAdminMembersRoute
@@ -369,6 +378,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/showcase/'
     | '/app/admin/contacts'
+    | '/app/admin/directory'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/showcase'
     | '/app/admin/contacts'
+    | '/app/admin/directory'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/showcase/'
     | '/app/admin/contacts'
+    | '/app/admin/directory'
     | '/app/admin/import'
     | '/app/admin/knowledge'
     | '/app/admin/members'
@@ -624,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminContactsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/directory': {
+      id: '/app/admin/directory'
+      path: '/admin/directory'
+      fullPath: '/app/admin/directory'
+      preLoaderRoute: typeof AppAdminDirectoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin/import': {
       id: '/app/admin/import'
       path: '/admin/import'
@@ -743,6 +762,7 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAdminContactsRoute: typeof AppAdminContactsRoute
+  AppAdminDirectoryRoute: typeof AppAdminDirectoryRoute
   AppAdminImportRoute: typeof AppAdminImportRoute
   AppAdminKnowledgeRoute: typeof AppAdminKnowledgeRoute
   AppAdminMembersRoute: typeof AppAdminMembersRoute
@@ -765,6 +785,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppIndexRoute: AppIndexRoute,
   AppAdminContactsRoute: AppAdminContactsRoute,
+  AppAdminDirectoryRoute: AppAdminDirectoryRoute,
   AppAdminImportRoute: AppAdminImportRoute,
   AppAdminKnowledgeRoute: AppAdminKnowledgeRoute,
   AppAdminMembersRoute: AppAdminMembersRoute,

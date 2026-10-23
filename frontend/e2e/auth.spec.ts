@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  chooseEmailSignIn,
   createStudent,
   openUserMenu,
   signIn,
@@ -107,6 +108,7 @@ test('a wrong password gets a clear message', async ({ page }) => {
 test('signing in returns to the page that asked for it', async ({ page }) => {
   await page.goto('/app/settings/security');
   await expect(page).toHaveURL(/\/login\?redirect=/);
+  await chooseEmailSignIn(page);
   await page.getByLabel('Электронная почта').fill(USERS.student);
   await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill('Qadam-Demo-2026!');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
@@ -121,6 +123,7 @@ test.describe('e-mailed codes and links', () => {
   test('a member signs in with a code from the e-mail', async ({ page }) => {
     const since = await mailboxMark();
     await page.goto('/login');
+    await chooseEmailSignIn(page);
     await page.getByLabel('Электронная почта').fill(CODE_USER);
     await page.getByRole('button', { name: 'Войти по коду из письма' }).click();
     await expect(page).toHaveURL(/\/login\/code/);

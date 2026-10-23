@@ -9,6 +9,7 @@ import {
   FileUp,
   Home,
   Inbox,
+  KeyRound,
   Lightbulb,
   LogOut,
   ShieldCheck,
@@ -150,6 +151,11 @@ function AppNav({ session }: { session: Session }) {
           {(admin || leadership) && (
             <NavLink to="/app/admin/ai/usage" icon={<BarChart3 />}>
               {t('nav.aiUsage')}
+            </NavLink>
+          )}
+          {admin && (
+            <NavLink to="/app/admin/directory" icon={<KeyRound />}>
+              {t('nav.directory')}
             </NavLink>
           )}
         </NavSection>
@@ -348,6 +354,13 @@ function useAppCommands(session: Session) {
         label: t('app:nav.ai'),
         icon: <Sparkles />,
         perform: () => void navigate({ to: '/app/admin/ai' }),
+      });
+      items.push({
+        id: 'app.directory',
+        group,
+        label: t('app:nav.directory'),
+        icon: <KeyRound />,
+        perform: () => void navigate({ to: '/app/admin/directory' }),
       });
     }
     if (admin || leadership) {
