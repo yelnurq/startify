@@ -3,10 +3,12 @@ package ai_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,12 +37,26 @@ type scripted struct {
 	mu      sync.Mutex
 	replies []func(req llm.CompletionRequest) (*llm.CompletionResponse, error)
 	asked   []llm.CompletionRequest
+	// noEmbeddings makes it a provider like Anthropic; embed answers Embed.
+	noEmbeddings bool
+	embed        func(texts []string) ([][]float32, string, error)
+	// streamErr fails Stream before the first words, like a 401 or a 529.
+	streamErr error
 }
 
-func (s *scripted) Name() string                    { return s.name }
-func (s *scripted) Local() bool                     { return s.local }
-func (s *scripted) DefaultModel(llm.Feature) string { return s.name + "-model" }
-func (s *scripted) Embed(context.Context, []string) ([][]float32, string, error) {
+func (s *scripted) Name() string { return s.name }
+func (s *scripted) Local() bool  { return s.local }
+func (s *scripted) DefaultModel(f llm.Feature) string {
+	if f == llm.FeatureEmbedding && s.noEmbeddings {
+		return ""
+	}
+	return s.name + "-model"
+}
+
+func (s *scripted) Embed(_ context.Context, texts []string) ([][]float32, string, error) {
+	if s.embed != nil {
+		return s.embed(texts)
+	}
 	return nil, "", llm.ErrNotSupported
 }
 
@@ -57,6 +73,12 @@ func (s *scripted) Complete(_ context.Context, req llm.CompletionRequest) (*llm.
 }
 
 func (s *scripted) Stream(ctx context.Context, req llm.CompletionRequest) (<-chan llm.StreamEvent, error) {
+	if s.streamErr != nil {
+		s.mu.Lock()
+		s.asked = append(s.asked, req)
+		s.mu.Unlock()
+		return nil, s.streamErr
+	}
 	res, err := s.Complete(ctx, req)
 	if err != nil {
 		return nil, err
@@ -369,5 +391,245 @@ func TestParseRoutes(t *testing.T) {
 	if _, err := ai.NewGateway(nil, []llm.Provider{&mock.Provider{}}, config.AI{Default: "mock", Routes: "mentor=anthropic", Timezone: "UTC"},
 		slog.New(slog.NewTextHandler(io.Discard, nil))); err == nil || !errors.Is(err, err) {
 		t.Fatal("a route to an unconfigured provider must fail at start-up")
+	}
+}
+
+// A stream that fails before the first words goes to the next provider of
+// the route, as Complete does (С-15).
+func TestStreamFallsBackToTheNextProvider(t *testing.T) {
+	overloaded := fmt.Errorf("%w: HTTP 529 overloaded", llm.ErrUnavailable)
+	cloud := &scripted{name: "anthropic", streamErr: overloaded}
+	e := setup(t, "mentor=anthropic,mock", cloud)
+	events, err := e.gateway.Stream(e.ctx, ai.Call{
+		Feature: llm.FeatureMentor, Locale: "ru", Messages: []llm.Message{{Role: llm.RoleUser, Content: "С чего начать?"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result *ai.Result
+	for ev := range events {
+		if ev.Err != nil {
+			t.Fatal(ev.Err)
+		}
+		if ev.Result != nil {
+			result = ev.Result
+		}
+	}
+	if result == nil || result.Provider != "mock" || len(cloud.asked) != 1 {
+		t.Fatalf("result %+v after %d cloud requests", result, len(cloud.asked))
+	}
+	rows := usage(t, e)
+	if len(rows) != 2 || rows[0].provider != "anthropic" || rows[0].status != "error" || rows[1].provider != "mock" || rows[1].status != "ok" {
+		t.Fatalf("usage %+v", rows)
+	}
+
+	// Without another provider the user is told AI is unavailable.
+	e = setup(t, "mentor=anthropic", &scripted{name: "anthropic", streamErr: overloaded})
+	_, err = e.gateway.Stream(e.ctx, ai.Call{Feature: llm.FeatureMentor, Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}})
+	if !apperr.Is(err, "ai.unavailable") {
+		t.Fatalf("no fallback: %v", err)
+	}
+}
+
+// Callers get the validated JSON value, not the fence a local model wrapped
+// it in (С-16).
+func TestStructuredOutputIsTheBareValue(t *testing.T) {
+	model := &scripted{name: "openai", local: true, replies: []func(llm.CompletionRequest) (*llm.CompletionResponse, error){
+		answer("Вот оценка:\n```json\n{\"score\": 7}\n```", 10),
+	}}
+	e := setup(t, "evaluation=openai", model)
+	res, err := e.gateway.Complete(e.ctx, ai.Call{Feature: llm.FeatureEvaluation, Schema: verdict, Messages: []llm.Message{{Role: llm.RoleUser, Content: "Оцени"}}})
+	if err != nil || res.Text != `{"score": 7}` || len(model.asked) != 1 {
+		t.Fatalf("%+v %v", res, err)
+	}
+}
+
+func truncated(text string) func(llm.CompletionRequest) (*llm.CompletionResponse, error) {
+	return func(req llm.CompletionRequest) (*llm.CompletionResponse, error) {
+		return &llm.CompletionResponse{Text: text, Model: req.Model, StopReason: llm.StopMaxTokens, Usage: llm.Usage{InputTokens: 5, OutputTokens: 5}}, nil
+	}
+}
+
+// A structured answer cut at the token limit is asked again with room to
+// finish; cut twice, it is a clear failure (Н-24).
+func TestTruncatedStructuredOutputGetsMoreRoom(t *testing.T) {
+	model := &scripted{name: "openai", local: true, replies: []func(llm.CompletionRequest) (*llm.CompletionResponse, error){
+		truncated(`{"sco`), answer(`{"score": 3}`, 5),
+	}}
+	e := setup(t, "evaluation=openai", model)
+	call := ai.Call{Feature: llm.FeatureEvaluation, Schema: verdict, MaxTokens: 1000, Messages: []llm.Message{{Role: llm.RoleUser, Content: "Оцени"}}}
+	res, err := e.gateway.Complete(e.ctx, call)
+	if err != nil || res.Text != `{"score": 3}` {
+		t.Fatalf("%+v %v", res, err)
+	}
+	if retry := model.asked[1]; retry.MaxTokens != 2000 || len(retry.Messages) != 1 {
+		t.Fatalf("the retry must have a larger limit and no correction: %+v", retry)
+	}
+
+	model.replies = []func(llm.CompletionRequest) (*llm.CompletionResponse, error){truncated(`{"sc`), truncated(`{"score`)}
+	if _, err := e.gateway.Complete(e.ctx, call); !apperr.Is(err, "ai.invalid_output") || len(model.asked) != 4 {
+		t.Fatalf("cut twice: %v after %d requests", err, len(model.asked))
+	}
+	var code string
+	err = e.db.App.ReadTx(e.ctx, func(ctx context.Context) error {
+		return e.db.App.Conn(ctx).QueryRow(ctx, "SELECT coalesce(error_code, '') FROM ai_usage ORDER BY id DESC LIMIT 1").Scan(&code)
+	})
+	if err != nil || code != "truncated" {
+		t.Fatalf("usage error code %q %v", code, err)
+	}
+}
+
+// slow holds every answer until released, like a model that thinks.
+type slow struct {
+	entered atomic.Int32
+	gate    chan struct{}
+}
+
+func (s *slow) Name() string                    { return "openai" }
+func (s *slow) Local() bool                     { return true }
+func (s *slow) DefaultModel(llm.Feature) string { return "slow-model" }
+func (s *slow) Embed(context.Context, []string) ([][]float32, string, error) {
+	return nil, "", llm.ErrNotSupported
+}
+
+func (s *slow) Stream(context.Context, llm.CompletionRequest) (<-chan llm.StreamEvent, error) {
+	return nil, llm.ErrNotSupported
+}
+
+func (s *slow) Complete(ctx context.Context, req llm.CompletionRequest) (*llm.CompletionResponse, error) {
+	s.entered.Add(1)
+	select {
+	case <-s.gate:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return &llm.CompletionResponse{Text: "ok", Model: req.Model, Usage: llm.Usage{InputTokens: 50, OutputTokens: 350}}, nil
+}
+
+// Calls in progress count against the limit with what they may use, so a
+// burst of parallel requests cannot overshoot it many times over (Н-21).
+func TestParallelCallsCannotOvershootTheLimit(t *testing.T) {
+	model := &slow{gate: make(chan struct{})}
+	e := setup(t, "summary=openai", model)
+	s, err := e.gateway.Settings(e.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.DailyUserTokens = 1000
+	if _, err := e.gateway.SaveSettings(e.ctx, s, nil); err != nil {
+		t.Fatal(err)
+	}
+	const calls = 8
+	var wg sync.WaitGroup
+	var limited atomic.Int32
+	failures := make(chan error, calls)
+	for range calls {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := e.gateway.Complete(e.ctx, ai.Call{Feature: llm.FeatureSummary, MaxTokens: 400, Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}})
+			switch {
+			case apperr.Is(err, "ai.limit_reached"):
+				limited.Add(1)
+			case err != nil:
+				failures <- err
+			}
+		}()
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for model.entered.Load()+limited.Load() < calls {
+		if time.Now().After(deadline) {
+			t.Fatalf("%d calls at the model, %d limited", model.entered.Load(), limited.Load())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	close(model.gate)
+	wg.Wait()
+	close(failures)
+	for err := range failures {
+		t.Fatal(err)
+	}
+	// Each call may use about 400 tokens: three fit under 1000 before the
+	// reservations reach the limit.
+	if n := model.entered.Load(); n > 3 || limited.Load() < calls-3 {
+		t.Fatalf("%d of %d parallel calls reached the model under a limit of 1000 tokens", n, calls)
+	}
+	var held int
+	err = e.db.App.ReadTx(e.ctx, func(ctx context.Context) error {
+		return e.db.App.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM ai_reservations").Scan(&held)
+	})
+	if err != nil || held != 0 {
+		t.Fatalf("finished calls must release their tokens: %d %v", held, err)
+	}
+}
+
+// Embeddings go only to providers that have them; a provider answering with
+// too few or ragged vectors is a failure, never a panic (Н-26).
+func TestEmbeddingRoutes(t *testing.T) {
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cloud := &scripted{name: "anthropic", noEmbeddings: true}
+	_, err := ai.NewGateway(nil, []llm.Provider{&mock.Provider{}, cloud}, config.AI{Default: "mock", Routes: "embedding=anthropic", Timezone: "UTC"}, log)
+	if err == nil || !strings.Contains(err.Error(), "no embedding model") {
+		t.Fatalf("an embedding route to Anthropic must fail at start-up: %v", err)
+	}
+	g, err := ai.NewGateway(nil, []llm.Provider{&mock.Provider{}, cloud}, config.AI{Default: "anthropic", Timezone: "UTC"}, log)
+	if err != nil || g.DefaultRoutes()[llm.FeatureEmbedding][0].Provider != "mock" {
+		t.Fatalf("default embedding route %v", err)
+	}
+
+	e := setup(t, "", cloud)
+	s, _ := e.gateway.Settings(e.ctx)
+	s.Routes = ai.Routes{llm.FeatureEmbedding: {{Provider: "anthropic"}}}
+	_, err = e.gateway.SaveSettings(e.ctx, s, nil)
+	if ae, ok := apperr.As(err); !ok || len(ae.Fields) != 1 || ae.Fields[0].Field != "routes.embedding" || ae.Fields[0].Code != "not_supported" {
+		t.Fatalf("saving an embedding route to Anthropic: %v", err)
+	}
+
+	short := &scripted{name: "openai", local: true, embed: func([]string) ([][]float32, string, error) {
+		return [][]float32{{1, 0}}, "short-model", nil
+	}}
+	e = setup(t, "embedding=openai,mock", short)
+	vectors, model, err := e.gateway.Embed(e.ctx, []string{"Положение", "о конкурсе"})
+	if err != nil || model != mock.EmbeddingModel || len(vectors) != 2 {
+		t.Fatalf("too few vectors must fall through to the next route: %v %s %d", err, model, len(vectors))
+	}
+	ragged := &scripted{name: "openai", local: true, embed: func([]string) ([][]float32, string, error) {
+		return [][]float32{{1, 0}, {1}}, "ragged-model", nil
+	}}
+	e = setup(t, "embedding=openai", ragged)
+	if _, _, err := e.gateway.Embed(e.ctx, []string{"a", "b"}); !apperr.Is(err, "ai.unavailable") {
+		t.Fatalf("ragged vectors: %v", err)
+	}
+}
+
+// The indexer's and the questions' embeddings are accounted but do not eat
+// the daily limit of students (С-17); an external embedding provider is
+// disclosed like any other (Н-27).
+func TestEmbeddingsAreAccountedNotLimited(t *testing.T) {
+	cloud := &scripted{name: "openai", embed: func(texts []string) ([][]float32, string, error) {
+		out := make([][]float32, len(texts))
+		for i := range out {
+			out[i] = []float32{1, 0}
+		}
+		return out, "cloud-embedding", nil
+	}}
+	e := setup(t, "embedding=openai", cloud)
+	s, _ := e.gateway.Settings(e.ctx)
+	s.DailyUserTokens = 100
+	if _, err := e.gateway.SaveSettings(e.ctx, s, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := e.gateway.Embed(e.ctx, []string{strings.Repeat("Положение о конкурсе стартап-проектов. ", 30)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.gateway.Complete(e.ctx, ai.Call{Feature: llm.FeatureSummary, MaxTokens: 10, Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}}); err != nil {
+		t.Fatalf("embedding tokens must not count against the daily limit: %v", err)
+	}
+	status, err := e.gateway.Status(e.ctx)
+	if err != nil || !status.External || status.Used >= 100 {
+		t.Fatalf("status %+v %v", status, err)
+	}
+	if rows := usage(t, e); len(rows) != 2 || rows[0].tokens < 200 {
+		t.Fatalf("embeddings must still be accounted: %+v", rows)
 	}
 }

@@ -13,6 +13,46 @@ import (
 	"github.com/google/uuid"
 )
 
+const createReservation = `-- name: CreateReservation :one
+INSERT INTO ai_reservations (tenant_id, user_id, tokens, expires_at)
+VALUES (app_current_tenant(), $1, $2, now() + make_interval(secs => $3::float8))
+RETURNING id
+`
+
+type CreateReservationParams struct {
+	UserID     *uuid.UUID
+	Tokens     int32
+	TtlSeconds float64
+}
+
+func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createReservation, arg.UserID, arg.Tokens, arg.TtlSeconds)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const deleteExpiredReservations = `-- name: DeleteExpiredReservations :execrows
+DELETE FROM ai_reservations WHERE expires_at < now()
+`
+
+func (q *Queries) DeleteExpiredReservations(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredReservations)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteReservation = `-- name: DeleteReservation :exec
+DELETE FROM ai_reservations WHERE id = $1
+`
+
+func (q *Queries) DeleteReservation(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteReservation, id)
+	return err
+}
+
 const getSettings = `-- name: GetSettings :one
 SELECT tenant_id, routes, local_only, daily_user_tokens, daily_tenant_tokens, mentor_mode, updated_at FROM tenant_ai_settings WHERE tenant_id = app_current_tenant()
 `
@@ -74,10 +114,34 @@ func (q *Queries) InsertUsage(ctx context.Context, arg InsertUsageParams) error 
 	return err
 }
 
+const lockLimits = `-- name: LockLimits :exec
+SELECT pg_advisory_xact_lock(hashtextextended('ai-limits:' || app_current_tenant()::text, 0))
+`
+
+// Serialises the limit check and the reservation of one university's calls.
+func (q *Queries) LockLimits(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, lockLimits)
+	return err
+}
+
+const reservedTokens = `-- name: ReservedTokens :one
+SELECT coalesce(sum(tokens), 0)::bigint AS tokens
+  FROM ai_reservations
+ WHERE tenant_id = app_current_tenant() AND expires_at > now()
+   AND ($1::uuid IS NULL OR user_id = $1::uuid)
+`
+
+func (q *Queries) ReservedTokens(ctx context.Context, userID *uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, reservedTokens, userID)
+	var tokens int64
+	err := row.Scan(&tokens)
+	return tokens, err
+}
+
 const tokensSince = `-- name: TokensSince :one
 SELECT coalesce(sum(input_tokens + output_tokens), 0)::bigint AS tokens
   FROM ai_usage
- WHERE tenant_id = app_current_tenant() AND created_at >= $1
+ WHERE tenant_id = app_current_tenant() AND created_at >= $1 AND feature <> 'embedding'
    AND ($2::uuid IS NULL OR user_id = $2::uuid)
 `
 
@@ -86,6 +150,8 @@ type TokensSinceParams struct {
 	UserID *uuid.UUID
 }
 
+// Tokens that count against the daily limits: embeddings are run by the
+// indexer for the whole university and are accounted, not limited (D-034).
 func (q *Queries) TokensSince(ctx context.Context, arg TokensSinceParams) (int64, error) {
 	row := q.db.QueryRow(ctx, tokensSince, arg.Since, arg.UserID)
 	var tokens int64

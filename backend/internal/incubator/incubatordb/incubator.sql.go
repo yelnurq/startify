@@ -246,6 +246,24 @@ func (q *Queries) EnsureStep(ctx context.Context, arg EnsureStepParams) error {
 	return err
 }
 
+const failStaleMaterials = `-- name: FailStaleMaterials :execrows
+UPDATE project_materials SET status = 'failed', error = $1 WHERE status = 'pending' AND updated_at < $2
+`
+
+type FailStaleMaterialsParams struct {
+	Error  *string
+	Before time.Time
+}
+
+// Materials whose job died would stay "in progress" forever.
+func (q *Queries) FailStaleMaterials(ctx context.Context, arg FailStaleMaterialsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, failStaleMaterials, arg.Error, arg.Before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const foldRevision = `-- name: FoldRevision :exec
 UPDATE project_revisions SET value = $1, version = $2 WHERE id = $3
 `
@@ -693,6 +711,42 @@ func (q *Queries) OpenComments(ctx context.Context, projectID uuid.UUID) ([]Open
 	return items, nil
 }
 
+const pruneMaterials = `-- name: PruneMaterials :many
+DELETE FROM project_materials
+ WHERE id IN (
+   SELECT m.id FROM project_materials m
+    WHERE m.project_id = $1 AND m.status <> 'pending'
+    ORDER BY m.id DESC
+   OFFSET $2::int)
+RETURNING file_id
+`
+
+type PruneMaterialsParams struct {
+	ProjectID uuid.UUID
+	Keep      int32
+}
+
+// Keeps the newest finished materials of a project; the rest go with their files.
+func (q *Queries) PruneMaterials(ctx context.Context, arg PruneMaterialsParams) ([]*uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, pruneMaterials, arg.ProjectID, arg.Keep)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*uuid.UUID{}
+	for rows.Next() {
+		var file_id *uuid.UUID
+		if err := rows.Scan(&file_id); err != nil {
+			return nil, err
+		}
+		items = append(items, file_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recentComments = `-- name: RecentComments :many
 SELECT id, step_key, field_key, author_id, created_at FROM project_comments
  WHERE project_id = $1 AND deleted_at IS NULL
@@ -883,7 +937,7 @@ func (q *Queries) SaveStep(ctx context.Context, arg SaveStepParams) (ProjectStep
 }
 
 const setMaterialFailed = `-- name: SetMaterialFailed :exec
-UPDATE project_materials SET status = 'failed', error = $1 WHERE id = $2
+UPDATE project_materials SET status = 'failed', error = $1 WHERE id = $2 AND status = 'pending'
 `
 
 type SetMaterialFailedParams struct {
@@ -896,8 +950,8 @@ func (q *Queries) SetMaterialFailed(ctx context.Context, arg SetMaterialFailedPa
 	return err
 }
 
-const setMaterialReady = `-- name: SetMaterialReady :exec
-UPDATE project_materials SET status = 'ready', file_id = $1, error = NULL WHERE id = $2
+const setMaterialReady = `-- name: SetMaterialReady :execrows
+UPDATE project_materials SET status = 'ready', file_id = $1, error = NULL WHERE id = $2 AND status = 'pending'
 `
 
 type SetMaterialReadyParams struct {
@@ -905,9 +959,12 @@ type SetMaterialReadyParams struct {
 	ID     uuid.UUID
 }
 
-func (q *Queries) SetMaterialReady(ctx context.Context, arg SetMaterialReadyParams) error {
-	_, err := q.db.Exec(ctx, setMaterialReady, arg.FileID, arg.ID)
-	return err
+func (q *Queries) SetMaterialReady(ctx context.Context, arg SetMaterialReadyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setMaterialReady, arg.FileID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setStepCheck = `-- name: SetStepCheck :one

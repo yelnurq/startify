@@ -141,11 +141,25 @@ SELECT * FROM project_materials WHERE id = @id AND project_id = @project_id;
 -- name: ListMaterials :many
 SELECT * FROM project_materials WHERE project_id = @project_id ORDER BY id DESC LIMIT 50;
 
--- name: SetMaterialReady :exec
-UPDATE project_materials SET status = 'ready', file_id = @file_id, error = NULL WHERE id = @id;
+-- name: SetMaterialReady :execrows
+UPDATE project_materials SET status = 'ready', file_id = @file_id, error = NULL WHERE id = @id AND status = 'pending';
 
 -- name: SetMaterialFailed :exec
-UPDATE project_materials SET status = 'failed', error = @error WHERE id = @id;
+UPDATE project_materials SET status = 'failed', error = @error WHERE id = @id AND status = 'pending';
+
+-- name: FailStaleMaterials :execrows
+-- Materials whose job died would stay "in progress" forever.
+UPDATE project_materials SET status = 'failed', error = @error WHERE status = 'pending' AND updated_at < @before;
+
+-- name: PruneMaterials :many
+-- Keeps the newest finished materials of a project; the rest go with their files.
+DELETE FROM project_materials
+ WHERE id IN (
+   SELECT m.id FROM project_materials m
+    WHERE m.project_id = @project_id AND m.status <> 'pending'
+    ORDER BY m.id DESC
+   OFFSET @keep::int)
+RETURNING file_id;
 
 -- name: CountReadyMaterials :one
 SELECT count(*)::int FROM project_materials WHERE project_id = @project_id AND status = 'ready';

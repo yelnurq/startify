@@ -11,15 +11,16 @@ import (
 )
 
 type KnowledgeDocument struct {
-	ID         uuid.UUID
-	TenantID   uuid.UUID
-	Title      string
-	Body       string
-	FileID     *uuid.UUID
-	Status     string
-	ChunkCount int32
-	Error      *string
-	CreatedBy  *uuid.UUID
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID            uuid.UUID
+	TenantID      uuid.UUID
+	Title         string
+	Body          string
+	FileID        *uuid.UUID
+	Status        string
+	ChunkCount    int32
+	Error         *string
+	CreatedBy     *uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	IndexFailures int32
 }

@@ -49,5 +49,8 @@ func PeriodicJobs() []*river.PeriodicJob {
 		river.NewPeriodicJob(river.PeriodicInterval(time.Hour),
 			func() (river.JobArgs, *river.InsertOpts) { return CleanupArgs{}, nil },
 			&river.PeriodicJobOpts{RunOnStart: true}),
+		river.NewPeriodicJob(river.PeriodicInterval(staleInterval),
+			func() (river.JobArgs, *river.InsertOpts) { return StaleArgs{}, nil },
+			&river.PeriodicJobOpts{RunOnStart: true}),
 	}
 }

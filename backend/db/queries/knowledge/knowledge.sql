@@ -17,8 +17,16 @@ SELECT id, title, file_id, status, chunk_count, error, created_by, created_at, u
 -- name: DeleteDocument :one
 DELETE FROM knowledge_documents WHERE id = @id RETURNING file_id;
 
--- name: SetDocumentStatus :exec
-UPDATE knowledge_documents SET status = @status, chunk_count = @chunk_count, error = @error WHERE id = @id;
+-- name: SetDocumentReady :exec
+UPDATE knowledge_documents SET status = 'ready', chunk_count = @chunk_count, error = NULL, index_failures = 0 WHERE id = @id;
+
+-- name: SetDocumentFailed :exec
+UPDATE knowledge_documents SET status = 'failed', error = @error, index_failures = index_failures + 1 WHERE id = @id;
+
+-- name: FailStaleDocuments :execrows
+-- New documents whose indexing job died would stay "indexing" forever.
+UPDATE knowledge_documents SET status = 'failed', error = @error, index_failures = index_failures + 1
+ WHERE status = 'pending' AND updated_at < @before;
 
 -- name: DeleteChunks :exec
 DELETE FROM knowledge_chunks WHERE document_id = @document_id;
@@ -33,6 +41,8 @@ SELECT c.id, c.document_id, d.title, c.heading, c.content,
   FROM knowledge_chunks c
   JOIN knowledge_documents d ON d.id = c.document_id
  WHERE c.embedding_model = @embedding_model AND d.status = 'ready'
+   -- Vectors of another size cannot be compared (a model reconfigured under the same name).
+   AND vector_dims(c.embedding) = vector_dims(@query::vector)
  ORDER BY c.embedding <=> @query::vector
  LIMIT @row_limit;
 
@@ -49,9 +59,10 @@ SELECT c.id, c.document_id, d.title, c.heading, c.content,
 SELECT DISTINCT tenant_id FROM knowledge_documents ORDER BY tenant_id;
 
 -- name: ListDocumentsForReindex :many
--- Documents without passages of the current model, and failed ones after a pause.
+-- Documents without passages of the current model, and failed ones after a
+-- pause until they failed max_failures times.
 SELECT id FROM knowledge_documents d
- WHERE (d.status = 'failed' AND d.updated_at < @failed_before)
-    OR (d.status <> 'failed' AND NOT EXISTS (
+ WHERE (d.status = 'failed' AND d.updated_at < @failed_before AND d.index_failures < @max_failures)
+    OR (d.status <> 'failed' AND (d.status <> 'ready' OR d.chunk_count > 0) AND NOT EXISTS (
          SELECT 1 FROM knowledge_chunks c WHERE c.document_id = d.id AND c.embedding_model = @embedding_model))
  ORDER BY d.id;

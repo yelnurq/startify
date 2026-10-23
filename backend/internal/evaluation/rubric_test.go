@@ -127,3 +127,20 @@ func TestMockEvaluationIsStrictAndConsistent(t *testing.T) {
 		t.Fatalf("kk: %+v", kk)
 	}
 }
+
+// A model that wraps its JSON in a fence or a sentence is still understood,
+// like by the gateway's schema check (С-16).
+func TestParseAcceptsFencedJSON(t *testing.T) {
+	raw, err := json.Marshal(MockResult("{}", "ru"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{string(raw), "```json\n" + string(raw) + "\n```", "Вот оценка:\n" + string(raw)} {
+		if _, scores, err := Parse(DefaultRubric, text); err != nil || len(scores) != len(DefaultRubric) {
+			t.Fatalf("%q: %v", text[:min(len(text), 20)], err)
+		}
+	}
+	if _, _, err := Parse(DefaultRubric, `{"criteria": []}`); err == nil {
+		t.Fatal("an answer without the rubric must be rejected")
+	}
+}

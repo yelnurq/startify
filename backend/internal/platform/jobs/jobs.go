@@ -6,6 +6,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -32,6 +33,13 @@ func NewQueue(database *db.DB) (*Queue, error) {
 		return nil, fmt.Errorf("jobs: client: %w", err)
 	}
 	return &Queue{db: database, client: client}, nil
+}
+
+// Detach returns a context for recording the outcome of a job after its own
+// context ended: a failure on the last attempt is often the job's deadline
+// itself, and a write on that context would be lost.
+func Detach(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 }
 
 // Enqueue inserts the job in the transaction of ctx when there is one.

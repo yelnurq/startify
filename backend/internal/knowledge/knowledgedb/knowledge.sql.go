@@ -15,7 +15,7 @@ import (
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO knowledge_documents (tenant_id, title, body, file_id, created_by)
 VALUES (app_current_tenant(), $1, $2, $3, $4)
-RETURNING id, tenant_id, title, body, file_id, status, chunk_count, error, created_by, created_at, updated_at
+RETURNING id, tenant_id, title, body, file_id, status, chunk_count, error, created_by, created_at, updated_at, index_failures
 `
 
 type CreateDocumentParams struct {
@@ -45,6 +45,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IndexFailures,
 	)
 	return i, err
 }
@@ -69,8 +70,27 @@ func (q *Queries) DeleteDocument(ctx context.Context, id uuid.UUID) (*uuid.UUID,
 	return file_id, err
 }
 
+const failStaleDocuments = `-- name: FailStaleDocuments :execrows
+UPDATE knowledge_documents SET status = 'failed', error = $1, index_failures = index_failures + 1
+ WHERE status = 'pending' AND updated_at < $2
+`
+
+type FailStaleDocumentsParams struct {
+	Error  *string
+	Before time.Time
+}
+
+// New documents whose indexing job died would stay "indexing" forever.
+func (q *Queries) FailStaleDocuments(ctx context.Context, arg FailStaleDocumentsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, failStaleDocuments, arg.Error, arg.Before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getDocument = `-- name: GetDocument :one
-SELECT id, tenant_id, title, body, file_id, status, chunk_count, error, created_by, created_at, updated_at FROM knowledge_documents WHERE id = $1
+SELECT id, tenant_id, title, body, file_id, status, chunk_count, error, created_by, created_at, updated_at, index_failures FROM knowledge_documents WHERE id = $1
 `
 
 func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (KnowledgeDocument, error) {
@@ -88,6 +108,7 @@ func (q *Queries) GetDocument(ctx context.Context, id uuid.UUID) (KnowledgeDocum
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IndexFailures,
 	)
 	return i, err
 }
@@ -178,20 +199,22 @@ func (q *Queries) ListDocuments(ctx context.Context, arg ListDocumentsParams) ([
 
 const listDocumentsForReindex = `-- name: ListDocumentsForReindex :many
 SELECT id FROM knowledge_documents d
- WHERE (d.status = 'failed' AND d.updated_at < $1)
-    OR (d.status <> 'failed' AND NOT EXISTS (
-         SELECT 1 FROM knowledge_chunks c WHERE c.document_id = d.id AND c.embedding_model = $2))
+ WHERE (d.status = 'failed' AND d.updated_at < $1 AND d.index_failures < $2)
+    OR (d.status <> 'failed' AND (d.status <> 'ready' OR d.chunk_count > 0) AND NOT EXISTS (
+         SELECT 1 FROM knowledge_chunks c WHERE c.document_id = d.id AND c.embedding_model = $3))
  ORDER BY d.id
 `
 
 type ListDocumentsForReindexParams struct {
 	FailedBefore   time.Time
+	MaxFailures    int32
 	EmbeddingModel string
 }
 
-// Documents without passages of the current model, and failed ones after a pause.
+// Documents without passages of the current model, and failed ones after a
+// pause until they failed max_failures times.
 func (q *Queries) ListDocumentsForReindex(ctx context.Context, arg ListDocumentsForReindexParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listDocumentsForReindex, arg.FailedBefore, arg.EmbeddingModel)
+	rows, err := q.db.Query(ctx, listDocumentsForReindex, arg.FailedBefore, arg.MaxFailures, arg.EmbeddingModel)
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +239,8 @@ SELECT c.id, c.document_id, d.title, c.heading, c.content,
   FROM knowledge_chunks c
   JOIN knowledge_documents d ON d.id = c.document_id
  WHERE c.embedding_model = $2 AND d.status = 'ready'
+   -- Vectors of another size cannot be compared (a model reconfigured under the same name).
+   AND vector_dims(c.embedding) = vector_dims($1::vector)
  ORDER BY c.embedding <=> $1::vector
  LIMIT $3
 `
@@ -313,24 +338,31 @@ func (q *Queries) SearchChunksText(ctx context.Context, arg SearchChunksTextPara
 	return items, nil
 }
 
-const setDocumentStatus = `-- name: SetDocumentStatus :exec
-UPDATE knowledge_documents SET status = $1, chunk_count = $2, error = $3 WHERE id = $4
+const setDocumentFailed = `-- name: SetDocumentFailed :exec
+UPDATE knowledge_documents SET status = 'failed', error = $1, index_failures = index_failures + 1 WHERE id = $2
 `
 
-type SetDocumentStatusParams struct {
-	Status     string
+type SetDocumentFailedParams struct {
+	Error *string
+	ID    uuid.UUID
+}
+
+func (q *Queries) SetDocumentFailed(ctx context.Context, arg SetDocumentFailedParams) error {
+	_, err := q.db.Exec(ctx, setDocumentFailed, arg.Error, arg.ID)
+	return err
+}
+
+const setDocumentReady = `-- name: SetDocumentReady :exec
+UPDATE knowledge_documents SET status = 'ready', chunk_count = $1, error = NULL, index_failures = 0 WHERE id = $2
+`
+
+type SetDocumentReadyParams struct {
 	ChunkCount int32
-	Error      *string
 	ID         uuid.UUID
 }
 
-func (q *Queries) SetDocumentStatus(ctx context.Context, arg SetDocumentStatusParams) error {
-	_, err := q.db.Exec(ctx, setDocumentStatus,
-		arg.Status,
-		arg.ChunkCount,
-		arg.Error,
-		arg.ID,
-	)
+func (q *Queries) SetDocumentReady(ctx context.Context, arg SetDocumentReadyParams) error {
+	_, err := q.db.Exec(ctx, setDocumentReady, arg.ChunkCount, arg.ID)
 	return err
 }
 
