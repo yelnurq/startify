@@ -40,7 +40,7 @@ import {
   toast,
   useReducedMotion,
 } from '@/design-system';
-import { useSignOut, type Session } from '@/features/auth/api';
+import { safeRedirect, useSignOut, type Session } from '@/features/auth/api';
 import { FormAlert } from '@/features/auth/components';
 import { useApplyMe } from '@/features/profile/api';
 import {
@@ -154,7 +154,12 @@ const STEP_ART: Record<StepKey, IllustrationName> = {
   idea: 'idea',
 };
 
-export function OnboardingPage({ session }: { session: Session }) {
+export interface OnboardingSearch {
+  /** Where the member was going; opened once onboarding is done. */
+  redirect?: string;
+}
+
+export function OnboardingPage({ session, redirect }: { session: Session; redirect?: string }) {
   const { t, i18n } = useTranslation(['onboarding', 'common']);
   const navigate = useNavigate();
   const reduce = useReducedMotion();
@@ -193,7 +198,7 @@ export function OnboardingPage({ session }: { session: Session }) {
       await complete.mutateAsync(toRequest(draft, ctx));
       celebrateStage();
       toast.success(t('done.title'), { description: t('done.text') });
-      await navigate({ to: '/app', replace: true });
+      await navigate({ href: safeRedirect(redirect) ?? '/app', replace: true });
     } catch (err) {
       setFormError(errorMessage(err));
     }
@@ -810,5 +815,6 @@ const onboardingRoute = getRouteApi('/onboarding');
 
 export function OnboardingRoute() {
   const { session } = onboardingRoute.useRouteContext();
-  return <OnboardingPage session={session} />;
+  const { redirect } = onboardingRoute.useSearch();
+  return <OnboardingPage session={session} redirect={redirect} />;
 }

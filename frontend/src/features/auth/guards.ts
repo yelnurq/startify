@@ -3,23 +3,36 @@ import { redirect, type ParsedLocation } from '@tanstack/react-router';
 
 import { hasRole, landingAfterSignIn, sessionQuery, type Role, type Session } from './api';
 
+/**
+ * The session the guards decide on. A remembered "signed in" is trusted (a
+ * lost session shows on the next API call); a remembered "signed out" is
+ * checked again, because the person may have signed in in another tab since.
+ * Without the session cookie that check sends no request.
+ */
+function currentSession(queryClient: QueryClient): Promise<Session | null> {
+  const signedOut = queryClient.getQueryData(sessionQuery.queryKey) === null;
+  return queryClient.query({ ...sessionQuery, staleTime: signedOut ? 0 : 'static' });
+}
+
 /** Signed-in users only; visitors go to sign-in and come back afterwards. */
 export async function requireSession(
   queryClient: QueryClient,
   location: ParsedLocation,
 ): Promise<Session> {
-  const session = await queryClient.query({ ...sessionQuery, staleTime: 'static' });
+  const session = await currentSession(queryClient);
   if (!session) throw redirect({ to: '/login', search: { redirect: location.href } });
   return session;
 }
 
-/** Signed-in users who finished onboarding. */
+/** Signed-in users who finished onboarding; others onboard first and come back. */
 export async function requireOnboarded(
   queryClient: QueryClient,
   location: ParsedLocation,
 ): Promise<Session> {
   const session = await requireSession(queryClient, location);
-  if (!session.membership.onboarded) throw redirect({ to: '/onboarding' });
+  if (!session.membership.onboarded) {
+    throw redirect({ to: '/onboarding', search: { redirect: location.href } });
+  }
   return session;
 }
 
@@ -30,6 +43,6 @@ export function requireRole(session: Session, ...roles: Role[]): void {
 
 /** Sign-in and sign-up pages are pointless for a signed-in user. */
 export async function redirectIfSignedIn(queryClient: QueryClient, target?: string): Promise<void> {
-  const session = await queryClient.query({ ...sessionQuery, staleTime: 'static' });
+  const session = await currentSession(queryClient);
   if (session) throw redirect({ href: landingAfterSignIn(session, target) });
 }
