@@ -148,6 +148,10 @@ func TestAIConfig(t *testing.T) {
 	if err != nil || cfg.AI.OpenAIModel != "qwen3:14b" || cfg.AI.Routes != "mentor=openai;embedding=openai" {
 		t.Fatalf("openai %+v %v", cfg.AI, err)
 	}
+	cfg, err = FromEnviron(append(validEnviron(), "QADAM_AI_EMBEDDING_MIN_SIMILARITY=0.45", "QADAM_AI_OPENAI_LOCAL=false"))
+	if err != nil || cfg.AI.EmbeddingMinSimilarity != 0.45 || cfg.AI.OpenAILocal != "false" {
+		t.Fatalf("relevance floor %+v %v", cfg.AI, err)
+	}
 	for env, want := range map[string]string{
 		"QADAM_AI_DEFAULT=anthropic":            "QADAM_AI_ANTHROPIC_API_KEY is required",
 		"QADAM_AI_DEFAULT=openai":               "QADAM_AI_OPENAI_BASE_URL and QADAM_AI_OPENAI_MODEL are required",
