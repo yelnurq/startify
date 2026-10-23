@@ -1,17 +1,22 @@
 // Command ai-eval runs the evaluation prompt on golden projects and checks
 // that the model scores them like a sound reviewer: the answer follows the
-// schema, empty and vague projects stay low, a complete project scores high,
-// instructions hidden in the project are ignored, the language is right.
+// schema, empty and vague projects stay low, complete projects score high and
+// above their weaker versions, red flags are found, instructions hidden in the
+// project are ignored, the language is right.
 //
-// The model is chosen like in the platform (QADAM_AI_DEFAULT, QADAM_AI_ROUTES
-// for the "evaluation" feature, provider keys); without settings the
-// deterministic mock is evaluated. Run it with `make ai-eval`.
+// Calls go through the AI gateway exactly as in the worker (routes, schema
+// check with a corrective retry, parsing), without a database. The model is
+// chosen like in the platform (QADAM_AI_DEFAULT, QADAM_AI_ROUTES for the
+// "evaluation" feature, provider keys); without settings the deterministic
+// mock is evaluated, once as is and once wrapping its JSON in a Markdown
+// fence as many local models do. Run it with `make ai-eval`.
 package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -57,7 +62,7 @@ func run() error {
 		return err
 	}
 	evaluation.RegisterMock()
-	providers := ai.ConfiguredProviders(cfg, 0)
+	providers := append(ai.ConfiguredProviders(cfg, 0), &evaluation.FencedMock{})
 	routes, err := ai.ParseRoutes(cfg.Routes)
 	if err != nil {
 		return err
@@ -72,44 +77,53 @@ func run() error {
 	if *only != "" {
 		name = *only
 	}
-	var provider llm.Provider
-	for _, p := range providers {
-		if p.Name() == name {
-			provider = p
-		}
-	}
-	if provider == nil {
-		return fmt.Errorf("provider %q is not configured", name)
-	}
-	if chosen == "" {
-		chosen = provider.DefaultModel(llm.FeatureEvaluation)
+	variants := []string{name}
+	if name == "mock" {
+		variants = append(variants, "mock-fenced")
 	}
 	list, err := evaluation.LoadCases(*cases, seedSteps)
 	if err != nil {
 		return err
 	}
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	fmt.Printf("Evaluating %d cases with %s / %s\n\n", len(list), provider.Name(), chosen)
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "CASE\tTOTAL\tLEVEL\tRESULT")
-	failed := 0
-	for i := range list {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		out := evaluation.RunCase(ctx, provider, chosen, &list[i])
-		cancel()
-		result := "ok"
-		if len(out.Problems) > 0 {
-			failed++
-			result = "FAIL: " + strings.Join(out.Problems, "; ")
+	failed, total := 0, 0
+	for _, variant := range variants {
+		g, err := evaluation.HarnessGateway(cfg, providers, variant, chosen, log)
+		if err != nil {
+			return err
 		}
-		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", out.Case, out.Total, out.Level, result)
-	}
-	if err := w.Flush(); err != nil {
-		return err
+		label := variant
+		if chosen != "" {
+			label += " / " + chosen
+		}
+		fmt.Printf("Evaluating %d cases with %s\n\n", len(list), label)
+		outcomes := make([]evaluation.Outcome, len(list))
+		for i := range list {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			outcomes[i] = evaluation.RunCase(ctx, g, &list[i])
+			cancel()
+		}
+		evaluation.Rank(list, outcomes)
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "CASE\tTOTAL\tLEVEL\tRESULT")
+		for _, out := range outcomes {
+			total++
+			result := "ok"
+			if len(out.Problems) > 0 {
+				failed++
+				result = "FAIL: " + strings.Join(out.Problems, "; ")
+			}
+			fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", out.Case, out.Total, out.Level, result)
+		}
+		if err := w.Flush(); err != nil {
+			return err
+		}
+		fmt.Println()
 	}
 	if failed > 0 {
-		return fmt.Errorf("%d of %d cases failed", failed, len(list))
+		return fmt.Errorf("%d of %d cases failed", failed, total)
 	}
-	fmt.Println("\nAll cases passed.")
+	fmt.Println("All cases passed.")
 	return nil
 }
