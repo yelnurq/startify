@@ -6,6 +6,10 @@ import { cn } from '../lib/cn';
 
 import { Spinner } from './spinner';
 
+/** A 32 px control reaches 44 px for a finger, only upwards and downwards (neighbours stay apart). */
+const TOUCH_TALLER =
+  'pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-inset-y-1.5';
+
 /**
  * The university's button: square, capitals with wide tracking, a solid or
  * outlined frame. Filled accents turn navy on hover and navy turns teal.
@@ -35,12 +39,14 @@ export const buttonVariants = cva(
         light: 'border border-white/40 text-white hover:bg-white/10',
         link: 'h-auto! border-b border-current px-0! pb-0.5 text-primary-text hover:text-ink',
       },
+      // Small sizes keep their look; on touch screens an invisible margin
+      // makes them 44 px tall to the finger (WCAG 2.5.5).
       size: {
-        sm: 'h-8 px-3.5 text-2xs',
+        sm: `h-8 px-3.5 text-2xs ${TOUCH_TALLER}`,
         md: 'h-10 px-5 text-xs',
         lg: 'h-12 px-6 text-xs [&_svg]:size-4.5',
         icon: 'size-10',
-        'icon-sm': 'size-8',
+        'icon-sm': `size-8 ${TOUCH_TALLER}`,
       },
       block: {
         true: 'w-full',
