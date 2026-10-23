@@ -105,9 +105,69 @@ func TestProductionHardening(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected production hardening errors")
 	}
-	for _, want := range []string{"QADAM_AUTH_SECRET_KEY looks like a development value", "QADAM_SMTP_HOST", "QADAM_FILES_SCAN must be required"} {
+	for _, want := range []string{
+		"QADAM_AUTH_SECRET_KEY looks like a development value", "QADAM_SMTP_HOST", "QADAM_FILES_SCAN must be required",
+		"QADAM_VALKEY_PASSWORD is required", "QADAM_SMTP_FROM is required",
+	} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error should mention %q, got: %v", want, err)
+		}
+	}
+}
+
+// productionEnviron is a production configuration that passes every check.
+func productionEnviron() []string {
+	return []string{
+		"QADAM_ENV=production",
+		"QADAM_APP_PUBLIC_URL=https://qadam.kaztbu.edu.kz",
+		"QADAM_DATABASE_URL=postgres://qadam_app:Zq81-pQ4rT0w@db.kaztbu.local:5432/qadam",
+		"QADAM_DATABASE_MIGRATE_URL=postgres://qadam:Lm42-xW9sK3e@db.kaztbu.local:5432/qadam",
+		"QADAM_VALKEY_PASSWORD=Hk37-vB2nQ8c",
+		"QADAM_AUTH_SECRET_KEY=Ue5wq9VtKp0aYb3RcN7mJx2LsF6hGz1T4oIy8BnMvC0=",
+		"QADAM_S3_ENDPOINT=minio:9000", "QADAM_S3_ACCESS_KEY=qadam-app", "QADAM_S3_SECRET_KEY=Rt64-yN1mB5k",
+		"QADAM_SMTP_HOST=smtp.kaztbu.edu.kz", "QADAM_SMTP_PORT=587", "QADAM_SMTP_TLS=starttls",
+		"QADAM_SMTP_USERNAME=qadam", "QADAM_SMTP_PASSWORD=Wd29-cX7pL4s", "QADAM_SMTP_FROM=qadam@kaztbu.edu.kz",
+		"QADAM_FILES_SCAN=required", "QADAM_FILES_CLAMAV_ADDR=clamav:3310",
+	}
+}
+
+func TestProductionChecks(t *testing.T) {
+	cfg, err := FromEnviron(productionEnviron())
+	if err != nil {
+		t.Fatalf("a complete production configuration must pass: %v", err)
+	}
+	if cfg.SMTP.From != "qadam@kaztbu.edu.kz" {
+		t.Fatalf("From = %q", cfg.SMTP.From)
+	}
+	for change, want := range map[string]string{
+		"QADAM_SMTP_HOST=mailpit":                                        "the development mail catcher",
+		"QADAM_SMTP_HOST=Mailpit":                                        "the development mail catcher",
+		"QADAM_SMTP_FROM=":                                               "QADAM_SMTP_FROM is required in production",
+		"QADAM_SMTP_TLS=none":                                            "would send the SMTP password in clear text",
+		"QADAM_VALKEY_PASSWORD=":                                         "QADAM_VALKEY_PASSWORD is required in production",
+		"QADAM_VALKEY_PASSWORD=dev-pwd":                                  "QADAM_VALKEY_PASSWORD looks like a development value",
+		"QADAM_S3_SECRET_KEY=qadam-dev-app-secret":                       "QADAM_S3_SECRET_KEY looks like a development value",
+		"QADAM_DATABASE_URL=postgres://qadam_app:qadam-dev-app@db/qadam": "QADAM_DATABASE_URL: the password looks like a development value",
+		"QADAM_DATABASE_MIGRATE_URL=postgres://qadam@db/qadam?password=qadam-dev": "QADAM_DATABASE_MIGRATE_URL: the password looks like a development value",
+	} {
+		if _, err := FromEnviron(append(productionEnviron(), change)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: %v, want %q", change, err, want)
+		}
+	}
+	// A relay that takes letters without signing in may work without TLS.
+	if _, err := FromEnviron(append(productionEnviron(), "QADAM_SMTP_TLS=none", "QADAM_SMTP_USERNAME=", "QADAM_SMTP_PASSWORD=")); err != nil {
+		t.Errorf("relay without authentication: %v", err)
+	}
+}
+
+func TestSMTPFrom(t *testing.T) {
+	cfg, err := FromEnviron(validEnviron())
+	if err != nil || cfg.SMTP.From != "no-reply@qadam.kz" || cfg.SMTP.FromName != "Qadam" {
+		t.Fatalf("development sender: %+v %v", cfg.SMTP, err)
+	}
+	for _, from := range []string{"Qadam <no-reply@qadam.kz>", "not an address"} {
+		if _, err := FromEnviron(append(validEnviron(), "QADAM_SMTP_FROM="+from)); err == nil || !strings.Contains(err.Error(), "bare e-mail address") {
+			t.Errorf("%q: %v", from, err)
 		}
 	}
 }

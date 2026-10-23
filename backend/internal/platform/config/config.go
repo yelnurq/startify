@@ -6,6 +6,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/netip"
 	"net/url"
 	"os"
@@ -233,7 +234,7 @@ func defaults() map[string]any {
 		"auth.access_ttl":               "15m",
 		"auth.refresh_ttl":              "720h",
 		"smtp.port":                     1025,
-		"smtp.from":                     "no-reply@qadam.kz",
+		"smtp.from":                     "",
 		"smtp.from_name":                "Qadam",
 		"smtp.tls":                      "none",
 		"s3.bucket":                     "qadam",
@@ -302,9 +303,16 @@ func envKey(name string) string {
 	return section + "." + field
 }
 
+// devSender signs letters outside production when QADAM_SMTP_FROM is not
+// set; production must name an address of the university's mail domain.
+const devSender = "no-reply@qadam.kz"
+
 func (c *Config) finalize() error {
 	if c.Database.MigrateURL == "" {
 		c.Database.MigrateURL = c.Database.URL
+	}
+	if c.SMTP.From == "" && c.Env != EnvProduction {
+		c.SMTP.From = devSender
 	}
 	c.HTTP.TrustedProxies = slices.DeleteFunc(c.HTTP.TrustedProxies, func(s string) bool {
 		return strings.TrimSpace(s) == ""
@@ -406,7 +414,7 @@ func (c *Config) Validate() error {
 
 	if len(c.Auth.SecretKey) < 32 {
 		fail("QADAM_AUTH_SECRET_KEY must be at least 32 characters (openssl rand -base64 48)")
-	} else if c.Env == EnvProduction && strings.Contains(strings.ToLower(c.Auth.SecretKey), "dev") {
+	} else if c.Env == EnvProduction && looksLikeDevelopment(c.Auth.SecretKey) {
 		fail("QADAM_AUTH_SECRET_KEY looks like a development value; generate a new one for production")
 	}
 	if c.Auth.AccessTTL < time.Minute || c.Auth.AccessTTL > time.Hour {
@@ -419,8 +427,13 @@ func (c *Config) Validate() error {
 	if !slices.Contains([]string{"none", "starttls", "tls"}, c.SMTP.TLS) {
 		fail("QADAM_SMTP_TLS must be none, starttls or tls, got %q", c.SMTP.TLS)
 	}
-	if c.Env == EnvProduction && c.SMTP.Host == "" {
-		fail("QADAM_SMTP_HOST is required in production")
+	if c.SMTP.From != "" {
+		if a, err := mail.ParseAddress(c.SMTP.From); err != nil || a.Name != "" || a.Address != c.SMTP.From {
+			fail("QADAM_SMTP_FROM must be a bare e-mail address (the name goes to QADAM_SMTP_FROM_NAME), got %q", c.SMTP.From)
+		}
+	}
+	if c.Env == EnvProduction {
+		c.validateProduction(fail)
 	}
 
 	if c.Env != EnvTest && (c.S3.Endpoint == "" || c.S3.AccessKey == "" || c.S3.SecretKey == "") {
@@ -485,6 +498,61 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid configuration:\n%w", errors.Join(errs...))
 	}
 	return nil
+}
+
+// looksLikeDevelopment reports a secret copied from .env.example: every
+// development secret there contains "dev".
+func looksLikeDevelopment(secret string) bool {
+	return strings.Contains(strings.ToLower(secret), "dev")
+}
+
+// validateProduction holds the checks of a real installation: no secrets
+// from .env.example, a password on Valkey and letters that reach people.
+func (c *Config) validateProduction(fail func(format string, args ...any)) {
+	for _, dsn := range []struct{ name, value string }{
+		{"QADAM_DATABASE_URL", c.Database.URL},
+		{"QADAM_DATABASE_MIGRATE_URL", c.Database.MigrateURL},
+	} {
+		u, err := url.Parse(dsn.value)
+		if err != nil {
+			continue
+		}
+		password := u.Query().Get("password")
+		if u.User != nil {
+			if p, ok := u.User.Password(); ok {
+				password = p
+			}
+		}
+		if looksLikeDevelopment(password) {
+			fail("%s: the password looks like a development value; generate a new one for production", dsn.name)
+		}
+	}
+
+	// Valkey holds revoked sessions, role versions and rate-limit counters:
+	// whoever can write there can undo a sign-out or lift a limit.
+	if c.Valkey.Password == "" {
+		fail("QADAM_VALKEY_PASSWORD is required in production")
+	} else if looksLikeDevelopment(c.Valkey.Password) {
+		fail("QADAM_VALKEY_PASSWORD looks like a development value; generate a new one for production")
+	}
+	if looksLikeDevelopment(c.S3.SecretKey) {
+		fail("QADAM_S3_SECRET_KEY looks like a development value; generate a new one for production")
+	}
+
+	// Sign-in codes, password resets and invitations travel by mail.
+	switch {
+	case c.SMTP.Host == "":
+		fail("QADAM_SMTP_HOST is required in production")
+	case strings.EqualFold(c.SMTP.Host, "mailpit"):
+		fail("QADAM_SMTP_HOST=mailpit is the development mail catcher; set the university's mail server")
+	}
+	if c.SMTP.From == "" {
+		fail("QADAM_SMTP_FROM is required in production: an address of the university's mail domain, " +
+			"so that letters pass its SPF and DMARC checks")
+	}
+	if c.SMTP.TLS == "none" && c.SMTP.Username != "" {
+		fail("QADAM_SMTP_TLS=none would send the SMTP password in clear text; use starttls or tls")
+	}
 }
 
 // IsProduction reports whether the process runs in production.
