@@ -21,6 +21,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
 	"github.com/yelnurq/startify/backend/internal/project/projectdb"
@@ -37,8 +38,12 @@ const (
 	RoleManager    = "manager"
 )
 
-// MaxTeam bounds the number of people in a project.
-const MaxTeam = 12
+// Size of a project: the team (owner and members) and, apart from it, its
+// supervisors.
+const (
+	MaxTeam        = 12
+	MaxSupervisors = 3
+)
 
 var (
 	errNotFound     = apperr.NotFound("project.not_found", "the project does not exist")
@@ -47,7 +52,17 @@ var (
 	errIPPolicy     = apperr.New(apperr.KindValidation, "project.ip_policy_required", "accept the intellectual property policy")
 	errNotMember    = apperr.NotFound("project.member_not_found", "the person is not in the project")
 	errOwnerLeaving = apperr.Conflict("project.owner_cannot_leave", "hand the project over before leaving")
+	errOwnerActive  = apperr.Conflict("project.owner_active", "the owner is active: only they hand the project over")
+
+	// A student starts a project or two; a script would start hundreds.
+	limitCreate = ratelimit.PerHour(10)
 )
+
+// TeamListener hears about changes of a project's people, inside the
+// transaction that makes them (the showcase keeps its team in step).
+type TeamListener interface {
+	TeamChanged(ctx context.Context, projectID uuid.UUID) error
+}
 
 // managers see every project of the university; moderators also manage them.
 var (
@@ -126,17 +141,31 @@ type Service struct {
 	org         *org.Service
 	tenants     *tenant.Service
 	audit       *audit.Logger
+	limiter     *ratelimit.Limiter
 	progress    ProgressSource
 	evaluations EvaluationSource
+	team        TeamListener
 }
 
 // NewService returns the project service; UseProgress must be called before use.
-func NewService(database *db.DB, users *user.Service, orgs *org.Service, tenants *tenant.Service, auditLog *audit.Logger) *Service {
-	return &Service{db: database, users: users, org: orgs, tenants: tenants, audit: auditLog}
+func NewService(database *db.DB, users *user.Service, orgs *org.Service, tenants *tenant.Service, auditLog *audit.Logger,
+	limiter *ratelimit.Limiter,
+) *Service {
+	return &Service{db: database, users: users, org: orgs, tenants: tenants, audit: auditLog, limiter: limiter}
 }
 
 // UseProgress connects the incubator.
 func (s *Service) UseProgress(p ProgressSource) { s.progress = p }
+
+// UseTeamListener connects the showcase.
+func (s *Service) UseTeamListener(l TeamListener) { s.team = l }
+
+func (s *Service) teamChanged(ctx context.Context, projectID uuid.UUID) error {
+	if s.team == nil {
+		return nil
+	}
+	return s.team.TeamChanged(ctx, projectID)
+}
 
 // UseEvaluations connects the evaluation module.
 func (s *Service) UseEvaluations(e EvaluationSource) { s.evaluations = e }
@@ -210,6 +239,9 @@ func (s *Service) Create(ctx context.Context, body apigen.ProjectCreate) (apigen
 		v.Add("industry", validate.CodeInvalid, nil)
 	}
 	if err := v.Err(); err != nil {
+		return apigen.Project{}, err
+	}
+	if err := s.limiter.Allow(ctx, "project-create:"+p.UserID.String(), limitCreate, "rate_limited"); err != nil {
 		return apigen.Project{}, err
 	}
 	settings, err := s.tenants.CurrentSettings(ctx)
@@ -599,12 +631,29 @@ func (s *Service) AddMember(ctx context.Context, projectID uuid.UUID, body apige
 		if body.Role == apigen.ProjectMemberAddRoleSupervisor && !hasRole(m.Roles, authz.RoleSupervisor) {
 			return apperr.New(apperr.KindValidation, "project.supervisor_role_required", "the person is not a supervisor")
 		}
+		// Counted under the project lock: two people added at once cannot
+		// both take the last place.
+		if err := s.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
-		team, err := q.ListMembers(ctx, []uuid.UUID{projectID})
+		people, err := q.ListMembers(ctx, []uuid.UUID{projectID})
 		if err != nil {
 			return err
 		}
-		if len(team) >= MaxTeam {
+		team, supervisors := 0, 0
+		for i := range people {
+			if people[i].Role == RoleSupervisor {
+				supervisors++
+			} else {
+				team++
+			}
+		}
+		switch {
+		case body.Role == apigen.ProjectMemberAddRoleSupervisor && supervisors >= MaxSupervisors:
+			return apperr.Conflict("project.supervisors_full", "the project has enough supervisors").
+				WithParams(map[string]any{"count": MaxSupervisors})
+		case body.Role == apigen.ProjectMemberAddRoleMember && team >= MaxTeam:
 			return apperr.Conflict("project.team_full", "the team is full").WithParams(map[string]any{"count": MaxTeam})
 		}
 		if _, err := q.AddMember(ctx, projectdb.AddMemberParams{ProjectID: projectID, UserID: body.UserId, Role: string(body.Role), Title: title}); err != nil {
@@ -613,10 +662,13 @@ func (s *Service) AddMember(ctx context.Context, projectID uuid.UUID, body apige
 			}
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{
+		if err := s.audit.Record(ctx, audit.Event{
 			Action: "project.member_added", TargetType: "project", TargetID: projectID.String(),
 			Metadata: map[string]any{"user_id": body.UserId, "role": body.Role},
-		})
+		}); err != nil {
+			return err
+		}
+		return s.teamChanged(ctx, projectID)
 	})
 	if err != nil {
 		return apigen.ProjectMember{}, fmt.Errorf("project: add member: %w", err)
@@ -646,7 +698,9 @@ func (s *Service) member(ctx context.Context, projectID, userID uuid.UUID) (apig
 	return apigen.ProjectMember{}, errNotMember
 }
 
-// UpdateMember changes a member's title or hands the project over.
+// UpdateMember changes a member's title or hands the project over: the
+// owner does, or a moderator once the owner has left the university or is
+// blocked there.
 func (s *Service) UpdateMember(ctx context.Context, projectID, userID uuid.UUID, body apigen.ProjectMemberUpdate) (apigen.ProjectMember, error) {
 	a, err := s.Access(ctx, projectID)
 	if err != nil {
@@ -659,7 +713,8 @@ func (s *Service) UpdateMember(ctx context.Context, projectID, userID uuid.UUID,
 	if body.Title != nil && !self && a.Role != RoleOwner {
 		return apigen.ProjectMember{}, errForbidden
 	}
-	if body.Role != nil && (a.Role != RoleOwner || self) {
+	byOwner := a.Role == RoleOwner && !self
+	if body.Role != nil && !byOwner && !a.CanModerate() {
 		return apigen.ProjectMember{}, errForbidden
 	}
 	var v validate.Errors
@@ -671,6 +726,9 @@ func (s *Service) UpdateMember(ctx context.Context, projectID, userID uuid.UUID,
 		return apigen.ProjectMember{}, err
 	}
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		target, err := q.GetMember(ctx, projectdb.GetMemberParams{ProjectID: projectID, UserID: userID})
 		if db.IsNoRows(err) {
@@ -685,22 +743,11 @@ func (s *Service) UpdateMember(ctx context.Context, projectID, userID uuid.UUID,
 			}
 		}
 		if body.Role != nil {
-			if target.Role != RoleMember {
-				return apperr.Validation(apperr.FieldError{Field: "role", Code: validate.CodeInvalid})
-			}
-			// Demote first: a project has exactly one owner.
-			if _, err := q.SetMemberRole(ctx, projectdb.SetMemberRoleParams{ProjectID: projectID, UserID: a.Principal.UserID, Role: RoleMember}); err != nil {
+			if err := s.handOver(ctx, q, a, target, byOwner); err != nil {
 				return err
 			}
-			if _, err := q.SetMemberRole(ctx, projectdb.SetMemberRoleParams{ProjectID: projectID, UserID: userID, Role: RoleOwner}); err != nil {
-				return err
-			}
-			return s.audit.Record(ctx, audit.Event{
-				Action: "project.owner_changed", TargetType: "project", TargetID: projectID.String(),
-				Metadata: map[string]any{"owner_id": userID},
-			})
 		}
-		return nil
+		return s.teamChanged(ctx, projectID)
 	})
 	if err != nil {
 		return apigen.ProjectMember{}, fmt.Errorf("project: update member: %w", err)
@@ -708,17 +755,63 @@ func (s *Service) UpdateMember(ctx context.Context, projectID, userID uuid.UUID,
 	return s.member(ctx, projectID, userID)
 }
 
-// RemoveMember removes someone from the project, or lets a member leave.
+// handOver makes target the owner (inside the transaction of ctx). A
+// moderator hands over only a project whose owner is no longer an active
+// member of the university.
+func (s *Service) handOver(ctx context.Context, q *projectdb.Queries, a Access, target projectdb.ProjectMember, byOwner bool) error {
+	if target.Role != RoleMember {
+		return apperr.Validation(apperr.FieldError{Field: "role", Code: validate.CodeInvalid})
+	}
+	owner := a.Principal.UserID
+	if !byOwner {
+		people, err := q.ListMembers(ctx, []uuid.UUID{target.ProjectID})
+		if err != nil {
+			return err
+		}
+		for i := range people {
+			if people[i].Role == RoleOwner {
+				owner = people[i].UserID
+			}
+		}
+		m, ok, err := s.users.Membership(ctx, owner)
+		if err != nil {
+			return err
+		}
+		if ok && m.Status == user.StatusActive {
+			return errOwnerActive
+		}
+	}
+	// Demote first: a project has exactly one owner.
+	if _, err := q.SetMemberRole(ctx, projectdb.SetMemberRoleParams{ProjectID: target.ProjectID, UserID: owner, Role: RoleMember}); err != nil {
+		return err
+	}
+	if _, err := q.SetMemberRole(ctx, projectdb.SetMemberRoleParams{ProjectID: target.ProjectID, UserID: target.UserID, Role: RoleOwner}); err != nil {
+		return err
+	}
+	return s.audit.Record(ctx, audit.Event{
+		Action: "project.owner_changed", TargetType: "project", TargetID: target.ProjectID.String(),
+		Metadata: map[string]any{"owner_id": target.UserID, "previous_owner_id": owner, "by_moderator": !byOwner},
+	})
+}
+
+// RemoveMember removes someone from the project, or lets a member leave;
+// an archived project keeps its team.
 func (s *Service) RemoveMember(ctx context.Context, projectID, userID uuid.UUID) error {
 	a, err := s.Access(ctx, projectID)
 	if err != nil {
 		return err
+	}
+	if a.Archived() {
+		return errArchived
 	}
 	self := userID == a.Principal.UserID
 	if !self && a.Role != RoleOwner && !a.CanModerate() {
 		return errForbidden
 	}
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		target, err := q.GetMember(ctx, projectdb.GetMemberParams{ProjectID: projectID, UserID: userID})
 		if db.IsNoRows(err) {
@@ -733,10 +826,13 @@ func (s *Service) RemoveMember(ctx context.Context, projectID, userID uuid.UUID)
 		if err := q.RemoveMember(ctx, projectdb.RemoveMemberParams{ProjectID: projectID, UserID: userID}); err != nil {
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{
+		if err := s.audit.Record(ctx, audit.Event{
 			Action: "project.member_removed", TargetType: "project", TargetID: projectID.String(),
 			Metadata: map[string]any{"user_id": userID},
-		})
+		}); err != nil {
+			return err
+		}
+		return s.teamChanged(ctx, projectID)
 	})
 	if err != nil {
 		return fmt.Errorf("project: remove member: %w", err)

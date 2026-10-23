@@ -212,6 +212,26 @@ func (s *Service) Universities(ctx context.Context, ids []uuid.UUID) (map[uuid.U
 	return out, nil
 }
 
+// Suspended lists the universities whose platform is suspended: their sites
+// do not open, so their pages leave the national showcase too.
+func (s *Service) Suspended(ctx context.Context) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		ids, err = tenantdb.New(s.db.Conn(ctx)).ListSuspendedTenantIDs(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("tenant: suspended: %w", err)
+	}
+	return ids, nil
+}
+
+// PlatformOrigin is the address of the platform's public site (the default
+// university): the one home of pages every university shows alike, such as
+// the national showcase.
+func (s *Service) PlatformOrigin() string { return strings.TrimSuffix(s.publicURL.String(), "/") }
+
 // origin is the address of a university's site: its primary domain, the
 // public URL for the default university, or a subdomain of the base domain.
 func (s *Service) origin(slug, domain string) string {

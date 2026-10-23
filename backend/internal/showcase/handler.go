@@ -169,9 +169,9 @@ func (h *Handler) ContactShowcaseProject(ctx context.Context, req apigen.Contact
 
 // GetShowcaseImage implements apigen.StrictServerInterface.
 func (h *Handler) GetShowcaseImage(ctx context.Context, req apigen.GetShowcaseImageRequestObject) (apigen.GetShowcaseImageResponseObject, error) {
-	data, err := h.svc.Image(ctx, req.Slug)
+	preview, err := h.svc.Image(ctx, req.Slug)
 	if err != nil {
 		return nil, err
 	}
-	return imageResponse{data: data}, nil
+	return imageResponse{preview: preview}, nil
 }

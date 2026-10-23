@@ -146,6 +146,40 @@ type meta struct {
 	Boot string
 	// Icon is the university's seal for the browser tab.
 	Icon string
+	// Alternates are the language versions of the page (hreflang).
+	Alternates []alternate
+}
+
+// alternate is a language version of a page; Lang "x-default" names the
+// address that follows the visitor's language.
+type alternate struct {
+	Lang string
+	Href string
+}
+
+// withLang is the address of a page in one language (?lang=, which the web
+// client and the first screen follow before the saved choice).
+func withLang(address, lang string) string {
+	if strings.Contains(address, "?") {
+		return address + "&lang=" + lang
+	}
+	return address + "?lang=" + lang
+}
+
+// localized gives a page at address its canonical address and its language
+// versions: one address per language, and the address without ?lang= as the
+// default (x-default), whose language follows the visitor. A version is its
+// own canonical, so each language is indexed apart.
+func localized(m *meta, r *http.Request, address string) {
+	m.Canonical = address
+	if lang, ok := explicitLocale(r); ok {
+		m.Canonical = withLang(address, lang)
+	}
+	m.Alternates = make([]alternate, 0, len(bootLocales)+1)
+	for _, l := range bootLocales {
+		m.Alternates = append(m.Alternates, alternate{Lang: l, Href: withLang(address, l)})
+	}
+	m.Alternates = append(m.Alternates, alternate{Lang: "x-default", Href: address})
 }
 
 var (
@@ -173,9 +207,19 @@ func render(shell []byte, m meta) []byte {
 	if m.Canonical != "" {
 		fmt.Fprintf(&head, "    <link rel=\"canonical\" href=\"%s\" />\n", esc(m.Canonical))
 	}
+	for _, a := range m.Alternates {
+		fmt.Fprintf(&head, "    <link rel=\"alternate\" hreflang=\"%s\" href=\"%s\" />\n", esc(a.Lang), esc(a.Href))
+	}
 	tag("property", "og:type", m.Kind)
 	tag("property", "og:site_name", siteName)
 	tag("property", "og:locale", ogLocales[m.Lang])
+	if len(m.Alternates) > 0 {
+		for _, l := range bootLocales {
+			if l != m.Lang {
+				tag("property", "og:locale:alternate", ogLocales[l])
+			}
+		}
+	}
 	tag("property", "og:title", m.Title)
 	tag("property", "og:description", m.Description)
 	tag("property", "og:url", m.Canonical)
@@ -273,43 +317,44 @@ func (s *Service) writePage(w http.ResponseWriter, r *http.Request, status int, 
 	_, _ = w.Write(page)
 }
 
-// university returns the tenant of the address with its brand and site, and
-// its short name in the tenant's language.
-func (s *Service) university(r *http.Request) (tenancy.Tenant, tenant.University, string, error) {
+// university returns the university of the address with its brand and site.
+func (s *Service) university(r *http.Request) (tenant.University, error) {
 	t, err := tenancy.Require(r.Context())
 	if err != nil {
-		return t, tenant.University{}, "", err
+		return tenant.University{}, err
 	}
 	universities, err := s.Tenants.Universities(r.Context(), []uuid.UUID{t.ID})
 	if err != nil {
-		return t, tenant.University{}, "", err
+		return tenant.University{}, err
 	}
-	u := universities[t.ID]
-	return t, u, best(u.Brief.ShortName, t.Locale), nil
+	return universities[t.ID], nil
 }
 
 func (s *Service) landingPage(w http.ResponseWriter, r *http.Request) {
-	t, u, name, err := s.university(r)
+	u, err := s.university(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	full := best(u.Brief.Name, t.Locale)
+	// The whole page speaks the language of the first screen and the client.
+	lang := bootLocale(r)
+	name, full := best(u.Brief.ShortName, lang), best(u.Brief.Name, lang)
 	m := meta{
-		Lang: t.Locale, Kind: "website", Canonical: u.Origin + "/",
-		Title:       fill(landingTitle, t.Locale, "{university}", name),
-		Description: bootString("landing:hero.subtitle", t.Locale),
+		Lang: lang, Kind: "website",
+		Title:       fill(landingTitle, lang, "{university}", name),
+		Description: bootString("landing:hero.subtitle", lang),
 	}
+	localized(&m, r, u.Origin+"/")
 	m.Body = fmt.Sprintf("<main><h1>%s</h1><p>%s</p><p><a href=\"%s/showcase\">%s</a></p></main>",
 		html.EscapeString(m.Title), html.EscapeString(m.Description), html.EscapeString(u.Origin),
-		html.EscapeString(fill(catalogTitle, t.Locale, "{university}", name)))
+		html.EscapeString(fill(catalogTitle, lang, "{university}", name)))
 	m.JSONLD = map[string]any{
 		"@context": "https://schema.org", "@type": "WebSite", "name": siteName, "url": m.Canonical,
 		"description": m.Description, "inLanguage": m.Lang,
 		"publisher": map[string]any{"@type": "CollegeOrUniversity", "name": full},
 	}
 	m.Icon = bootLogo(u.Brief)
-	boot := landingBoot(u, bootLocale(r))
+	boot := landingBoot(u, lang)
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -318,27 +363,33 @@ func (s *Service) landingPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
-	t, u, name, err := s.university(r)
+	u, err := s.university(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
+	lang := bootLocale(r)
+	name := best(u.Brief.ShortName, lang)
 	national := r.URL.Query().Get("scope") == "national"
 	params := apigen.ListShowcaseParams{}
 	limit := catalogItems
 	params.Limit = &limit
 	origin := u.Origin
 	m := meta{
-		Lang: t.Locale, Kind: "website", Canonical: origin + "/showcase",
-		Title:       fill(catalogTitle, t.Locale, "{university}", name),
-		Description: fill(catalogDescription, t.Locale, "{university}", name),
+		Lang: lang, Kind: "website",
+		Title:       fill(catalogTitle, lang, "{university}", name),
+		Description: fill(catalogDescription, lang, "{university}", name),
 	}
+	address := origin + "/showcase"
 	if national {
 		scope := apigen.ListShowcaseParamsScopeNational
 		params.Scope = &scope
-		m.Canonical += "?scope=national"
-		m.Title, m.Description = nationalTitle.Best(t.Locale), nationalDescription.Best(t.Locale)
+		// Every university shows the same national list: one address is
+		// canonical, on the platform's own site.
+		address = s.Tenants.PlatformOrigin() + "/showcase?scope=national"
+		m.Title, m.Description = nationalTitle.Best(lang), nationalDescription.Best(lang)
 	}
+	localized(&m, r, address)
 	// The routes run without sign-in: search engines see public pages only.
 	page, err := s.List(r.Context(), params)
 	if err != nil {
@@ -361,7 +412,7 @@ func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
 		"mainEntity": map[string]any{"@type": "ItemList", "numberOfItems": len(items), "itemListElement": items},
 	}
 	m.Icon = bootLogo(u.Brief)
-	boot := catalogBoot(u.Brief, bootLocale(r), national)
+	boot := catalogBoot(u.Brief, lang, national)
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -370,11 +421,13 @@ func (s *Service) catalogPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) projectPage(w http.ResponseWriter, r *http.Request) {
-	t, u, name, err := s.university(r)
+	u, err := s.university(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
+	lang := bootLocale(r)
+	name := best(u.Brief.ShortName, lang)
 	row, _, err := s.published(r.Context(), chi.URLParam(r, "slug"))
 	if err != nil {
 		var ae *apperr.Error
@@ -385,14 +438,15 @@ func (s *Service) projectPage(w http.ResponseWriter, r *http.Request) {
 		// Unknown pages and pages for members only look the same; the web
 		// client still opens them for members.
 		s.writePage(w, r, http.StatusNotFound, meta{
-			Lang: t.Locale, Kind: "website", NoIndex: true,
-			Title: fill(catalogTitle, t.Locale, "{university}", name),
+			Lang: lang, Kind: "website", NoIndex: true,
+			Title: fill(catalogTitle, lang, "{university}", name),
 		})
 		return
 	}
-	m := projectMeta(&row, t.Locale, u.Origin, name)
+	m := projectMeta(&row, lang, u.Origin, name)
+	localized(&m, r, m.Canonical)
 	m.Icon = bootLogo(u.Brief)
-	boot := projectBoot(&row, u.Brief, bootLocale(r))
+	boot := projectBoot(&row, u.Brief, lang)
 	if m.Boot, err = renderBoot(&boot); err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -465,7 +519,7 @@ type urlSet struct {
 }
 
 func (s *Service) sitemap(w http.ResponseWriter, r *http.Request) {
-	_, u, _, err := s.university(r)
+	u, err := s.university(r)
 	origin := u.Origin
 	if err != nil {
 		httpx.WriteError(w, r, err)
@@ -481,9 +535,11 @@ func (s *Service) sitemap(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	set := urlSet{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9", URLs: []sitemapURL{
-		{Loc: origin + "/"}, {Loc: origin + "/showcase"}, {Loc: origin + "/showcase?scope=national"},
-	}}
+	set := urlSet{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9", URLs: []sitemapURL{{Loc: origin + "/"}, {Loc: origin + "/showcase"}}}
+	// The national list has one canonical home, the platform's site.
+	if origin == s.Tenants.PlatformOrigin() {
+		set.URLs = append(set.URLs, sitemapURL{Loc: origin + "/showcase?scope=national"})
+	}
 	for _, row := range rows {
 		set.URLs = append(set.URLs, sitemapURL{Loc: origin + "/showcase/" + row.Slug, LastMod: row.UpdatedAt.UTC().Format("2006-01-02")})
 	}
@@ -504,7 +560,7 @@ var robotsDisallowed = []string{
 }
 
 func (s *Service) robots(w http.ResponseWriter, r *http.Request) {
-	_, u, _, err := s.university(r)
+	u, err := s.university(r)
 	origin := u.Origin
 	if err != nil {
 		httpx.WriteError(w, r, err)

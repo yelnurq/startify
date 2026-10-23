@@ -37,10 +37,13 @@ var (
 	errContactNotFound  = apperr.NotFound("contact.not_found", "the request does not exist")
 	errAlreadyModerated = apperr.Conflict("contact.already_moderated", "the request has already been moderated")
 
-	// A partner writes a few letters an hour; a project receives at most a
-	// few dozen a day.
+	// A partner writes a few letters an hour, and to one project a few a
+	// day. The cap per project only bounds what a flood can store: it is far
+	// above what a project receives, so a flood from many addresses cannot
+	// shut the form for real partners for a whole day.
 	limitContactSender  = ratelimit.PerHour(5)
-	limitContactProject = ratelimit.Limit{Rate: 20, Burst: 20, Period: 24 * time.Hour}
+	limitContactEmail   = ratelimit.Limit{Rate: 3, Burst: 3, Period: 24 * time.Hour}
+	limitContactProject = ratelimit.Limit{Rate: 100, Burst: 100, Period: 24 * time.Hour}
 
 	contactKinds = []string{"investment", "partnership", "pilot", "mentoring", "hiring", "other"}
 )
@@ -90,7 +93,7 @@ func (s *Service) Contact(ctx context.Context, slug string, body apigen.ContactC
 	}
 	var v validate.Errors
 	name := v.Text("name", body.Name, 2, 120)
-	email := strings.ToLower(strings.TrimSpace(string(body.Email)))
+	email := strings.ToLower(strings.TrimSpace(body.Email))
 	if a, err := mail.ParseAddress(email); err != nil || a.Address != email || len(email) > 254 {
 		v.Add("email", "email", nil)
 	}
@@ -106,11 +109,17 @@ func (s *Service) Contact(ctx context.Context, slug string, body apigen.ContactC
 	if ip := httpx.ClientIPFrom(ctx); ip.IsValid() {
 		sender = ip.String()
 	}
-	if err := s.Limiter.Allow(ctx, "showcase.contact:"+sender, limitContactSender, "showcase.too_many_requests"); err != nil {
-		return apigen.ContactAccepted{}, err
-	}
-	if err := s.Limiter.Allow(ctx, "showcase.contact:"+row.ProjectID.String(), limitContactProject, "showcase.too_many_requests"); err != nil {
-		return apigen.ContactAccepted{}, err
+	for _, l := range []struct {
+		key   string
+		limit ratelimit.Limit
+	}{
+		{"showcase.contact:" + sender, limitContactSender},
+		{"showcase.contact:" + row.ProjectID.String() + ":" + email, limitContactEmail},
+		{"showcase.contact:" + row.ProjectID.String(), limitContactProject},
+	} {
+		if err := s.Limiter.Allow(ctx, l.key, l.limit, "showcase.too_many_requests"); err != nil {
+			return apigen.ContactAccepted{}, err
+		}
 	}
 	settings, err := s.Tenants.CurrentSettings(ctx)
 	if err != nil {
@@ -305,6 +314,10 @@ func (s *Service) Moderate(ctx context.Context, contactID uuid.UUID, forward boo
 		e, err := q.GetEntry(ctx, c.ProjectID)
 		if err != nil {
 			return err
+		}
+		// The team closed the form meanwhile: the request is not sent to them.
+		if forward && !e.ContactEnabled {
+			return errContactDisabled
 		}
 		status, action := ContactRejected, "showcase.contact_rejected"
 		if forward {

@@ -75,6 +75,9 @@ var (
 	errIncomplete  = apperr.New(apperr.KindValidation, "showcase.incomplete", "save the page with a problem and a solution first")
 	errNotInReview = apperr.Conflict("showcase.not_in_review", "the page is not waiting for review")
 	errForbidden   = apperr.Forbidden("rbac.forbidden", "not allowed for your role in the project")
+	errOwnPage     = apperr.Forbidden("showcase.own_page", "a moderator does not approve the page of their own project")
+	errSlugTaken   = apperr.Validation(apperr.FieldError{Field: "slug", Code: validate.CodeTaken})
+	errPageStale   = apperr.PreconditionFailed("precondition.failed", "the page was changed since it was loaded")
 
 	slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
@@ -213,7 +216,7 @@ func pageURL(ctx context.Context, slug string) string {
 // entryAPI is the page as the team and moderators see it.
 func entryAPI(ctx context.Context, e *showcasedb.ShowcaseEntry) apigen.ShowcaseEntry {
 	out := apigen.ShowcaseEntry{
-		ProjectId: e.ProjectID, Saved: true, Slug: e.Slug, Status: apigen.ShowcaseStatus(e.Status),
+		ProjectId: e.ProjectID, Saved: true, Version: int(e.Version), Held: e.Held, Slug: e.Slug, Status: apigen.ShowcaseStatus(e.Status),
 		Visibility: apigen.ShowcaseVisibility(e.Visibility), Title: e.Title, Tagline: e.Tagline,
 		Industry: apigen.Industry(e.Industry), Stage: apigen.ShowcaseStage(e.Stage), CoverUrl: apiconv.FileURL(e.CoverFileID),
 		VideoUrl: e.VideoUrl, Sections: sectionsOf(e.Sections).api(), Team: teamAPI(e.Team), Needs: needsAPI(e.Needs),
@@ -265,13 +268,16 @@ type derived struct {
 	level     *string
 }
 
-func (s *Service) derive(ctx context.Context, a project.Access, roles map[string]string) (derived, error) {
-	p := a.Project
-	d := derived{stage: incubator.StageOf(p.CurrentStep), year: int32(p.CreatedAt.Year())} //nolint:gosec // a calendar year
-	members, err := s.Projects.Members(ctx, p.ID)
+// teamOf is the team as a page shows it: the owner and the members (not the
+// supervisors), with the roles the team step names or their titles. It
+// returns the owner's faculty too.
+func (s *Service) teamOf(ctx context.Context, projectID uuid.UUID, roles map[string]string) ([]Member, *uuid.UUID, error) {
+	members, err := s.Projects.Members(ctx, projectID)
 	if err != nil {
-		return d, err
+		return nil, nil, err
 	}
+	team := []Member{}
+	var faculty *uuid.UUID
 	for i := range members {
 		m := &members[i]
 		if m.Role != apigen.ProjectRoleOwner && m.Role != apigen.ProjectRoleMember {
@@ -281,11 +287,21 @@ func (s *Service) derive(ctx context.Context, a project.Access, roles map[string
 		if role == "" {
 			role = m.Title
 		}
-		d.team = append(d.team, Member{Name: m.User.FullName, Role: role, AvatarURL: m.User.AvatarUrl})
-		if d.facultyID == nil && m.Role == apigen.ProjectRoleOwner && m.User.Faculty != nil {
+		team = append(team, Member{Name: m.User.FullName, Role: role, AvatarURL: m.User.AvatarUrl})
+		if faculty == nil && m.Role == apigen.ProjectRoleOwner && m.User.Faculty != nil {
 			id := m.User.Faculty.Id
-			d.facultyID = &id
+			faculty = &id
 		}
+	}
+	return team, faculty, nil
+}
+
+func (s *Service) derive(ctx context.Context, a project.Access, roles map[string]string) (derived, error) {
+	p := a.Project
+	d := derived{stage: incubator.StageOf(p.CurrentStep), year: int32(p.CreatedAt.Year())} //nolint:gosec // a calendar year
+	var err error
+	if d.team, d.facultyID, err = s.teamOf(ctx, p.ID, roles); err != nil {
+		return d, err
 	}
 	if p.FacultyID != nil {
 		d.facultyID = p.FacultyID
@@ -332,13 +348,24 @@ func (s *Service) suggestion(ctx context.Context, a project.Access) (apigen.Show
 		ProjectId: p.ID, Saved: false, Slug: Slugify(p.Title), Status: StatusDraft, Visibility: VisibilityUniversity,
 		Title: p.Title, Tagline: draft.Tagline, Industry: apigen.Industry(p.Industry), Stage: apigen.ShowcaseStage(d.stage),
 		Sections: sections.api(), Team: teamAPI(team), Needs: []apigen.ShowcaseNeed{}, Tags: []string{},
-		Score: intPtr(d.score), Level: levelPtr(d.level), ContactEnabled: true,
-	}
-	if draft.VideoURL != "" {
-		v := draft.VideoURL
-		out.VideoUrl = &v
+		Score: intPtr(d.score), Level: levelPtr(d.level), ContactEnabled: true, VideoUrl: videoLink(draft.VideoURL),
 	}
 	return out, sections, d, nil
+}
+
+// videoLink keeps a video link of the incubator answers only when the page
+// may embed it (YouTube or Vimeo), the rule a saved page follows: a page
+// saved without the editor (a cover uploaded first) must not slip past it.
+func videoLink(u string) *string {
+	if strings.TrimSpace(u) == "" {
+		return nil
+	}
+	var v validate.Errors
+	link := v.URL("video_url", &u, maxVideoURL, videoHosts...)
+	if v.Err() != nil {
+		return nil
+	}
+	return link
 }
 
 // Entry returns the page of a project with its ETag.
@@ -421,8 +448,41 @@ func SearchText(title, tagline string, x Sections, tags []string) string {
 	return strings.Join([]string{title, tagline, x.Problem, x.Solution, x.Market, x.Traction, x.Ask, strings.Join(tags, " ")}, " ")
 }
 
-// Update saves the page. Moving a published page to public visibility sends
-// it to review; it stays live inside the university meanwhile.
+// shownChanged reports whether a save changed what the page shows to the
+// public: such a change of an approved public page needs a new approval.
+func shownChanged(before, after *showcasedb.ShowcaseEntry) bool {
+	return before.Slug != after.Slug || before.Title != after.Title || before.Tagline != after.Tagline ||
+		string(before.Sections) != string(after.Sections) || !equalPtr(before.VideoUrl, after.VideoUrl) ||
+		!slices.Equal(before.Tags, after.Tags) || !slices.Equal(before.Needs, after.Needs)
+}
+
+func equalPtr(a, b *string) bool {
+	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
+}
+
+func equalUUID(a, b *uuid.UUID) bool {
+	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
+}
+
+// statusAfterSave is the status of a live page after the team saved it:
+// university pages publish at once; going public, a rejected page and any
+// change of what an approved public page shows wait for review (D-043, as
+// changed: an approval covers the version that was reviewed).
+func statusAfterSave(before, after *showcasedb.ShowcaseEntry) string {
+	switch {
+	case after.Visibility == VisibilityUniversity:
+		return StatusPublished
+	case before.Visibility == VisibilityUniversity || before.Status == StatusRejected:
+		return StatusInReview
+	case before.Status == StatusPublished && shownChanged(before, after):
+		return StatusInReview
+	}
+	return after.Status
+}
+
+// Update saves the page. Moving a published page to public visibility, or
+// changing what an approved public page shows, sends it to review; it stays
+// live inside the university meanwhile.
 func (s *Service) Update(ctx context.Context, projectID uuid.UUID, body apigen.ShowcaseEntryUpdate, ifMatch *string) (apigen.ShowcaseEntry, string, error) {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
@@ -448,6 +508,10 @@ func (s *Service) Update(ctx context.Context, projectID uuid.UUID, body apigen.S
 	}
 	var row showcasedb.ShowcaseEntry
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
+		// The project first, then the page: the order every writer keeps.
+		if err := s.Projects.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		current, err := q.LockEntry(ctx, projectID)
 		var version int32
@@ -463,7 +527,7 @@ func (s *Service) Update(ctx context.Context, projectID uuid.UUID, body apigen.S
 			return apperr.PreconditionFailed("precondition.failed", "the page was changed since it was loaded")
 		}
 		if owner, err := q.SlugOwner(ctx, in.slug); err == nil && owner != projectID {
-			return apperr.Validation(apperr.FieldError{Field: "slug", Code: validate.CodeTaken})
+			return errSlugTaken
 		} else if err != nil && !db.IsNoRows(err) {
 			return err
 		}
@@ -475,30 +539,14 @@ func (s *Service) Update(ctx context.Context, projectID uuid.UUID, body apigen.S
 			VideoUrl: in.videoURL, Sections: sections, Team: team, Needs: in.needs, Tags: in.tags, ShowScore: in.showScore,
 			Score: d.score, Level: d.level, ContactEnabled: in.contactEnabled, SearchText: SearchText(in.title, in.tagline, in.sections, in.tags),
 		}); err != nil {
+			// Another project took the address after the check above.
+			if db.IsUniqueViolation(err, "") {
+				return errSlugTaken
+			}
 			return err
 		}
 		if live(&row) {
-			status := row.Status
-			switch {
-			case in.visibility == VisibilityUniversity:
-				status = StatusPublished
-			case current.Visibility == VisibilityUniversity || current.Status == StatusRejected:
-				status = StatusInReview
-			}
-			if status != row.Status {
-				submitted := row.SubmittedAt
-				if status == StatusInReview {
-					now := s.now()
-					submitted = &now
-				}
-				if row, err = q.SetStatus(ctx, showcasedb.SetStatusParams{
-					ProjectID: projectID, Status: status, SubmittedAt: submitted, PublishedAt: row.PublishedAt,
-					ReviewComment: row.ReviewComment, ReviewedBy: row.ReviewedBy,
-				}); err != nil {
-					return err
-				}
-			}
-			if err := s.syncProject(ctx, &row); err != nil {
+			if row, err = s.setStatus(ctx, &row, statusAfterSave(&current, &row)); err != nil {
 				return err
 			}
 		}
@@ -511,6 +559,29 @@ func (s *Service) Update(ctx context.Context, projectID uuid.UUID, body apigen.S
 		return apigen.ShowcaseEntry{}, "", fmt.Errorf("showcase: update: %w", err)
 	}
 	return entryAPI(ctx, &row), ETag(row.Version), nil
+}
+
+// setStatus moves a page to status when it changes, stamping a submission
+// for review, and keeps the project's visibility in step (inside the
+// transaction of ctx).
+func (s *Service) setStatus(ctx context.Context, row *showcasedb.ShowcaseEntry, status string) (showcasedb.ShowcaseEntry, error) {
+	out := *row
+	if status != row.Status {
+		submitted := row.SubmittedAt
+		if status == StatusInReview {
+			now := s.now()
+			submitted = &now
+		}
+		var err error
+		if out, err = s.q(ctx).SetStatus(ctx, showcasedb.SetStatusParams{
+			ProjectID: row.ProjectID, Status: status, SubmittedAt: submitted, PublishedAt: row.PublishedAt,
+			ReviewComment: row.ReviewComment, ReviewedBy: row.ReviewedBy, Held: row.Held,
+		}); err != nil {
+			return out, err
+		}
+	}
+	err := s.syncProject(ctx, &out)
+	return out, err
 }
 
 // syncProject keeps the visibility of the project in step with its page.
@@ -526,7 +597,9 @@ func (s *Service) syncProject(ctx context.Context, e *showcasedb.ShowcaseEntry) 
 }
 
 // Publish puts the saved page on the showcase: university pages at once,
-// public pages after review (live inside the university meanwhile).
+// public pages after review (live inside the university meanwhile). A page a
+// moderator took down waits for review whatever its visibility, and stays
+// hidden until a moderator approves it.
 func (s *Service) Publish(ctx context.Context, projectID uuid.UUID) (apigen.ShowcaseEntry, error) {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
@@ -537,6 +610,9 @@ func (s *Service) Publish(ctx context.Context, projectID uuid.UUID) (apigen.Show
 	}
 	var row showcasedb.ShowcaseEntry
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Projects.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		var err error
 		row, err = q.LockEntry(ctx, projectID)
@@ -552,16 +628,16 @@ func (s *Service) Publish(ctx context.Context, projectID uuid.UUID) (apigen.Show
 		}
 		now := s.now()
 		published := row.PublishedAt
-		if published == nil {
+		if published == nil && !row.Held {
 			published = &now
 		}
 		status, submitted, action := StatusPublished, row.SubmittedAt, "showcase.published"
-		if row.Visibility == VisibilityPublic && row.Status != StatusPublished {
+		if row.Held || (row.Visibility == VisibilityPublic && row.Status != StatusPublished) {
 			status, submitted, action = StatusInReview, &now, "showcase.submitted"
 		}
 		if row, err = q.SetStatus(ctx, showcasedb.SetStatusParams{
 			ProjectID: projectID, Status: status, SubmittedAt: submitted, PublishedAt: published,
-			ReviewComment: row.ReviewComment, ReviewedBy: row.ReviewedBy,
+			ReviewComment: row.ReviewComment, ReviewedBy: row.ReviewedBy, Held: row.Held,
 		}); err != nil {
 			return err
 		}
@@ -579,7 +655,8 @@ func (s *Service) Publish(ctx context.Context, projectID uuid.UUID) (apigen.Show
 	return entryAPI(ctx, &row), nil
 }
 
-// Unpublish takes the page off the showcase (back to draft).
+// Unpublish takes the page off the showcase (back to draft). A moderator's
+// take-down holds the page: the team publishes it again only through review.
 func (s *Service) Unpublish(ctx context.Context, projectID uuid.UUID) (apigen.ShowcaseEntry, error) {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
@@ -588,8 +665,12 @@ func (s *Service) Unpublish(ctx context.Context, projectID uuid.UUID) (apigen.Sh
 	if !a.Team() && !a.CanModerate() {
 		return apigen.ShowcaseEntry{}, errForbidden
 	}
+	takeDown := !a.Team()
 	var row showcasedb.ShowcaseEntry
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Projects.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		var err error
 		if row, err = q.LockEntry(ctx, projectID); err != nil {
@@ -597,13 +678,18 @@ func (s *Service) Unpublish(ctx context.Context, projectID uuid.UUID) (apigen.Sh
 		}
 		if row, err = q.SetStatus(ctx, showcasedb.SetStatusParams{
 			ProjectID: projectID, Status: StatusDraft, ReviewComment: row.ReviewComment, ReviewedBy: row.ReviewedBy,
+			Held: row.Held || takeDown,
 		}); err != nil {
 			return err
 		}
 		if err := s.syncProject(ctx, &row); err != nil {
 			return err
 		}
-		return s.Audit.Record(ctx, audit.Event{Action: "showcase.unpublished", TargetType: "project", TargetID: projectID.String()})
+		action := "showcase.unpublished"
+		if takeDown {
+			action = "showcase.taken_down"
+		}
+		return s.Audit.Record(ctx, audit.Event{Action: action, TargetType: "project", TargetID: projectID.String()})
 	})
 	if db.IsNoRows(err) {
 		return apigen.ShowcaseEntry{}, errNotFound
@@ -612,6 +698,39 @@ func (s *Service) Unpublish(ctx context.Context, projectID uuid.UUID) (apigen.Sh
 		return apigen.ShowcaseEntry{}, fmt.Errorf("showcase: unpublish: %w", err)
 	}
 	return entryAPI(ctx, &row), nil
+}
+
+// TeamChanged implements project.TeamListener: the team a saved page shows
+// (on the national showcase and in its JSON-LD too) follows the project's
+// members, so someone who left the team leaves the page at once.
+func (s *Service) TeamChanged(ctx context.Context, projectID uuid.UUID) error {
+	row, err := s.load(ctx, projectID)
+	if err != nil || row == nil {
+		return err
+	}
+	var current []Member
+	_ = json.Unmarshal(row.Team, &current)
+	draft, err := incubator.DraftShowcase(ctx, s.DB, projectID, "")
+	if err != nil {
+		return err
+	}
+	team, _, err := s.teamOf(ctx, projectID, draft.Roles)
+	if err != nil {
+		return err
+	}
+	if slices.EqualFunc(team, current, func(a, b Member) bool {
+		return a.Name == b.Name && a.Role == b.Role && equalPtr(a.AvatarURL, b.AvatarURL)
+	}) {
+		return nil
+	}
+	raw, err := json.Marshal(team)
+	if err != nil {
+		return err
+	}
+	if _, err := s.q(ctx).SetTeam(ctx, showcasedb.SetTeamParams{ProjectID: projectID, Team: raw}); err != nil && !db.IsNoRows(err) {
+		return fmt.Errorf("showcase: team: %w", err)
+	}
+	return nil
 }
 
 // ensure saves the suggested page when the team changes it for the first
@@ -706,6 +825,9 @@ func (s *Service) DeleteCover(ctx context.Context, projectID uuid.UUID) (apigen.
 func (s *Service) replaceCover(ctx context.Context, projectID uuid.UUID, fileID *uuid.UUID) (showcasedb.ShowcaseEntry, error) {
 	var row showcasedb.ShowcaseEntry
 	err := s.DB.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Projects.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		current, err := q.LockEntry(ctx, projectID)
 		if err != nil {
@@ -713,6 +835,12 @@ func (s *Service) replaceCover(ctx context.Context, projectID uuid.UUID, fileID 
 		}
 		if row, err = q.SetCover(ctx, showcasedb.SetCoverParams{ProjectID: projectID, CoverFileID: fileID}); err != nil {
 			return err
+		}
+		// A new picture on an approved public page needs a new approval.
+		if public(row.Status, row.Visibility) && !equalUUID(current.CoverFileID, fileID) {
+			if row, err = s.setStatus(ctx, &row, StatusInReview); err != nil {
+				return err
+			}
 		}
 		if current.CoverFileID != nil {
 			if err := s.Files.Delete(ctx, *current.CoverFileID); err != nil {
@@ -770,31 +898,56 @@ func (s *Service) Review(ctx context.Context, projectID uuid.UUID, body apigen.S
 	if err := v.Err(); err != nil {
 		return apigen.ShowcaseEntry{}, err
 	}
+	// An approval publishes the version the moderator saw.
+	if body.Approve && ifMatch == nil {
+		return apigen.ShowcaseEntry{}, apperr.PreconditionRequired("precondition.required", "send If-Match with the version you reviewed")
+	}
+	if body.Approve {
+		people, err := s.Projects.MemberIDs(ctx, projectID)
+		if err != nil {
+			return apigen.ShowcaseEntry{}, err
+		}
+		if _, own := people[p.UserID]; own {
+			return apigen.ShowcaseEntry{}, errOwnPage
+		}
+	}
 	var row showcasedb.ShowcaseEntry
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
+		if err := s.Projects.Lock(ctx, projectID); err != nil {
+			return err
+		}
 		q := s.q(ctx)
 		var err error
 		if row, err = q.LockEntry(ctx, projectID); err != nil {
 			return err
 		}
+		if ifMatch != nil && strings.TrimPrefix(strings.TrimSpace(*ifMatch), "W/") != ETag(row.Version) {
+			return errPageStale
+		}
 		reviewable := row.Status == StatusInReview || (!body.Approve && public(row.Status, row.Visibility))
 		if !reviewable {
 			return errNotInReview
 		}
-		status, action := StatusPublished, "showcase.approved"
+		status, action, held, published := StatusPublished, "showcase.approved", false, row.PublishedAt
 		if !body.Approve {
-			status, action = StatusRejected, "showcase.rejected"
+			status, action, held = StatusRejected, "showcase.rejected", row.Held
+		} else if published == nil {
+			// A page taken down by a moderator goes live again once approved.
+			now := s.now()
+			published = &now
 		}
 		if row, err = q.SetStatus(ctx, showcasedb.SetStatusParams{
-			ProjectID: projectID, Status: status, SubmittedAt: row.SubmittedAt, PublishedAt: row.PublishedAt,
-			ReviewComment: comment, ReviewedBy: &p.UserID,
+			ProjectID: projectID, Status: status, SubmittedAt: row.SubmittedAt, PublishedAt: published,
+			ReviewComment: comment, ReviewedBy: &p.UserID, Held: held,
 		}); err != nil {
 			return err
 		}
 		if err := s.syncProject(ctx, &row); err != nil {
 			return err
 		}
-		return s.Audit.Record(ctx, audit.Event{Action: action, TargetType: "project", TargetID: projectID.String()})
+		return s.Audit.Record(ctx, audit.Event{
+			Action: action, TargetType: "project", TargetID: projectID.String(), Metadata: map[string]any{"version": row.Version},
+		})
 	})
 	if db.IsNoRows(err) {
 		return apigen.ShowcaseEntry{}, errNotFound

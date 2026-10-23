@@ -2243,9 +2243,10 @@ paths:
         Requires `innovation_manager` or `tenant_admin`. An approval names the version the
         moderator reviewed in `If-Match` (`"<version>"`; 428 without it, 412
         `precondition.failed` when the team has changed the page since) and publishes exactly
-        that version. A moderator in the project's team or among its supervisors cannot
-        approve its page (`showcase.own_page`). Rejecting a published public page takes it
-        down and holds it (`held`) until a moderator approves it again.
+        that version; approving a page a moderator took down (`held`) publishes it again. A
+        moderator in the project's team or among its supervisors cannot approve its page
+        (`showcase.own_page`). A published public page can be rejected later too: it stays
+        visible inside the university.
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
