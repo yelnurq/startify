@@ -757,7 +757,7 @@ func (s *Service) Reviews(ctx context.Context, status *apigen.ShowcaseStatus) (a
 // Review approves a page for everyone or rejects it with a comment; a
 // rejected page stays live inside the university. Published public pages can
 // be rejected later too.
-func (s *Service) Review(ctx context.Context, projectID uuid.UUID, body apigen.ShowcaseReview) (apigen.ShowcaseEntry, error) {
+func (s *Service) Review(ctx context.Context, projectID uuid.UUID, body apigen.ShowcaseReview, ifMatch *string) (apigen.ShowcaseEntry, error) {
 	p, err := authz.RequireRole(ctx, reviewRoles...)
 	if err != nil {
 		return apigen.ShowcaseEntry{}, err

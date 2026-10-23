@@ -108,13 +108,14 @@ export function useStepAction(projectId: string, stepKey: string, action: StepAc
   });
 }
 
+/** Approves the version of the step the approver reviewed (`etag`): 412 when the team changed it since. */
 export function useApproveStep(projectId: string, stepKey: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (comment: string) =>
+    mutationFn: ({ comment, etag }: { comment: string; etag: string }) =>
       unwrapTagged(
         api.POST('/projects/{projectId}/steps/{stepKey}/approve', {
-          params: { path: { projectId, stepKey } },
+          params: { path: { projectId, stepKey }, header: { 'If-Match': etag } },
           body: { comment },
         }),
       ),

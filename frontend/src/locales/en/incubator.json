@@ -154,10 +154,11 @@
   },
   "approve": {
     "title": "Approve the step",
-    "description": "Approval counts the step as done even when the minimum is not met. The team will see your comment.",
+    "description": "Approval counts the step as done even when the minimum is not met. The team will see your comment. If the team changes the answers, the approval is withdrawn.",
     "comment": "Comment for the team",
     "submit": "Approve",
-    "done": "Step approved"
+    "done": "Step approved",
+    "stale": "The team changed the step while you were reviewing it. We loaded the new answers: check them and approve again."
   },
   "conflict": {
     "title": "The step was changed at the same time",

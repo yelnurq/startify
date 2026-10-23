@@ -223,7 +223,7 @@ func (s *Service) Facets(ctx context.Context, national bool) (apigen.ShowcaseFac
 	var rows []showcasedb.ListFacetRowsRow
 	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		var err error
-		rows, err = s.q(ctx).ListFacetRows(ctx, scope)
+		rows, err = s.q(ctx).ListFacetRows(ctx, showcasedb.ListFacetRowsParams{Scope: scope})
 		return err
 	})
 	if err != nil {

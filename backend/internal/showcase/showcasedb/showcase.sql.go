@@ -81,7 +81,7 @@ func (q *Queries) CreateContact(ctx context.Context, arg CreateContactParams) (C
 
 const getEntry = `-- name: GetEntry :one
 
-SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at FROM showcase_entries
+SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held FROM showcase_entries
  WHERE project_id = $1 AND tenant_id = app_current_tenant()
 `
 
@@ -128,12 +128,13 @@ func (q *Queries) GetEntry(ctx context.Context, projectID uuid.UUID) (ShowcaseEn
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }
 
 const getLiveBySlug = `-- name: GetLiveBySlug :one
-SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at FROM showcase_entries
+SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held FROM showcase_entries
  WHERE tenant_id = app_current_tenant() AND slug = $1 AND published_at IS NOT NULL
 `
 
@@ -173,6 +174,7 @@ func (q *Queries) GetLiveBySlug(ctx context.Context, slug string) (ShowcaseEntry
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }
@@ -183,9 +185,16 @@ SELECT c.id, c.tenant_id, c.project_id, c.name, c.email, c.organization, c.kind,
   LEFT JOIN showcase_entries e ON e.project_id = c.project_id
  WHERE c.tenant_id = app_current_tenant()
    AND ($1::text IS NULL OR c.status = $1::text)
+   AND ($2::uuid IS NULL OR c.id < $2::uuid)
  ORDER BY c.id DESC
- LIMIT 200
+ LIMIT $3
 `
+
+type ListContactsParams struct {
+	Status   *string
+	BeforeID *uuid.UUID
+	RowLimit int32
+}
 
 type ListContactsRow struct {
 	ID           uuid.UUID
@@ -205,8 +214,8 @@ type ListContactsRow struct {
 	ProjectTitle string
 }
 
-func (q *Queries) ListContacts(ctx context.Context, status *string) ([]ListContactsRow, error) {
-	rows, err := q.db.Query(ctx, listContacts, status)
+func (q *Queries) ListContacts(ctx context.Context, arg ListContactsParams) ([]ListContactsRow, error) {
+	rows, err := q.db.Query(ctx, listContacts, arg.Status, arg.BeforeID, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -249,8 +258,14 @@ SELECT e.industry, e.stage, e.needs, e.tags, e.year, e.faculty_id, e.faculty
          WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
          ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
        END
+   AND NOT (e.tenant_id = ANY(coalesce($2::uuid[], '{}')))
  LIMIT 10000
 `
+
+type ListFacetRowsParams struct {
+	Scope     string
+	Suspended []uuid.UUID
+}
 
 type ListFacetRowsRow struct {
 	Industry  string
@@ -262,8 +277,8 @@ type ListFacetRowsRow struct {
 	Faculty   json.RawMessage
 }
 
-func (q *Queries) ListFacetRows(ctx context.Context, scope string) ([]ListFacetRowsRow, error) {
-	rows, err := q.db.Query(ctx, listFacetRows, scope)
+func (q *Queries) ListFacetRows(ctx context.Context, arg ListFacetRowsParams) ([]ListFacetRowsRow, error) {
+	rows, err := q.db.Query(ctx, listFacetRows, arg.Scope, arg.Suspended)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +379,7 @@ func (q *Queries) ListFeatured(ctx context.Context, arg ListFeaturedParams) ([]L
 }
 
 const listForReview = `-- name: ListForReview :many
-SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at FROM showcase_entries
+SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held FROM showcase_entries
  WHERE tenant_id = app_current_tenant() AND status = $1
  ORDER BY submitted_at NULLS LAST, project_id
  LIMIT 200
@@ -412,6 +427,7 @@ func (q *Queries) ListForReview(ctx context.Context, status string) ([]ShowcaseE
 			&i.Search,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Held,
 		); err != nil {
 			return nil, err
 		}
@@ -432,21 +448,24 @@ SELECT e.project_id, e.tenant_id, e.slug, e.title, e.tagline, e.industry, e.stag
          WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
          ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
        END
-   AND ($2::text IS NULL OR e.search @@ to_tsquery('simple', $2::text))
-   AND ($3::text IS NULL OR e.industry = $3::text)
-   AND ($4::text IS NULL OR e.stage = $4::text)
-   AND ($5::uuid IS NULL OR e.faculty_id = $5::uuid)
-   AND ($6::integer IS NULL OR e.year = $6::integer)
-   AND ($7::text IS NULL OR $7::text = ANY(e.needs))
-   AND ($8::text IS NULL OR $8::text = ANY(e.tags))
-   AND ($9::timestamptz IS NULL
-        OR (e.published_at, e.project_id) < ($9::timestamptz, $10::uuid))
+   -- Pages of suspended universities leave the national showcase.
+   AND NOT (e.tenant_id = ANY(coalesce($2::uuid[], '{}')))
+   AND ($3::text IS NULL OR e.search @@ to_tsquery('simple', $3::text))
+   AND ($4::text IS NULL OR e.industry = $4::text)
+   AND ($5::text IS NULL OR e.stage = $5::text)
+   AND ($6::uuid IS NULL OR e.faculty_id = $6::uuid)
+   AND ($7::integer IS NULL OR e.year = $7::integer)
+   AND ($8::text IS NULL OR $8::text = ANY(e.needs))
+   AND ($9::text IS NULL OR $9::text = ANY(e.tags))
+   AND ($10::timestamptz IS NULL
+        OR (e.published_at, e.project_id) < ($10::timestamptz, $11::uuid))
  ORDER BY e.published_at DESC, e.project_id DESC
- LIMIT $11
+ LIMIT $12
 `
 
 type ListLiveParams struct {
 	Scope     string
+	Suspended []uuid.UUID
 	Query     *string
 	Industry  *string
 	Stage     *string
@@ -481,6 +500,7 @@ type ListLiveRow struct {
 func (q *Queries) ListLive(ctx context.Context, arg ListLiveParams) ([]ListLiveRow, error) {
 	rows, err := q.db.Query(ctx, listLive,
 		arg.Scope,
+		arg.Suspended,
 		arg.Query,
 		arg.Industry,
 		arg.Stage,
@@ -533,13 +553,16 @@ SELECT c.id, c.tenant_id, c.project_id, c.name, c.email, c.organization, c.kind,
   LEFT JOIN showcase_entries e ON e.project_id = c.project_id
  WHERE c.project_id = $1
    AND (NOT $2::boolean OR c.status = 'forwarded')
+   AND ($3::uuid IS NULL OR c.id < $3::uuid)
  ORDER BY c.id DESC
- LIMIT 200
+ LIMIT $4
 `
 
 type ListProjectContactsParams struct {
 	ProjectID     uuid.UUID
 	ForwardedOnly bool
+	BeforeID      *uuid.UUID
+	RowLimit      int32
 }
 
 type ListProjectContactsRow struct {
@@ -561,7 +584,12 @@ type ListProjectContactsRow struct {
 }
 
 func (q *Queries) ListProjectContacts(ctx context.Context, arg ListProjectContactsParams) ([]ListProjectContactsRow, error) {
-	rows, err := q.db.Query(ctx, listProjectContacts, arg.ProjectID, arg.ForwardedOnly)
+	rows, err := q.db.Query(ctx, listProjectContacts,
+		arg.ProjectID,
+		arg.ForwardedOnly,
+		arg.BeforeID,
+		arg.RowLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -655,7 +683,7 @@ func (q *Queries) LockContact(ctx context.Context, id uuid.UUID) (ContactRequest
 }
 
 const lockEntry = `-- name: LockEntry :one
-SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at FROM showcase_entries
+SELECT project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held FROM showcase_entries
  WHERE project_id = $1 AND tenant_id = app_current_tenant()
  FOR UPDATE
 `
@@ -696,6 +724,7 @@ func (q *Queries) LockEntry(ctx context.Context, projectID uuid.UUID) (ShowcaseE
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }
@@ -739,7 +768,7 @@ const setCover = `-- name: SetCover :one
 UPDATE showcase_entries
    SET cover_file_id = $1, version = version + 1
  WHERE project_id = $2
-RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at
+RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held
 `
 
 type SetCoverParams struct {
@@ -783,6 +812,7 @@ func (q *Queries) SetCover(ctx context.Context, arg SetCoverParams) (ShowcaseEnt
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }
@@ -808,9 +838,10 @@ UPDATE showcase_entries
        submitted_at = $2,
        published_at = $3,
        review_comment = $4,
-       reviewed_by = $5
- WHERE project_id = $6
-RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at
+       reviewed_by = $5,
+       held = $6
+ WHERE project_id = $7
+RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held
 `
 
 type SetStatusParams struct {
@@ -819,6 +850,7 @@ type SetStatusParams struct {
 	PublishedAt   *time.Time
 	ReviewComment *string
 	ReviewedBy    *uuid.UUID
+	Held          bool
 	ProjectID     uuid.UUID
 }
 
@@ -829,6 +861,7 @@ func (q *Queries) SetStatus(ctx context.Context, arg SetStatusParams) (ShowcaseE
 		arg.PublishedAt,
 		arg.ReviewComment,
 		arg.ReviewedBy,
+		arg.Held,
 		arg.ProjectID,
 	)
 	var i ShowcaseEntry
@@ -865,6 +898,61 @@ func (q *Queries) SetStatus(ctx context.Context, arg SetStatusParams) (ShowcaseE
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
+	)
+	return i, err
+}
+
+const setTeam = `-- name: SetTeam :one
+UPDATE showcase_entries
+   SET team = $1, version = version + 1
+ WHERE project_id = $2 AND tenant_id = app_current_tenant()
+RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held
+`
+
+type SetTeamParams struct {
+	Team      json.RawMessage
+	ProjectID uuid.UUID
+}
+
+// The team as the page shows it follows the project's members.
+func (q *Queries) SetTeam(ctx context.Context, arg SetTeamParams) (ShowcaseEntry, error) {
+	row := q.db.QueryRow(ctx, setTeam, arg.Team, arg.ProjectID)
+	var i ShowcaseEntry
+	err := row.Scan(
+		&i.ProjectID,
+		&i.TenantID,
+		&i.Slug,
+		&i.Status,
+		&i.Visibility,
+		&i.Title,
+		&i.Tagline,
+		&i.Industry,
+		&i.Stage,
+		&i.FacultyID,
+		&i.Faculty,
+		&i.Year,
+		&i.CoverFileID,
+		&i.VideoUrl,
+		&i.Sections,
+		&i.Team,
+		&i.Needs,
+		&i.Tags,
+		&i.ShowScore,
+		&i.Score,
+		&i.Level,
+		&i.ContactEnabled,
+		&i.Version,
+		&i.OgFileID,
+		&i.OgHash,
+		&i.ReviewComment,
+		&i.ReviewedBy,
+		&i.SubmittedAt,
+		&i.PublishedAt,
+		&i.Search,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }
@@ -909,7 +997,7 @@ ON CONFLICT (project_id) DO UPDATE
        contact_enabled = EXCLUDED.contact_enabled,
        search = EXCLUDED.search,
        version = showcase_entries.version + 1
-RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at
+RETURNING project_id, tenant_id, slug, status, visibility, title, tagline, industry, stage, faculty_id, faculty, year, cover_file_id, video_url, sections, team, needs, tags, show_score, score, level, contact_enabled, version, og_file_id, og_hash, review_comment, reviewed_by, submitted_at, published_at, search, created_at, updated_at, held
 `
 
 type UpsertEntryParams struct {
@@ -992,6 +1080,7 @@ func (q *Queries) UpsertEntry(ctx context.Context, arg UpsertEntryParams) (Showc
 		&i.Search,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Held,
 	)
 	return i, err
 }

@@ -513,16 +513,26 @@ function StepEditorView({
         onOpenChange={setApproving}
         loading={approve.isPending}
         onApprove={(comment) => {
-          approve.mutate(comment, {
-            onSuccess: (result) => {
-              editor.replace(result);
-              setApproving(false);
-              toast.success(t('approve.done'));
+          approve.mutate(
+            { comment, etag: editor.currentEtag },
+            {
+              onSuccess: (result) => {
+                editor.replace(result);
+                setApproving(false);
+                toast.success(t('approve.done'));
+              },
+              onError: (err) => {
+                // The team changed the step meanwhile: show the new answers before approving.
+                if (err instanceof ApiError && err.status === 412) {
+                  setApproving(false);
+                  void editor.refresh();
+                  toast.error(t('approve.stale'));
+                  return;
+                }
+                toast.error(errorMessage(err));
+              },
             },
-            onError: (err) => {
-              toast.error(errorMessage(err));
-            },
-          });
+          );
         }}
       />
     </div>

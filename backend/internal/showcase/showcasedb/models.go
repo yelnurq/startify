@@ -61,4 +61,5 @@ type ShowcaseEntry struct {
 	Search         interface{}
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	Held           bool
 }
