@@ -132,17 +132,23 @@ func TestResolveClientIP(t *testing.T) {
 		want   string
 	}{
 		{"untrusted peer ignores header", "203.0.113.7:4000", "1.2.3.4", "203.0.113.7"},
-		{"trusted peer uses last untrusted hop", "10.0.0.2:4000", "1.2.3.4, 198.51.100.9, 10.0.0.5", "198.51.100.9"},
-		{"only trusted hops", "10.0.0.2:4000", "10.0.0.9", "10.0.0.9"},
-		{"garbage stops the walk", "10.0.0.2:4000", "1.2.3.4, nonsense", "10.0.0.2"},
+		{"trusted peer without header", "10.0.0.2:4000", "", "10.0.0.2"},
+		{"trusted peer gives the client it saw", "10.0.0.2:4000", "198.51.100.9", "198.51.100.9"},
+		// A campus client in a private network is as trusted as the proxy by
+		// CIDR; what it claims before the proxy's entry must not count.
+		{"entries claimed by the client are ignored", "10.0.0.2:4000", "1.2.3.4, 10.0.0.5", "10.0.0.5"},
+		{"last header line wins", "10.0.0.2:4000", "1.2.3.4\n198.51.100.9", "198.51.100.9"},
+		{"garbage falls back to the peer", "10.0.0.2:4000", "1.2.3.4, nonsense", "10.0.0.2"},
 		{"ipv6 peer", "[2001:db8::1]:443", "", "2001:db8::1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 			req.RemoteAddr = tc.remote
-			if tc.xff != "" {
-				req.Header.Set("X-Forwarded-For", tc.xff)
+			for _, line := range strings.Split(tc.xff, "\n") {
+				if line != "" {
+					req.Header.Add("X-Forwarded-For", line)
+				}
 			}
 			if got := resolveClientIP(req, trusted).String(); got != tc.want {
 				t.Fatalf("got %s, want %s", got, tc.want)

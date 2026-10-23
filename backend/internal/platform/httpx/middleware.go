@@ -57,7 +57,11 @@ func RequestIDFrom(ctx context.Context) string {
 }
 
 // ClientIP resolves the client address, honouring X-Forwarded-For only when the
-// direct peer is one of the trusted proxies.
+// direct peer is one of the trusted proxies. Exactly one proxy hop is trusted:
+// the client is the address that proxy saw, the last entry of the header.
+// Nginx replaces the header with its $remote_addr instead of appending to it,
+// so earlier entries are whatever the client claimed and are ignored; a TLS
+// proxy in front of Nginx is handled by Nginx's real_ip module, not here.
 func ClientIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,22 +79,16 @@ func ClientIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
 
 func resolveClientIP(r *http.Request, trusted []netip.Prefix) netip.Addr {
 	peer := parseAddr(r.RemoteAddr)
-	isTrusted := func(a netip.Addr) bool {
-		return slices.ContainsFunc(trusted, func(p netip.Prefix) bool { return p.Contains(a) })
-	}
-	if !peer.IsValid() || !isTrusted(peer) {
+	if !peer.IsValid() || !slices.ContainsFunc(trusted, func(p netip.Prefix) bool { return p.Contains(peer) }) {
 		return peer
 	}
-	hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
-	for i := len(hops) - 1; i >= 0; i-- {
-		hop := parseAddr(strings.TrimSpace(hops[i]))
-		if !hop.IsValid() {
-			break
-		}
-		if !isTrusted(hop) {
-			return hop
-		}
-		peer = hop
+	values := r.Header.Values("X-Forwarded-For")
+	if len(values) == 0 {
+		return peer
+	}
+	hops := strings.Split(values[len(values)-1], ",")
+	if hop := parseAddr(strings.TrimSpace(hops[len(hops)-1])); hop.IsValid() {
+		return hop
 	}
 	return peer
 }
