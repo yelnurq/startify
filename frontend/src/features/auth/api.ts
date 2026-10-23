@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 
 import { api, readCookie, unwrap } from '@/shared/api/client';
 import { isUnauthenticated } from '@/shared/api/errors';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
 import type { components } from '@/shared/api/schema.gen';
 
 export type Session = components['schemas']['Session'];
@@ -59,16 +60,20 @@ export function useSignIn() {
 
 export function useRegister() {
   const store = useStoreSession();
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: (body: components['schemas']['RegisterRequest']) =>
       unwrap(
         api.POST('/auth/register', {
           body,
-          headers: { 'Idempotency-Key': crypto.randomUUID() },
+          headers: { 'Idempotency-Key': submission.for(body) },
         }),
       ),
     onSuccess: (result) => {
       if (isSession(result)) store(result);
+    },
+    onSettled: (_data, error) => {
+      submission.settle(error);
     },
   });
 }
@@ -163,6 +168,12 @@ export function safeRedirect(target: unknown): string | undefined {
 
 /** Where a freshly signed-in user should land. */
 export function landingAfterSignIn(session: Session, redirect?: string): string {
-  if (!session.membership.onboarded) return '/onboarding';
-  return safeRedirect(redirect) ?? '/app';
+  const target = safeRedirect(redirect);
+  if (!session.membership.onboarded) {
+    // Onboarding opens the page the member was going to once it is done.
+    return target
+      ? `/onboarding?${new URLSearchParams({ redirect: target }).toString()}`
+      : '/onboarding';
+  }
+  return target ?? '/app';
 }
