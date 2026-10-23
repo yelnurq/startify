@@ -40,6 +40,13 @@
     outline-offset: 2px;
   }
 
+  /* Focus parked on the content or a page heading (skip link, page change) is
+     not a control: no ring around the whole page. */
+  main[tabindex='-1']:focus,
+  [data-route-focus]:focus {
+    outline: none;
+  }
+
   [hidden] {
     display: none !important;
   }

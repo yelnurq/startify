@@ -6,6 +6,7 @@ import { RegisterPage } from '@/features/auth/register-page';
 import { loadNamespaces } from '@/shared/i18n';
 
 export const Route = createFileRoute('/register')({
+  staticData: { pageTitle: 'register' },
   beforeLoad: ({ context }) => redirectIfSignedIn(context.queryClient),
   loader: async ({ context }) => {
     await Promise.all([

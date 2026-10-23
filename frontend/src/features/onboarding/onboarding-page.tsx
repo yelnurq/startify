@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
   Skeleton,
+  SkipLink,
   Tag,
   Textarea,
   toast,
@@ -217,6 +218,7 @@ export function OnboardingPage({ session, redirect }: { session: Session; redire
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-x-clip bg-bg">
+      <SkipLink>{t('common:actions.skipToContent')}</SkipLink>
       <EdgeIllustration
         name="route"
         placement="bottom-left"
@@ -252,6 +254,7 @@ export function OnboardingPage({ session, redirect }: { session: Session; redire
 
       <main
         id="main"
+        tabIndex={-1}
         className="relative flex flex-1 justify-center overflow-hidden px-4 py-8 sm:py-12"
       >
         <div

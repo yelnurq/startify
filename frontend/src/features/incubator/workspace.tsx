@@ -23,6 +23,7 @@ import { projectQuery } from '@/features/projects/api';
 import { ShowcaseAside, ShowcaseEditor } from '@/features/showcase/editor';
 import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
+import { useDocumentMeta } from '@/shared/hooks/use-document-meta';
 import { useLocalized } from '@/shared/i18n/localized';
 
 import { stepsQuery, templateQuery } from './api';
@@ -50,6 +51,7 @@ export function Workspace({ projectId, stepKey, view, evaluationId }: WorkspaceP
   const { t } = useTranslation('incubator');
   const { t: te } = useTranslation('evaluation');
   const { t: ts } = useTranslation('showcase');
+  const { t: tc } = useTranslation();
   const text = useLocalized();
   const { session } = appRoute.useRouteContext();
   const template = useQuery(templateQuery);
@@ -69,6 +71,26 @@ export function Workspace({ projectId, stepKey, view, evaluationId }: WorkspaceP
   const onBridge = useCallback((value: StepBridge | null) => {
     setBridge(value);
   }, []);
+
+  // The tab names the project and where in it the member is.
+  const projectTitle = project.data?.data.title;
+  const stepTitle = stepKey && template.data ? findStep(template.data, stepKey)?.title : undefined;
+  const where = stepTitle
+    ? text(stepTitle)
+    : view === 'evaluation'
+      ? te('title')
+      : view === 'showcase'
+        ? ts('editor.title')
+        : undefined;
+  useDocumentMeta(
+    projectTitle
+      ? tc('pageTitles.format', {
+          page: where
+            ? tc('pageTitles.project', { project: projectTitle, page: where })
+            : projectTitle,
+        })
+      : undefined,
+  );
 
   if (project.isError) {
     const missing = project.error instanceof ApiError && project.error.status === 404;

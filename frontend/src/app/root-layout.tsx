@@ -14,6 +14,8 @@ import {
 import { tenantQuery } from '@/features/auth/api';
 import { changeLocale, LOCALES } from '@/shared/i18n';
 
+import { RouteAnnouncer } from './route-announcer';
+
 /** Global commands available on every screen of the palette. */
 function useGlobalCommands(): PaletteCommand[] {
   const { t } = useTranslation();
@@ -68,6 +70,7 @@ export function RootLayout() {
       <Outlet />
       <CommandPalette />
       <Toaster />
+      <RouteAnnouncer />
     </TooltipProvider>
   );
 }

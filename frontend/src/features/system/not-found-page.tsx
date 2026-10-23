@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import { PublicLayout } from '@/app/layouts/public-layout';
 import { Button, EdgeIllustration, EmptyState, Logo } from '@/design-system';
+import { useDocumentMeta } from '@/shared/hooks/use-document-meta';
 
 export function NotFoundPage() {
   const { t } = useTranslation();
+  useDocumentMeta(t('pageTitles.format', { page: t('notFound.title') }));
   return (
     <PublicLayout
       logo={

@@ -369,7 +369,10 @@
         "question": "Can I work from my phone?",
         "answer": "Yes. All incubator steps, the mentor chat and competition applications are designed for smartphones."
       }
-    }
+    },
+    "skipLink": "Skip link",
+    "skipLinkHint": "The keyboard's first stop on every page: it appears on Tab and moves focus to the content, past the navigation.",
+    "skipLinkDemo": "To the Navigation section"
   },
   "data": {
     "title": "Data",

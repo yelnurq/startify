@@ -37,6 +37,7 @@ import { sessionQuery, tenantQuery } from '@/features/auth/api';
 import { showcaseHighlightsQuery } from '@/features/showcase/api';
 import { ShowcaseCardView } from '@/features/showcase/card';
 import { SiteFrame } from '@/features/showcase/site';
+import { useDocumentMeta } from '@/shared/hooks/use-document-meta';
 import { useFormatters } from '@/shared/i18n/format';
 import { useLocalized } from '@/shared/i18n/localized';
 
@@ -91,8 +92,14 @@ function isAudience(value: string): value is Audience {
 
 /** Public home page: what Qadam is, the route of a project, who it is for. */
 export function LandingPage() {
+  const { t } = useTranslation();
+  const text = useLocalized();
   const session = useQuery(sessionQuery);
+  const tenant = useQuery(tenantQuery);
   const signedIn = Boolean(session.data);
+  const university = text(tenant.data?.short_name) || text(tenant.data?.name);
+  // The same title the server gives the page for crawlers.
+  useDocumentMeta(university ? t('pageTitles.landing', { university }) : undefined);
 
   return (
     <SiteFrame>

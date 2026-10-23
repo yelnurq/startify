@@ -28,6 +28,7 @@ import {
   illustrations,
   RadarChart,
   SegmentedControl,
+  SkipLink,
   StageTrack,
   StatTile,
   type StepItem,
@@ -153,6 +154,13 @@ export function NavigationSection({ index }: { index: number }) {
           </Specimen>
         </div>
       </div>
+      <Specimen label={t('navigation.skipLink')} bodyClassName="flex flex-col items-start gap-3">
+        <p className="max-w-2xl text-sm text-fg-muted">{t('navigation.skipLinkHint')}</p>
+        {/* Shown in place here; on a page it hides until the keyboard reaches it. */}
+        <SkipLink href="#navigation" className="not-sr-only focus:static">
+          {t('navigation.skipLinkDemo')}
+        </SkipLink>
+      </Specimen>
       <Specimen label={t('navigation.accordion')}>
         <Accordion type="single" collapsible defaultValue="q1">
           {(['q1', 'q2', 'q3'] as const).map((q) => (

@@ -305,6 +305,17 @@
     "outdatedText": "Жаңартудан кейін бет ескірді. Жұмысты жалғастыру үшін оны жаңартыңыз."
   },
   "pageTitles": {
-    "format": "{{page}} — Qadam"
+    "format": "{{page}} — Qadam",
+    "landing": "Qadam — {{university}} инновациялық платформасы",
+    "login": "Кіру",
+    "loginCode": "Кодпен кіру",
+    "register": "Тіркелу",
+    "forgotPassword": "Құпиясөзді қалпына келтіру",
+    "resetPassword": "Жаңа құпиясөз",
+    "verifyEmail": "Поштаны растау",
+    "onboarding": "Танысу",
+    "design": "Дизайн-жүйе",
+    "member": "Қатысушы профилі",
+    "project": "{{project}} · {{page}}"
   }
 }

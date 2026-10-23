@@ -8,6 +8,7 @@ import { loadNamespaces } from '@/shared/i18n';
 import { compact, optionalString } from '@/shared/router/search';
 
 export const Route = createFileRoute('/onboarding')({
+  staticData: { pageTitle: 'onboarding' },
   // The page the member was going to before onboarding, opened afterwards.
   validateSearch: (search: Record<string, unknown>): OnboardingSearch =>
     compact({ redirect: optionalString(search.redirect) }),

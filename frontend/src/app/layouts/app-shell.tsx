@@ -8,6 +8,7 @@ import { Kbd, modKey } from '@/design-system/components/kbd';
 import { LogoMark } from '@/design-system/components/logo';
 import { useCommandPalette } from '@/design-system/components/command-palette';
 import { Sheet, SheetContent, SheetTitle } from '@/design-system/components/sheet';
+import { SkipLink } from '@/design-system/components/skip-link';
 import { cn } from '@/design-system/lib/cn';
 
 import { SidebarCollapsed } from './sidebar-context';
@@ -97,6 +98,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh bg-bg">
+      <SkipLink>{t('actions.skipToContent')}</SkipLink>
       <aside
         className={cn(
           'sticky top-0 hidden h-dvh shrink-0 border-r border-border bg-surface transition-[width] duration-200 lg:block',
@@ -162,6 +164,7 @@ export function AppShell({
         </header>
         <main
           id="main"
+          tabIndex={-1}
           className={cn(
             'mx-auto w-full min-w-0 flex-1',
             !bleed && 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',

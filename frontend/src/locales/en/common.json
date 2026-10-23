@@ -305,6 +305,17 @@
     "outdatedText": "The page is out of date after an update. Reload it to continue."
   },
   "pageTitles": {
-    "format": "{{page}} — Qadam"
+    "format": "{{page}} — Qadam",
+    "landing": "Qadam — innovation platform of {{university}}",
+    "login": "Sign in",
+    "loginCode": "Sign in with a code",
+    "register": "Sign up",
+    "forgotPassword": "Password recovery",
+    "resetPassword": "New password",
+    "verifyEmail": "Email confirmation",
+    "onboarding": "Getting started",
+    "design": "Design system",
+    "member": "Member profile",
+    "project": "{{project}} · {{page}}"
   }
 }

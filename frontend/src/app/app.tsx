@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 
 import { sessionQuery } from '@/features/auth/api';
 import { abandonEditors, discardDraftsExcept } from '@/features/incubator/drafts';
+import type common from '@/locales/ru/common.json';
 import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
@@ -66,8 +67,13 @@ declare module '@tanstack/react-router' {
       | 'contacts';
     /** The page brings its own columns: no content padding (project workspace). */
     bleed?: boolean;
+    /** Tab title of a page outside the signed-in area (`common:pageTitles.*`). */
+    pageTitle?: PageTitleKey;
   }
 }
+
+/** Page titles a route can name; the others take parameters a page fills in. */
+type PageTitleKey = Exclude<keyof (typeof common)['pageTitles'], 'format' | 'landing' | 'project'>;
 
 // Whoever signs in next at this computer sees nothing cached for the previous
 // user. Step editors still saving stop with the session; unsaved drafts stay

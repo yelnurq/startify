@@ -317,6 +317,17 @@
     "outdatedText": "После обновления страница устарела. Обновите её, чтобы продолжить."
   },
   "pageTitles": {
-    "format": "{{page}} — Qadam"
+    "format": "{{page}} — Qadam",
+    "landing": "Qadam — инновационная платформа {{university}}",
+    "login": "Вход",
+    "loginCode": "Вход по коду",
+    "register": "Регистрация",
+    "forgotPassword": "Восстановление пароля",
+    "resetPassword": "Новый пароль",
+    "verifyEmail": "Подтверждение почты",
+    "onboarding": "Знакомство",
+    "design": "Дизайн-система",
+    "member": "Профиль участника",
+    "project": "{{project}} · {{page}}"
   }
 }
