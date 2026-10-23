@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"mime/multipart"
 	"regexp"
 	"slices"
@@ -54,7 +55,8 @@ var (
 type AccessRevoker interface {
 	// RolesChanged invalidates access tokens carrying the previous roles.
 	RolesChanged(ctx context.Context, tenantID, userID uuid.UUID) error
-	// RevokeAll ends every session of the user in the tenant.
+	// RevokeAll ends every session of the user in the tenant (inside the
+	// transaction of ctx, if any) and puts them on the deny-list.
 	RevokeAll(ctx context.Context, tenantID, userID uuid.UUID, reason string) error
 }
 
@@ -717,11 +719,14 @@ func (s *Service) UpdateMember(ctx context.Context, userID uuid.UUID, body apige
 			return apperr.Conflict("member.cannot_demote_self", "administrators cannot remove their own access")
 		}
 		if losesAdmin {
-			admins, err := q.CountAdmins(ctx)
+			// Two administrators demoting each other at once must not both
+			// succeed: the administrators are locked and counted again once
+			// any concurrent change has committed (audit Н-6).
+			admins, err := q.LockAdmins(ctx)
 			if err != nil {
 				return err
 			}
-			if admins <= 1 {
+			if slices.Contains(admins, userID) && len(admins) <= 1 {
 				return apperr.Conflict("member.last_admin", "the university needs at least one administrator")
 			}
 		}
@@ -729,13 +734,27 @@ func (s *Service) UpdateMember(ctx context.Context, userID uuid.UUID, body apige
 		if err != nil {
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{
+		if err := s.audit.Record(ctx, audit.Event{
 			Action: "member.updated", TargetType: "user", TargetID: userID.String(),
 			Metadata: map[string]any{
 				"roles_before": before.Roles, "roles_after": after.Roles,
 				"status_before": before.Status, "status_after": after.Status,
 			},
-		})
+		}); err != nil {
+			return err
+		}
+		// Access granted by issued tokens ends before the change commits: if
+		// the revocation store fails, nothing is saved and the request fails
+		// as a whole instead of answering 500 for a saved change.
+		if accessChanged(before, after) {
+			if err := s.revoker.RolesChanged(ctx, after.TenantID, userID); err != nil {
+				return err
+			}
+		}
+		if after.Status == StatusSuspended && before.Status != StatusSuspended {
+			return s.revoker.RevokeAll(ctx, after.TenantID, userID, "suspended")
+		}
+		return nil
 	})
 	if err != nil {
 		if _, ok := apperr.As(err); ok {
@@ -743,18 +762,21 @@ func (s *Service) UpdateMember(ctx context.Context, userID uuid.UUID, body apige
 		}
 		return apigen.Member{}, fmt.Errorf("user: update member: %w", err)
 	}
-
-	if !slices.Equal(before.Roles, after.Roles) {
-		if err := s.revoker.RolesChanged(ctx, after.TenantID, userID); err != nil {
-			return apigen.Member{}, err
-		}
-	}
-	if after.Status == StatusSuspended && before.Status != StatusSuspended {
-		if err := s.revoker.RevokeAll(ctx, after.TenantID, userID, "suspended"); err != nil {
-			return apigen.Member{}, err
+	if accessChanged(before, after) {
+		// Once more after the commit: a token refreshed between the first
+		// bump and the commit carries the new version with the old roles.
+		// The change is saved, so a failure here is logged, not returned.
+		if err := s.revoker.RolesChanged(context.WithoutCancel(ctx), after.TenantID, userID); err != nil {
+			slog.WarnContext(ctx, "role version not bumped after commit", slog.Any("error", err), slog.String("user", userID.String()))
 		}
 	}
 	return s.member(ctx, userID)
+}
+
+// accessChanged reports whether a membership update changes what the
+// member's tokens grant.
+func accessChanged(before, after userdb.Membership) bool {
+	return !slices.Equal(before.Roles, after.Roles) || (after.Status == StatusSuspended && before.Status != StatusSuspended)
 }
 
 func (s *Service) member(ctx context.Context, userID uuid.UUID) (apigen.Member, error) {

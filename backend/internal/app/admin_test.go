@@ -5,14 +5,19 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/text/encoding/charmap"
 
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/mail"
+	"github.com/yelnurq/startify/backend/internal/platform/authz"
+	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/seed"
 )
 
@@ -78,6 +83,98 @@ func TestMemberAdministration(t *testing.T) {
 	expectProblem(t, student.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusUnauthorized, "auth.session_revoked")
 	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/login",
 		apigen.LoginRequest{Email: openapiEmail("yerbol@qadam.test"), Password: password}), http.StatusForbidden, "auth.account_suspended")
+}
+
+func TestAdministratorsCannotDemoteEachOtherAtOnce(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	first := seedAdmin(t, h, ts)
+	_, err := seed.Account(context.Background(), h.db.App, ts.kazutb, seed.Member{
+		Email: "second-admin@qadam.test", FullName: "Екінші Әкімші", Locale: "ru", Password: password,
+		Roles: []string{"tenant_admin"}, Slug: "ekinshi-akimshi",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second := h.browser(t, kazutbHost)
+	login(t, second, "second-admin@qadam.test", password)
+	id := func(b *browser) string {
+		return decode[apigen.Session](t, b.do(http.MethodGet, "/api/v1/auth/session", nil)).User.Id.String()
+	}
+	firstID, secondID := id(first), id(second)
+
+	// Hold the administrators' rows so that both requests arrive before either commits.
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, h.db.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	hold, err := conn.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := hold.Exec(ctx, "SELECT 1 FROM memberships WHERE 'tenant_admin' = ANY(roles) FOR UPDATE"); err != nil {
+		t.Fatal(err)
+	}
+	demote := apigen.MemberUpdate{Roles: &[]apigen.Role{apigen.RoleStudent}}
+	results := make(chan int, 2)
+	go func() { results <- first.do(http.MethodPatch, "/api/v1/admin/members/"+secondID, demote).Code }()
+	go func() { results <- second.do(http.MethodPatch, "/api/v1/admin/members/"+firstID, demote).Code }()
+	waitForLockWaits(t, h, 2)
+	if err := hold.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	codes := []int{<-results, <-results}
+	slices.Sort(codes)
+	if codes[0] != http.StatusOK || codes[1] != http.StatusConflict {
+		t.Fatalf("answers %v, want one 200 and one 409", codes)
+	}
+	var admins int
+	if err := conn.QueryRow(ctx, "SELECT count(*) FROM memberships WHERE 'tenant_admin' = ANY(roles) AND status = 'active'").Scan(&admins); err != nil {
+		t.Fatal(err)
+	}
+	if admins != 1 {
+		t.Fatalf("%d administrators left", admins)
+	}
+}
+
+func TestMemberChangeIsNotSavedWithoutRevocation(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	admin := seedAdmin(t, h, ts)
+	student := register(t, h.browser(t, kazutbHost), "kept@qadam.test", "Өзгермейтін Студент")
+	actor := decode[apigen.Session](t, admin.do(http.MethodGet, "/api/v1/auth/session", nil))
+
+	// The revocation store is down: the change must not be saved half-way.
+	h.redis.Close()
+	ctx := tenancy.With(context.Background(), tenancy.Tenant{ID: ts.kazutb, Slug: "kazutb"})
+	ctx = db.WithTenant(ctx, ts.kazutb)
+	ctx = authz.WithPrincipal(ctx, authz.Principal{UserID: actor.User.Id, TenantID: ts.kazutb, Roles: []authz.Role{authz.RoleTenantAdmin}})
+	suspended := apigen.MemberUpdateStatusSuspended
+	for _, update := range []apigen.MemberUpdate{
+		{Roles: &[]apigen.Role{apigen.RoleStudent, apigen.RoleMentor}},
+		{Status: &suspended},
+	} {
+		if _, err := h.services.Users.UpdateMember(ctx, student.User.Id, update); err == nil {
+			t.Fatalf("%+v saved without revoking access", update)
+		}
+	}
+	var roles []string
+	var status string
+	conn, err := pgx.Connect(context.Background(), h.db.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(context.Background()) }()
+	err = conn.QueryRow(context.Background(), "SELECT roles, status FROM memberships WHERE user_id = $1 AND tenant_id = $2",
+		student.User.Id, ts.kazutb).Scan(&roles, &status)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roles) != 1 || roles[0] != "student" || status != "active" {
+		t.Fatalf("membership changed: %v %s", roles, status)
+	}
 }
 
 func cp1251(t *testing.T, s string) []byte {

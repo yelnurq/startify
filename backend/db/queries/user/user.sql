@@ -73,9 +73,13 @@ SELECT u.id, u.email, u.full_name, u.avatar_file_id,
  ORDER BY u.full_name, u.id
  LIMIT @row_limit;
 
--- name: CountAdmins :one
-SELECT count(*) FROM memberships
- WHERE tenant_id = app_current_tenant() AND 'tenant_admin' = ANY(roles) AND status = 'active';
+-- name: LockAdmins :many
+-- Locks the active administrators of the university in a fixed order, so
+-- changes that could remove the last one are serialised.
+SELECT user_id FROM memberships
+ WHERE tenant_id = app_current_tenant() AND 'tenant_admin' = ANY(roles) AND status = 'active'
+ ORDER BY user_id
+   FOR UPDATE;
 
 -- Profiles -------------------------------------------------------------------
 
