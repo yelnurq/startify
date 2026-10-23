@@ -162,6 +162,7 @@
       "not_found": "The import was not found.",
       "empty": "The file has no data rows.",
       "too_many_rows": "Too many rows: at most {{max}} per import.",
+      "too_many_columns": "Too many columns: at most {{max}}.",
       "missing_columns": "Required columns are missing: {{columns}}.",
       "duplicate_columns": "Columns are repeated: {{columns}}."
     },

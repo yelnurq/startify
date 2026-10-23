@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -19,10 +20,27 @@ import (
 const (
 	maxImportBytes = 10 << 20
 	maxRows        = 3000
+	// maxColumns bounds the header; the known columns are far fewer.
+	maxColumns = 50
+	// maxSheetRows bounds the rows of a worksheet looked at, blank ones
+	// included: a row numbered far below the data makes the reader step
+	// through every row number in between.
+	maxSheetRows = 100 * maxRows
+	// Unpacked size of the whole workbook and of one XML part kept in memory.
+	xlsxUnzipLimit   = 64 << 20
+	xlsxXMLPartLimit = 32 << 20
+	zipSignature     = "PK\x03\x04"
+	// oleSignature starts encrypted workbooks and old .xls files.
+	oleSignature = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
 )
 
 var errInvalidFile = apperr.New(apperr.KindValidation, "import.invalid_file",
 	"the file must be CSV (UTF-8 or Windows-1251) or XLSX with headers in the first row")
+
+func errTooManyRows() error {
+	return apperr.New(apperr.KindValidation, "import.too_many_rows", "the file has too many rows").
+		WithParams(map[string]any{"max": maxRows})
+}
 
 // table is the content of an uploaded spreadsheet.
 type table struct {
@@ -32,12 +50,35 @@ type table struct {
 	lines []int
 }
 
+// setHeader keeps the header row; a header wider than maxColumns is refused.
+func (t *table) setHeader(header []string) error {
+	for len(header) > 0 && strings.TrimSpace(header[len(header)-1]) == "" {
+		header = header[:len(header)-1]
+	}
+	if len(header) > maxColumns {
+		return apperr.New(apperr.KindValidation, "import.too_many_columns", "the file has too many columns").
+			WithParams(map[string]any{"max": maxColumns})
+	}
+	t.header = header
+	return nil
+}
+
+// add keeps a data row. Cells right of the header have no column to go to,
+// so they are not kept (a copy lets the rest of a very wide row go).
+func (t *table) add(record []string, line int) {
+	if len(record) > len(t.header) {
+		record = slices.Clone(record[:len(t.header)])
+	}
+	t.rows = append(t.rows, record)
+	t.lines = append(t.lines, line)
+}
+
 func readTable(name string, data []byte) (table, error) {
 	var (
 		t   table
 		err error
 	)
-	if strings.EqualFold(filepath.Ext(name), ".xlsx") || bytes.HasPrefix(data, []byte("PK\x03\x04")) {
+	if strings.EqualFold(filepath.Ext(name), ".xlsx") || bytes.HasPrefix(data, []byte(zipSignature)) || bytes.HasPrefix(data, []byte(oleSignature)) {
 		t, err = readXLSX(data)
 	} else {
 		t, err = readCSV(data)
@@ -52,8 +93,7 @@ func readTable(name string, data []byte) (table, error) {
 		return t, apperr.New(apperr.KindValidation, "import.empty", "the file has no data rows")
 	}
 	if len(t.rows) > maxRows {
-		return t, apperr.New(apperr.KindValidation, "import.too_many_rows", "the file has too many rows").
-			WithParams(map[string]any{"max": maxRows})
+		return t, errTooManyRows()
 	}
 	return t, nil
 }
@@ -90,7 +130,9 @@ func readCSV(data []byte) (table, error) {
 	if err != nil {
 		return t, errInvalidFile
 	}
-	t.header = header
+	if err := t.setHeader(header); err != nil {
+		return t, err
+	}
 	for {
 		record, err := r.Read()
 		if errors.Is(err, io.EOF) {
@@ -103,8 +145,7 @@ func readCSV(data []byte) (table, error) {
 			continue
 		}
 		line, _ := r.FieldPos(0)
-		t.rows = append(t.rows, record)
-		t.lines = append(t.lines, line)
+		t.add(record, line)
 		if len(t.rows) > maxRows {
 			break
 		}
@@ -122,9 +163,28 @@ func delimiter(headerLine []byte) rune {
 	return best
 }
 
-func readXLSX(data []byte) (table, error) {
+// readXLSX streams the first worksheet row by row and stops at the first
+// limit it reaches. excelize v2.11.0 has known flaws on crafted files
+// (GO-2026-6684, -6685, -6688, -6689; fixed only after the release, see
+// docs/BACKLOG.md), hence the guards around it:
+//   - only a ZIP archive is opened: an encrypted workbook is an OLE container
+//     whose decryption can panic or allocate without bound;
+//   - the unpacked size is capped, and large XML parts go to temporary files;
+//   - rows are read by the iterator with a cap on the rows looked at, instead
+//     of GetRows, which loops through every row number up to the last one;
+//   - formulas are never evaluated, only their cached values are read;
+//   - a panic inside excelize means a bad file, not a failed server.
+func readXLSX(data []byte) (t table, err error) {
+	if !bytes.HasPrefix(data, []byte(zipSignature)) {
+		return table{}, errInvalidFile
+	}
+	defer func() {
+		if recover() != nil {
+			t, err = table{}, errInvalidFile
+		}
+	}()
 	f, err := excelize.OpenReader(bytes.NewReader(data), excelize.Options{
-		UnzipSizeLimit: 64 << 20, UnzipXMLSizeLimit: 32 << 20,
+		UnzipSizeLimit: xlsxUnzipLimit, UnzipXMLSizeLimit: xlsxXMLPartLimit,
 	})
 	if err != nil {
 		return table{}, errInvalidFile
@@ -134,20 +194,38 @@ func readXLSX(data []byte) (table, error) {
 	if len(sheets) == 0 {
 		return table{}, errInvalidFile
 	}
-	rows, err := f.GetRows(sheets[0])
-	if err != nil || len(rows) == 0 {
+	rows, err := f.Rows(sheets[0])
+	if err != nil {
 		return table{}, errInvalidFile
 	}
-	t := table{header: rows[0]}
-	for i, record := range rows[1:] {
+	defer func() { _ = rows.Close() }()
+	for line := 1; rows.Next(); line++ {
+		if line > maxSheetRows {
+			return table{}, errTooManyRows()
+		}
+		record, err := rows.Columns()
+		if err != nil {
+			return table{}, errInvalidFile
+		}
+		if line == 1 {
+			if err := t.setHeader(record); err != nil {
+				return table{}, err
+			}
+			if len(t.header) == 0 {
+				return table{}, errInvalidFile
+			}
+			continue
+		}
 		if blank(record) {
 			continue
 		}
-		t.rows = append(t.rows, record)
-		t.lines = append(t.lines, i+2)
+		t.add(record, line)
 		if len(t.rows) > maxRows {
 			break
 		}
+	}
+	if rows.Error() != nil {
+		return table{}, errInvalidFile
 	}
 	return t, nil
 }

@@ -1,9 +1,12 @@
 package imports
 
 import (
+	"archive/zip"
 	"bytes"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/text/encoding/charmap"
@@ -60,6 +63,91 @@ func TestReadXLSX(t *testing.T) {
 	}
 }
 
+// xlsxWithSheet builds a workbook whose first worksheet has the given rows
+// as raw XML, to reproduce files that excelize itself would not write.
+func xlsxWithSheet(t *testing.T, sheetData string) []byte {
+	t.Helper()
+	var plain bytes.Buffer
+	if err := excelize.NewFile().Write(&plain); err != nil {
+		t.Fatal(err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(plain.Bytes()), int64(plain.Len()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	zw := zip.NewWriter(&out)
+	for _, file := range zr.File {
+		w, err := zw.Create(file.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if file.Name == "xl/worksheets/sheet1.xml" {
+			_, _ = io.WriteString(w, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+				`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`+
+				sheetData+`</sheetData></worksheet>`)
+			continue
+		}
+		rc, err := file.Open()
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _ = io.Copy(w, rc)
+		_ = rc.Close()
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return out.Bytes()
+}
+
+func inline(ref, text string) string {
+	return `<c r="` + ref + `" t="inlineStr"><is><t>` + text + `</t></is></c>`
+}
+
+func TestReadXLSXLimits(t *testing.T) {
+	// A row numbered far beyond the data used to make the reader step
+	// through every row number in between (GO-2026-6685).
+	huge := xlsxWithSheet(t, `<row r="1">`+inline("A1", "email")+`</row>`+
+		`<row r="2">`+inline("A2", "a@qadam.test")+`</row>`+
+		`<row r="99999999999">`+inline("A3", "x")+`</row>`)
+	start := time.Now()
+	if _, err := readTable("students.xlsx", huge); !apperr.Is(err, "import.too_many_rows") {
+		t.Fatalf("huge row number: %v", err)
+	}
+	if took := time.Since(start); took > 10*time.Second {
+		t.Fatalf("huge row number took %v", took)
+	}
+
+	// Cells right of the header are not kept, however far right they are.
+	wide := xlsxWithSheet(t, `<row r="1">`+inline("A1", "email")+inline("B1", "full_name")+`</row>`+
+		`<row r="2">`+inline("A2", "a@qadam.test")+inline("B2", "Әсел")+inline("XFD2", "far")+`</row>`)
+	tb, err := readTable("students.xlsx", wide)
+	if err != nil || len(tb.rows) != 1 || len(tb.rows[0]) != 2 || tb.rows[0][1] != "Әсел" {
+		t.Fatalf("wide row: %+v %v", tb, err)
+	}
+
+	var header strings.Builder
+	for i := 1; i <= maxColumns+1; i++ {
+		cell, _ := excelize.CoordinatesToCellName(i, 1)
+		header.WriteString(inline(cell, "column"))
+	}
+	tooWide := xlsxWithSheet(t, `<row r="1">`+header.String()+`</row><row r="2">`+inline("A2", "a@qadam.test")+`</row>`)
+	if _, err := readTable("students.xlsx", tooWide); !apperr.Is(err, "import.too_many_columns") {
+		t.Fatalf("wide header: %v", err)
+	}
+}
+
+func TestEncryptedWorkbookIsRefused(t *testing.T) {
+	// Encrypted workbooks and old .xls files are OLE containers, never opened.
+	ole := append([]byte(oleSignature), bytes.Repeat([]byte{0xFF}, 4096)...)
+	for _, name := range []string{"students.xlsx", "students.xls", "students.csv"} {
+		if _, err := readTable(name, ole); !apperr.Is(err, "import.invalid_file") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
 func TestFileErrors(t *testing.T) {
 	cases := map[string]struct {
 		data []byte
@@ -69,6 +157,7 @@ func TestFileErrors(t *testing.T) {
 		"garbage":   {[]byte("PK\x03\x04 not really a zip"), "import.invalid_file"},
 		"too many":  {[]byte("email\n" + strings.Repeat("a@b.kz\n", maxRows+1)), "import.too_many_rows"},
 		"bad quote": {[]byte("email,full_name\n\"a@b.kz,x\n\"\"\n,\"\n"), ""},
+		"too wide":  {[]byte(strings.Repeat("column,", maxColumns) + "email\na@b.kz\n"), "import.too_many_columns"},
 	}
 	for name, c := range cases {
 		_, err := readTable("x.csv", c.data)
@@ -91,6 +180,12 @@ func TestFileErrors(t *testing.T) {
 	index, keys, err := mapHeader([]string{"  E-Mail* ", "Ф.И.О.", "", "Топ"}, studentColumns)
 	if err != nil || len(keys) != 3 || index["group_code"] != 3 {
 		t.Fatalf("aliases: %v %v %v", index, keys, err)
+	}
+
+	// Trailing empty header cells do not count, extra cells of a row are dropped.
+	tb, err := readTable("x.csv", []byte("email,full_name,,,\na@b.kz,Дана,x,y,z,w\n"))
+	if err != nil || len(tb.header) != 2 || len(tb.rows[0]) != 2 {
+		t.Fatalf("trim: %+v %v", tb, err)
 	}
 }
 
