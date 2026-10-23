@@ -15,10 +15,12 @@ const focusRing =
   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-500/20 focus-visible:border-primary-400';
 
 /**
- * The 18 px box answers in 24 px (WCAG 2.5.8) and in 44 px on touch screens,
- * through an invisible margin; the visible control keeps its size.
+ * The 18 px box answers in 24 px (WCAG 2.5.8) and in 32 px on touch screens,
+ * through an invisible margin; the visible control keeps its size. Lists of
+ * options stand 32 px apart, so more would reach into the neighbour; the
+ * whole label row is the larger target.
  */
-const hitArea = 'relative after:absolute after:-inset-[3px] pointer-coarse:after:-inset-[13px]';
+const hitArea = 'relative after:absolute after:-inset-[3px] pointer-coarse:after:-inset-[7px]';
 
 export function Checkbox({
   className,
@@ -83,8 +85,9 @@ export function Switch({ className, id, ...props }: ComponentProps<typeof Switch
       data-slot="switch"
       className={cn(
         'inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-transparent bg-neutral-300 p-0.5 transition-colors duration-200 dark:bg-neutral-700',
-        // 36 × 20 on screen, 36 × 24 to the pointer and 44 × 44 to a finger.
-        'relative after:absolute after:inset-x-0 after:-inset-y-0.5 pointer-coarse:after:-inset-x-1 pointer-coarse:after:-inset-y-3',
+        // 36 × 20 on screen, 36 × 24 to the pointer and 44 × 32 to a finger
+        // (switch rows stand 32 px apart).
+        'relative after:absolute after:inset-x-0 after:-inset-y-0.5 pointer-coarse:after:-inset-x-1 pointer-coarse:after:-inset-y-1.5',
         'disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary',
         'focus-visible:ring-4 focus-visible:ring-primary-500/25 focus-visible:outline-none',
         className,

@@ -8,18 +8,20 @@ import { focusMainHeading } from './route-focus';
 
 /** The tab title from the deepest route that names its page. */
 function useRouteTitle() {
-  const { t } = useTranslation();
   const pageTitle = useMatches({
     select: (matches) => matches.findLast((m) => m.staticData.pageTitle)?.staticData.pageTitle,
   });
   const titleKey = useMatches({
     select: (matches) => matches.findLast((m) => m.staticData.titleKey)?.staticData.titleKey,
   });
-  // Signed-in pages load the `app` catalogue in their route loader.
+  // Signed-in pages name themselves from the `app` catalogue, asked for only
+  // there; until it arrives the tab reads just «Qadam».
+  const namespaces: ('common' | 'app')[] = titleKey ? ['common', 'app'] : ['common'];
+  const { t, ready } = useTranslation(namespaces, { useSuspense: false });
   const page = pageTitle
     ? t(`pageTitles.${pageTitle}`)
-    : titleKey
-      ? t(`titles.${titleKey}`, { ns: 'app' })
+    : titleKey && ready
+      ? t(`app:titles.${titleKey}`)
       : undefined;
   const title = page ? t('pageTitles.format', { page }) : undefined;
   useEffect(() => {
