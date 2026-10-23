@@ -123,12 +123,21 @@ func (e *stepError) Unwrap() error { return e.err }
 
 // session is a connection to one server of the directory.
 type session struct {
-	conn *ldap.Conn
-	url  string
-	cfg  Config
+	conn     *ldap.Conn
+	url      string
+	cfg      Config
+	watchdog *time.Timer
 }
 
-func (s *session) close() { _ = s.conn.Close() }
+func (s *session) close() {
+	s.watchdog.Stop()
+	_ = s.conn.Close()
+}
+
+// sessionLimit bounds a whole session (connection, TLS, binds, searches):
+// go-ldap times out requests but not a TLS handshake after StartTLS, and a
+// server that stops answering must not hold a sign-in forever.
+var sessionLimit = func(c Config) time.Duration { return 4*c.Timeout + 5*time.Second }
 
 // tlsConfig trusts the public authorities of the system and the
 // university's own certification authority; the server name is always
@@ -178,9 +187,12 @@ func open(c Config, rules Rules, rec *recorder) (*session, error) {
 			continue
 		}
 		conn.SetTimeout(c.Timeout)
+		// Closing the connection ends whatever waits on it.
+		watchdog := time.AfterFunc(sessionLimit(c), func() { _ = conn.Close() })
 		rec.add(step(stepConnect, statusOK, "", "", raw))
 		if scheme == "ldap" && c.StartTLS {
 			if err := conn.StartTLS(cfg); err != nil {
+				watchdog.Stop()
 				_ = conn.Close()
 				code := classifyNetwork(err)
 				if !isTLSCode(code) {
@@ -196,7 +208,7 @@ func open(c Config, rules Rules, rec *recorder) (*session, error) {
 		} else {
 			rec.add(tlsStep(conn, raw))
 		}
-		return &session{conn: conn, url: raw, cfg: c}, nil
+		return &session{conn: conn, url: raw, cfg: c, watchdog: watchdog}, nil
 	}
 	if last == nil {
 		last = &stepError{step: stepConnect, code: codeProtocol, err: errors.New("no address")}
