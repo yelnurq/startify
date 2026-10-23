@@ -100,7 +100,8 @@
       "invalid_parameter": "The request contains an invalid parameter.",
       "invalid_limit": "The number of items per page must be between {{min}} and {{max}}.",
       "too_large": "The amount of data is too large.",
-      "timeout": "The server did not respond in time. Please try again."
+      "timeout": "The server did not respond in time. Please try again.",
+      "invalid_cursor": "The next part of the list could not be shown: the list is out of date. Reload the page."
     },
     "validation": {
       "failed": "Some fields are filled in incorrectly."
@@ -309,5 +310,24 @@
   "diff": {
     "added": "added:",
     "removed": "removed:"
+  },
+  "errorPage": {
+    "title": "This page could not be opened",
+    "outdatedTitle": "A new version of Qadam is out",
+    "outdatedText": "The page is out of date after an update. Reload it to continue."
+  },
+  "pageTitles": {
+    "format": "{{page}} — Qadam",
+    "landing": "Qadam — innovation platform of {{university}}",
+    "login": "Sign in",
+    "loginCode": "Sign in with a code",
+    "register": "Sign up",
+    "forgotPassword": "Password recovery",
+    "resetPassword": "New password",
+    "verifyEmail": "Email confirmation",
+    "onboarding": "Getting started",
+    "design": "Design system",
+    "member": "Member profile",
+    "project": "{{project}} · {{page}}"
   }
 }

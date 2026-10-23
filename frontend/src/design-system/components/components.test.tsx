@@ -7,7 +7,10 @@ import { Button } from './button';
 import { EdgeIllustration } from './edge-illustration';
 import { Field } from './field';
 import { Input } from './input';
+import { SkipLink } from './skip-link';
 import { Textarea } from './textarea';
+import { TooltipProvider } from './tooltip';
+import { TruncatedText } from './truncated-text';
 
 describe('Field', () => {
   it('labels the control and links hint and counter', () => {
@@ -109,5 +112,35 @@ describe('EdgeIllustration', () => {
     expect(art).toHaveClass('pointer-events-none', 'absolute', 'right-0', 'bottom-0', 'w-64');
     expect(art).not.toHaveClass('w-56');
     expect(art?.querySelector('svg.illustration')).not.toBeNull();
+  });
+});
+
+describe('TruncatedText', () => {
+  it('takes focus when cut, except inside a control that is focused instead', () => {
+    // jsdom does not lay out: pretend every text is wider than its box.
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(300);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
+    render(
+      <TooltipProvider>
+        <TruncatedText>Казахский университет технологии и бизнеса</TruncatedText>
+        <a href="/app">
+          <TruncatedText focusable={false}>Модерация витрины проектов</TruncatedText>
+        </a>
+      </TooltipProvider>,
+    );
+    expect(screen.getByText('Казахский университет технологии и бизнеса')).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(screen.getByText('Модерация витрины проектов')).not.toHaveAttribute('tabindex');
+  });
+});
+
+describe('SkipLink', () => {
+  it('leads to the content and hides until focused', () => {
+    render(<SkipLink>Перейти к содержимому</SkipLink>);
+    const link = screen.getByRole('link', { name: 'Перейти к содержимому' });
+    expect(link).toHaveAttribute('href', '#main');
+    expect(link).toHaveClass('sr-only', 'focus:not-sr-only');
   });
 });

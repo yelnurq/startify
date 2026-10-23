@@ -16,10 +16,14 @@ import {
   type MentorMessage,
   type MentorMode,
 } from './api';
+import { sessionDraftStore } from './drafts';
 import { StepEditor, type Tagged } from './step-editor';
 
-/** One editor per mounted step form; it keeps edits across re-renders. */
-export function useStepEditor(projectId: string, stepKey: string, initial: Tagged) {
+/**
+ * One editor per mounted step form; it keeps edits across re-renders, and
+ * unsaved ones in the tab's session storage until the server has them.
+ */
+export function useStepEditor(projectId: string, stepKey: string, initial: Tagged, userId: string) {
   const queryClient = useQueryClient();
   const [editor] = useState(
     () =>
@@ -35,19 +39,26 @@ export function useStepEditor(projectId: string, stepKey: string, initial: Tagge
           void queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'card'] });
           void queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'activity'] });
         },
+        sessionDraftStore(userId, projectId, stepKey),
       ),
   );
   const snapshot = useSyncExternalStore(editor.subscribe, editor.getSnapshot);
 
   useEffect(() => {
     editor.resume();
-    // Leaving the step sends what is left; the cache keeps the last version.
+    // Leaving the step sends what is left; the cache keeps the last version
+    // for other views (the lean canvas), marked as not fresh from the server
+    // so that the next visit fetches the step again before editing.
     return () => {
       editor.dispose();
-      queryClient.setQueryData(stepQuery(projectId, stepKey).queryKey, {
-        data: { ...editor.getSnapshot().step, values: editor.getSnapshot().values },
-        etag: editor.currentEtag,
-      });
+      queryClient.setQueryData(
+        stepQuery(projectId, stepKey).queryKey,
+        {
+          data: { ...editor.getSnapshot().step, values: editor.getSnapshot().values },
+          etag: editor.currentEtag,
+        },
+        { updatedAt: 0 },
+      );
     };
   }, [editor, queryClient, projectId, stepKey]);
 
@@ -64,44 +75,58 @@ export function useStepEditor(projectId: string, stepKey: string, initial: Tagge
 
 const PRESENCE_INTERVAL = 15_000;
 
+/** The project is gone or closed to this member: reporting again cannot succeed. */
+function isFinal(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500;
+}
+
 /**
  * Reports presence every 15 seconds while the page is visible and returns
- * who else is in the project and the current step versions.
+ * who else is in the project and the current step versions. Only for a
+ * project that opened (`enabled`); a refusal (404, 403) stops the reports.
  */
-export function usePresence(projectId: string, stepKey: string | undefined) {
+export function usePresence(projectId: string, stepKey: string | undefined, enabled = true) {
   const [presence, setPresence] = useState<Presence | null>(null);
   const step = useRef(stepKey);
+  const refused = useRef(false);
   useEffect(() => {
     step.current = stepKey;
   }, [stepKey]);
 
   useEffect(() => {
+    if (!enabled) return;
     let stopped = false;
-    const report = () => {
-      if (document.visibilityState !== 'visible') return;
-      reportPresence(projectId, step.current)
-        .then((value) => {
-          if (!stopped) setPresence(value);
-        })
-        .catch(() => undefined);
-    };
-    report();
-    const timer = setInterval(report, PRESENCE_INTERVAL);
-    document.addEventListener('visibilitychange', report);
-    return () => {
+    refused.current = false;
+    const stop = () => {
       stopped = true;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', report);
     };
-  }, [projectId]);
+    const report = () => {
+      if (stopped || document.visibilityState !== 'visible') return;
+      reportPresence(projectId, step.current)
+        .then((value) => {
+          if (!stopped) setPresence(value);
+        })
+        .catch((error: unknown) => {
+          if (!isFinal(error)) return;
+          refused.current = true;
+          stop();
+        });
+    };
+    const timer = setInterval(report, PRESENCE_INTERVAL);
+    document.addEventListener('visibilitychange', report);
+    report();
+    return stop;
+  }, [projectId, enabled]);
 
   // A new step is announced at once.
   useEffect(() => {
-    if (!stepKey) return;
+    if (!enabled || !stepKey || refused.current) return;
     reportPresence(projectId, stepKey)
       .then(setPresence)
       .catch(() => undefined);
-  }, [projectId, stepKey]);
+  }, [projectId, stepKey, enabled]);
 
   return presence;
 }
@@ -149,17 +174,28 @@ export function useMentor(projectId: string, stepKey: string) {
     [queryClient, key],
   );
 
+  /**
+   * Asks the mentor. `onUnsent` gets the question back when it never reached
+   * the server (limit, rate limit, no network), so the person keeps the text.
+   */
   const send = useCallback(
-    (content: string, mode: MentorMode | undefined) => {
+    (content: string, mode: MentorMode | undefined, onUnsent?: (content: string) => void) => {
       controller.current?.abort();
       const current = new AbortController();
       controller.current = current;
       let text = '';
       let finished = false;
+      // The server stores the question first and echoes it as `message`.
+      let accepted = false;
       setStream({ status: 'streaming', text });
+      const fail = (message: string) => {
+        setStream({ status: 'failed', text, message });
+        if (!accepted) onUnsent?.(content);
+      };
 
       const onEvent = (event: ServerEvent) => {
         if (event.event === 'message') {
+          accepted = true;
           const message = payload(event) as MentorMessage | undefined;
           if (message) append(message);
         } else if (event.event === 'delta') {
@@ -173,11 +209,7 @@ export function useMentor(projectId: string, stepKey: string) {
         } else if (event.event === 'error') {
           const problem = payload(event) as Problem | undefined;
           finished = true;
-          setStream({
-            status: 'failed',
-            text,
-            message: errorMessage(problem ? new ApiError(problem) : undefined),
-          });
+          fail(errorMessage(problem ? new ApiError(problem) : undefined));
         }
       };
 
@@ -188,13 +220,11 @@ export function useMentor(projectId: string, stepKey: string) {
         current.signal,
       )
         .then(() => {
-          if (!finished && !current.signal.aborted) {
-            setStream({ status: 'failed', text, message: errorMessage(undefined) });
-          }
+          if (!finished && !current.signal.aborted) fail(errorMessage(undefined));
         })
         .catch((err: unknown) => {
           if (current.signal.aborted) return;
-          setStream({ status: 'failed', text, message: errorMessage(err) });
+          fail(errorMessage(err));
         })
         .finally(() => {
           if (controller.current === current) controller.current = null;

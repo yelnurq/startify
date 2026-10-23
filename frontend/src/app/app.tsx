@@ -2,10 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 
 import { sessionQuery } from '@/features/auth/api';
+import { abandonEditors, discardDraftsExcept } from '@/features/incubator/drafts';
+import type common from '@/locales/ru/common.json';
 import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
 import { releaseBoot } from './boot';
+import { installChunkReload } from './chunk-reload';
+import { RouteErrorPage } from './error-page';
+import { forgetUserData, watchSessionUser } from './session-watch';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,8 +28,12 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
+  defaultErrorComponent: RouteErrorPage,
   scrollRestoration: true,
 });
+
+// A page left open across a deployment reloads once to get the new code.
+installChunkReload();
 
 // The server-drawn first screen of public pages gives way once the first page
 // is drawn with its code and data.
@@ -58,13 +67,28 @@ declare module '@tanstack/react-router' {
       | 'contacts';
     /** The page brings its own columns: no content padding (project workspace). */
     bleed?: boolean;
+    /** Tab title of a page outside the signed-in area (`common:pageTitles.*`). */
+    pageTitle?: PageTitleKey;
   }
 }
 
+/** Page titles a route can name; the others take parameters a page fills in. */
+type PageTitleKey = Exclude<keyof (typeof common)['pageTitles'], 'format' | 'landing' | 'project'>;
+
+// Whoever signs in next at this computer sees nothing cached for the previous
+// user. Step editors still saving stop with the session; unsaved drafts stay
+// only for the person who wrote them.
+watchSessionUser(queryClient, (user) => {
+  abandonEditors();
+  if (user !== null) discardDraftsExcept(user);
+});
+
 // A session lost while working (expired, revoked in another tab): forget it and
-// return to sign-in. Initial visits are handled by the route guards instead.
+// everything fetched with it, and return to sign-in. Initial visits are handled
+// by the route guards instead.
 setUnauthenticatedHandler(() => {
   const hadSession = Boolean(queryClient.getQueryState(sessionQuery.queryKey)?.data);
+  forgetUserData(queryClient);
   queryClient.setQueryData(sessionQuery.queryKey, null);
   const { pathname, search } = window.location;
   if (hadSession && (pathname.startsWith('/app') || pathname.startsWith('/onboarding'))) {

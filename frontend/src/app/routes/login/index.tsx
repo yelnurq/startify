@@ -7,6 +7,7 @@ import { loadNamespaces } from '@/shared/i18n';
 import { compact, optionalString } from '@/shared/router/search';
 
 export const Route = createFileRoute('/login/')({
+  staticData: { pageTitle: 'login' },
   validateSearch: (search: Record<string, unknown>): { redirect?: string; error?: string } =>
     compact({ redirect: optionalString(search.redirect), error: optionalString(search.error, 64) }),
   beforeLoad: ({ context, search }) => redirectIfSignedIn(context.queryClient, search.redirect),

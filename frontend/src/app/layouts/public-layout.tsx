@@ -6,6 +6,7 @@ import { IconButton } from '@/design-system/components/icon-button';
 import { cn } from '@/design-system/lib/cn';
 import { LanguageSwitcher } from '@/design-system/components/preferences';
 import { Sheet, SheetContent, SheetTitle } from '@/design-system/components/sheet';
+import { SkipLink } from '@/design-system/components/skip-link';
 
 interface PublicLayoutProps {
   /** Logo link to the home page. */
@@ -34,12 +35,7 @@ export function PublicLayout({
   const hasMenu = Boolean(nav ?? actions);
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
-      <a
-        href="#main"
-        className="sr-only z-50 rounded-lg bg-primary px-4 py-2 text-primary-fg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-      >
-        {t('actions.skipToContent')}
-      </a>
+      <SkipLink>{t('actions.skipToContent')}</SkipLink>
       <header className="sticky top-0 z-40 border-b border-border bg-surface">
         <div className="mx-auto flex h-16 max-w-page items-center gap-3 px-4 sm:gap-8 sm:px-6 lg:h-20">
           {logo}
@@ -91,7 +87,7 @@ export function PublicLayout({
         </SheetContent>
       </Sheet>
 
-      <main id="main" className="flex-1">
+      <main id="main" tabIndex={-1} className="flex-1">
         {children}
       </main>
       {footer}

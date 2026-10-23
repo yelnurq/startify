@@ -112,7 +112,7 @@ export function Tag({
           type="button"
           aria-label={removeLabel}
           onClick={onRemove}
-          className="-mr-1.5 grid size-5 place-items-center rounded-full text-fg-subtle transition-colors hover:bg-surface-sunken hover:text-fg"
+          className="relative -mr-2 grid size-6 place-items-center rounded-full text-fg-subtle transition-colors hover:bg-surface-sunken hover:text-fg pointer-coarse:after:absolute pointer-coarse:after:-inset-1"
         >
           <X aria-hidden />
         </button>

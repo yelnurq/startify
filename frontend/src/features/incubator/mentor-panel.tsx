@@ -78,8 +78,12 @@ export function MentorPanel({ projectId, step, onApply }: MentorPanelProps) {
   const submit = () => {
     const content = draft.trim();
     if (!content || streaming) return;
-    send(content, modes.length > 1 ? activeMode : undefined);
     setDraft('');
+    // A question the server never got (limit, no network) comes back into
+    // the field, unless the person has started typing another one.
+    send(content, modes.length > 1 ? activeMode : undefined, (unsent) => {
+      setDraft((current) => current || unsent);
+    });
   };
 
   return (

@@ -16,6 +16,7 @@ import {
   SelectValue,
   SkeletonCard,
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/design-system';
@@ -104,130 +105,132 @@ export function TeamBoardPage({ search, onSearchChange }: TeamBoardPageProps) {
           <TabsTrigger value="all">{t('board.tabs.all')}</TabsTrigger>
           <TabsTrigger value="mine">{t('board.tabs.mine')}</TabsTrigger>
         </TabsList>
-      </Tabs>
-
-      {!mine && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <Input
-            type="search"
-            value={query}
-            leading={<Search />}
-            maxLength={120}
-            aria-label={t('board.search')}
-            placeholder={t('board.searchPlaceholder')}
-            onChange={(event) => {
-              setQuery(event.target.value);
-            }}
-          />
-          <Select
-            value={search.role ?? ANY}
-            onValueChange={(value) => {
-              update({ role: isTeamRole(value) ? value : undefined });
-            }}
-          >
-            <SelectTrigger aria-label={t('board.role')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY}>{t('board.anyRole')}</SelectItem>
-              {TEAM_ROLES.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {t(`roles.${role}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            value={skill}
-            maxLength={40}
-            aria-label={t('board.skill')}
-            placeholder={t('board.skillPlaceholder')}
-            onChange={(event) => {
-              setSkill(event.target.value);
-            }}
-          />
-          {filtered && (
-            <Button variant="ghost" leftIcon={<X />} onClick={resetFilters}>
-              {t('board.reset')}
-            </Button>
-          )}
-        </div>
-      )}
-
-      {requests.isPending && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" aria-busy>
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      )}
-      {requests.isError && (
-        <Callout
-          tone="danger"
-          action={
-            <Button size="sm" variant="secondary" onClick={() => void requests.refetch()}>
-              {t('common:actions.retry')}
-            </Button>
-          }
-        >
-          {errorMessage(requests.error)}
-        </Callout>
-      )}
-      {requests.isSuccess && items.length === 0 && (
-        <EmptyState
-          illustration={filtered ? 'search' : mine ? 'idea' : 'team'}
-          title={
-            filtered ? t('board.emptyFiltered') : mine ? t('board.emptyMine') : t('board.empty')
-          }
-          description={
-            filtered
-              ? t('board.emptyFilteredText')
-              : mine
-                ? t('board.emptyMineText')
-                : t('board.emptyText')
-          }
-          action={
-            filtered ? (
-              <Button variant="secondary" onClick={resetFilters}>
-                {t('board.reset')}
-              </Button>
-            ) : (
-              <Button
-                leftIcon={<Plus />}
-                onClick={() => {
-                  setCreating(true);
+        {/* One panel shows the open tab, so the tab's aria-controls points at it. */}
+        <TabsContent value={mine ? 'mine' : 'all'} className="flex flex-col gap-6 pt-6">
+          {!mine && (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+              <Input
+                type="search"
+                value={query}
+                leading={<Search />}
+                maxLength={120}
+                aria-label={t('board.search')}
+                placeholder={t('board.searchPlaceholder')}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                }}
+              />
+              <Select
+                value={search.role ?? ANY}
+                onValueChange={(value) => {
+                  update({ role: isTeamRole(value) ? value : undefined });
                 }}
               >
-                {t('board.create')}
-              </Button>
-            )
-          }
-        />
-      )}
-      {items.length > 0 && (
-        <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {items.map((request) => (
-            <li key={request.id}>
-              <RequestCard
-                linked
-                request={request}
-                onRespond={setResponding}
-                onEdit={setEditing}
-                onShowResponses={setViewing}
+                <SelectTrigger aria-label={t('board.role')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>{t('board.anyRole')}</SelectItem>
+                  {TEAM_ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {t(`roles.${role}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                value={skill}
+                maxLength={40}
+                aria-label={t('board.skill')}
+                placeholder={t('board.skillPlaceholder')}
+                onChange={(event) => {
+                  setSkill(event.target.value);
+                }}
               />
-            </li>
-          ))}
-        </ul>
-      )}
-      {requests.hasNextPage && (
-        <Button
-          variant="secondary"
-          className="self-center"
-          loading={requests.isFetchingNextPage}
-          onClick={() => void requests.fetchNextPage()}
-        >
-          {t('common:actions.loadMore')}
-        </Button>
-      )}
+              {filtered && (
+                <Button variant="ghost" leftIcon={<X />} onClick={resetFilters}>
+                  {t('board.reset')}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {requests.isPending && (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2" aria-busy>
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          )}
+          {requests.isError && (
+            <Callout
+              tone="danger"
+              action={
+                <Button size="sm" variant="secondary" onClick={() => void requests.refetch()}>
+                  {t('common:actions.retry')}
+                </Button>
+              }
+            >
+              {errorMessage(requests.error)}
+            </Callout>
+          )}
+          {requests.isSuccess && items.length === 0 && (
+            <EmptyState
+              illustration={filtered ? 'search' : mine ? 'idea' : 'team'}
+              title={
+                filtered ? t('board.emptyFiltered') : mine ? t('board.emptyMine') : t('board.empty')
+              }
+              description={
+                filtered
+                  ? t('board.emptyFilteredText')
+                  : mine
+                    ? t('board.emptyMineText')
+                    : t('board.emptyText')
+              }
+              action={
+                filtered ? (
+                  <Button variant="secondary" onClick={resetFilters}>
+                    {t('board.reset')}
+                  </Button>
+                ) : (
+                  <Button
+                    leftIcon={<Plus />}
+                    onClick={() => {
+                      setCreating(true);
+                    }}
+                  >
+                    {t('board.create')}
+                  </Button>
+                )
+              }
+            />
+          )}
+          {items.length > 0 && (
+            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {items.map((request) => (
+                <li key={request.id}>
+                  <RequestCard
+                    linked
+                    request={request}
+                    onRespond={setResponding}
+                    onEdit={setEditing}
+                    onShowResponses={setViewing}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          {requests.hasNextPage && (
+            <Button
+              variant="secondary"
+              className="self-center"
+              loading={requests.isFetchingNextPage}
+              onClick={() => void requests.fetchNextPage()}
+            >
+              {t('common:actions.loadMore')}
+            </Button>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <RequestDialog
         open={creating || editing !== null}

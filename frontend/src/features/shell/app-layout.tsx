@@ -79,7 +79,7 @@ function Brand({ session }: { session: Session }) {
   return (
     <Link to="/app" className="flex min-w-0 flex-col rounded-md leading-tight">
       <span className="font-display text-base font-bold text-ink">{t('app.name')}</span>
-      <TruncatedText className="text-xs text-fg-subtle">
+      <TruncatedText focusable={false} className="text-xs text-fg-subtle">
         {text(session.tenant.short_name) || text(session.tenant.name)}
       </TruncatedText>
     </Link>
@@ -190,11 +190,11 @@ function UserMenu({ session }: { session: Session }) {
           {/* The accessible name starts with the visible name (WCAG 2.5.3, label in name). */}
           <Avatar name={session.user.full_name} src={session.user.avatar_url} size="sm" />
           <span className="flex min-w-0 flex-1 flex-col">
-            <TruncatedText className="text-sm font-medium text-fg">
+            <TruncatedText focusable={false} className="text-sm font-medium text-fg">
               {session.user.full_name}
             </TruncatedText>
             {role && (
-              <TruncatedText className="text-xs text-fg-subtle">
+              <TruncatedText focusable={false} className="text-xs text-fg-subtle">
                 {t(`common:roles.${role}`)}
               </TruncatedText>
             )}

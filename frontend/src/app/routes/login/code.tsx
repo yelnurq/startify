@@ -6,6 +6,7 @@ import { loadNamespaces } from '@/shared/i18n';
 import { compact, optionalFlag, optionalString } from '@/shared/router/search';
 
 export const Route = createFileRoute('/login/code')({
+  staticData: { pageTitle: 'loginCode' },
   validateSearch: (
     search: Record<string, unknown>,
   ): { email?: string; sent?: boolean; redirect?: string } =>

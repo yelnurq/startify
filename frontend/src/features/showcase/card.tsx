@@ -147,7 +147,7 @@ export function UniversityChip({
           style={{ backgroundColor: university.color }}
         />
       )}
-      <span className="truncate">{text(university.short_name) || text(university.name)}</span>
+      <TruncatedText>{text(university.short_name) || text(university.name)}</TruncatedText>
     </span>
   );
 }

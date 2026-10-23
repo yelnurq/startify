@@ -3,6 +3,7 @@ import { use, type ComponentProps, type ReactNode } from 'react';
 
 import { cn } from '@/design-system/lib/cn';
 import { Tooltip } from '@/design-system/components/tooltip';
+import { TruncatedText } from '@/design-system/components/truncated-text';
 
 import { SidebarCollapsed } from './sidebar-context';
 
@@ -33,7 +34,11 @@ function NavAnchor({ icon, badge, children, className, ...props }: NavAnchorProp
       <span className="grid size-7 shrink-0 place-items-center rounded-md transition-colors group-hover:text-primary-text group-data-[status=active]:bg-linear-to-br group-data-[status=active]:from-primary group-data-[status=active]:to-primary-500 group-data-[status=active]:text-white group-data-[status=active]:shadow-sm [&_svg]:size-4">
         {icon}
       </span>
-      {!collapsed && <span className="flex-1 truncate">{children}</span>}
+      {!collapsed && (
+        <TruncatedText focusable={false} className="flex-1">
+          {children}
+        </TruncatedText>
+      )}
       {!collapsed && badge}
     </a>
   );

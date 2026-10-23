@@ -35,6 +35,7 @@ export * from './components/scroll-area';
 export * from './components/select';
 export * from './components/sheet';
 export * from './components/skeleton';
+export * from './components/skip-link';
 export * from './components/sparkline';
 export * from './components/spinner';
 export * from './components/stat-tile';

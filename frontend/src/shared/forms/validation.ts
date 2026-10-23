@@ -17,6 +17,9 @@ export function installZodLocalization(): void {
   if (installed) return;
   installed = true;
   z.config({
+    // No compiled parsers: the CSP forbids eval, and zod's `new Function` probe
+    // would be reported as a violation. Must be set before any schema exists.
+    jitless: true,
     customError: (issue) => {
       const t = i18n.t.bind(i18n);
       switch (issue.code) {

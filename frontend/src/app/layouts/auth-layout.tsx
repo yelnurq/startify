@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { EdgeIllustration } from '@/design-system/components/edge-illustration';
 import { LanguageSwitcher } from '@/design-system/components/preferences';
+import { SkipLink } from '@/design-system/components/skip-link';
 import type { IllustrationName } from '@/design-system/illustrations';
 
 interface AuthLayoutProps {
@@ -18,8 +20,10 @@ interface AuthLayoutProps {
 
 /** Sign-in, sign-up and recovery screens: a navy brand panel and the form on white. */
 export function AuthLayout({ logo, back, aside, art = 'shield', children }: AuthLayoutProps) {
+  const { t } = useTranslation();
   return (
     <div className="grid min-h-dvh grid-cols-1 bg-surface lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      <SkipLink>{t('actions.skipToContent')}</SkipLink>
       <aside className="relative hidden overflow-hidden panel-ink lg:block">
         <div aria-hidden className="absolute inset-0 ornament opacity-[0.04] [--qd-brand:#fff]" />
         <div
@@ -41,6 +45,7 @@ export function AuthLayout({ logo, back, aside, art = 'shield', children }: Auth
         </div>
         <main
           id="main"
+          tabIndex={-1}
           className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-12 sm:px-0"
         >
           {children}

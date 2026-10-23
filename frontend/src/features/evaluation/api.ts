@@ -1,6 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapTagged } from '@/shared/api/client';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
+import { finishedSince } from '@/shared/api/polling';
 import type { components } from '@/shared/api/schema.gen';
 import type { Locale } from '@/shared/i18n';
 
@@ -24,15 +26,29 @@ export function isRunning(status: EvaluationStatus | undefined): boolean {
 /** Interval of polling a running evaluation. */
 export const POLL_MS = 2_000;
 
+/**
+ * A finished evaluation changes the score shown on the project's card, in
+ * its menu, in the project lists and on the dashboard.
+ */
+function refreshScores(client: QueryClient, projectId: string) {
+  void client.invalidateQueries({ queryKey: ['projects', projectId, 'card'] });
+  void client.invalidateQueries({ queryKey: ['projects', projectId, 'activity'] });
+  void client.invalidateQueries({ queryKey: ['projects', 'list'] });
+}
+
 export function evaluationsQuery(projectId: string) {
   return queryOptions({
     queryKey: ['projects', projectId, 'evaluations'],
-    queryFn: async () =>
-      (
-        await unwrap(
-          api.GET('/projects/{projectId}/evaluations', { params: { path: { projectId } } }),
-        )
-      ).items,
+    queryFn: async ({ client, queryKey }) => {
+      const before = client.getQueryData<EvaluationSummary[]>(queryKey);
+      const { items } = await unwrap(
+        api.GET('/projects/{projectId}/evaluations', { params: { path: { projectId } } }),
+      );
+      if (finishedSince(before, items, (e) => isRunning(e.status))) {
+        refreshScores(client, projectId);
+      }
+      return items;
+    },
     // While one runs the history shows its status; refresh until it settles.
     refetchInterval: (query) =>
       query.state.data?.some((e) => isRunning(e.status)) ? POLL_MS : false,
@@ -42,12 +58,22 @@ export function evaluationsQuery(projectId: string) {
 export function evaluationQuery(projectId: string, evaluationId: string) {
   return queryOptions({
     queryKey: ['projects', projectId, 'evaluations', evaluationId],
-    queryFn: () =>
-      unwrap(
+    queryFn: async ({ client, queryKey }) => {
+      const before = client.getQueryData<Evaluation>(queryKey);
+      const evaluation = await unwrap(
         api.GET('/projects/{projectId}/evaluations/{evaluationId}', {
           params: { path: { projectId, evaluationId } },
         }),
-      ),
+      );
+      if (before && finishedSince([before], [evaluation], (e) => isRunning(e.status))) {
+        refreshScores(client, projectId);
+        void client.invalidateQueries({
+          queryKey: ['projects', projectId, 'evaluations'],
+          exact: true,
+        });
+      }
+      return evaluation;
+    },
     refetchInterval: (query) => (isRunning(query.state.data?.status) ? POLL_MS : false),
   });
 }
@@ -69,16 +95,20 @@ function useInvalidateEvaluations(projectId: string) {
 export function useRequestEvaluation(projectId: string) {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateEvaluations(projectId);
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: () =>
       unwrap(
         api.POST('/projects/{projectId}/evaluations', {
           params: {
             path: { projectId },
-            header: { 'Idempotency-Key': crypto.randomUUID() },
+            header: { 'Idempotency-Key': submission.for({ projectId }) },
           },
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: (evaluation) => {
       queryClient.setQueryData(evaluationQuery(projectId, evaluation.id).queryKey, evaluation);
       void invalidate();

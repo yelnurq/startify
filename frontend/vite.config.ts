@@ -33,10 +33,20 @@ export default defineConfig({
   },
   build: {
     target: 'es2023',
-    sourcemap: true,
+    // No source maps in the published bundle (DECISIONS: source maps); a
+    // debugging build gets them without a reference in the code.
+    sourcemap: process.env.QADAM_SOURCEMAP === 'hidden' ? 'hidden' : false,
     // Fonts stay files: the CSP allows fonts only from our origin (font-src
     // 'self'), so a small subset inlined as a data: URL would be blocked.
     assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined),
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // Every icon was its own chunk (45 requests on the landing): one file instead.
+          groups: [{ name: 'icons', test: /[\\/]node_modules[\\/]lucide-react[\\/]/ }],
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',
