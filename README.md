@@ -70,7 +70,31 @@ docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-com
 Вуз определяется по адресу: `localhost:3000` и `kazutb.localhost:3000` — КазУТБ,
 `sandbox.localhost:3000` — второй, пустой вуз для проверки изоляции (`sandbox-admin@qadam.test`).
 В продакшене — `<вуз>.qadam.kz` или собственный домен вуза. Вход через SSO вуза (OIDC)
-настраивается в таблице `tenant_oidc_providers` (интерфейс — фаза 10).
+настраивается в таблице `tenant_oidc_providers` (интерфейс — фаза 10). Вход через Active Directory
+или LDAP администратор вуза настраивает сам на странице «Вход через каталог»
+(`/app/admin/directory`) — [инструкция для вуза](docs/guides/active-directory.md).
+
+### Демо-каталог
+
+`make dev` поднимает и OpenLDAP с каталогом КазУТБ (`deploy/ldap`, `dc=kazutb,dc=local`, порт
+`ldap://localhost:3389`), а `make seed` направляет на него вход через каталог КазУТБ — выключенным.
+Войдите как `admin@qadam.test`, откройте «Вход через каталог», нажмите «Проверить подключение»,
+включите вход и сохраните. Пароли каталога свои, не `Qadam-Demo-2026!`:
+
+| Логин в каталоге | Пароль | Группы → роли | Аккаунт в Qadam |
+|---|---|---|---|
+| `seitkaziev.e` | `Erlan-Ldap-2026` | admins, staff → администратор, научный руководитель | `admin@qadam.test` |
+| `abenova.d` | `Dinara-Ldap-2026` | innovation (вложена в staff) → менеджер по инновациям, научный руководитель | `innovation@qadam.test` |
+| `kassymova.g` | `Gulnar-Ldap-2026` | staff → научный руководитель | `gulnar@qadam.test` |
+| `sarsenova.a` | `Aigerim-Ldap-2026` | students → студент | `aigerim@qadam.test` |
+| `zhumabekov.n` | `Nurlan-Ldap-2026` | students → студент | `nurlan@qadam.test` |
+| `akhmetov.n` | `Nursultan-Ldap-2026` | students → студент | нет — создаётся при первом входе |
+
+Сервисная учётная запись — `cn=qadam-svc,ou=Service Accounts,dc=kazutb,dc=local` /
+`Qadam-Ldap-Bind-2026`, администратор каталога — `cn=admin,dc=kazutb,dc=local` /
+`LDAP_ADMIN_PASSWORD` из `.env`. Существующие аккаунты привязываются к каталогу по почте и
+сохраняют свои роли (обновление ролей при входе в сидах выключено). При запуске API вне Docker
+укажите на странице адрес `ldap://localhost:3389`.
 
 ### Языковые модели
 
@@ -157,4 +181,5 @@ docs/       ARCHITECTURE, DECISIONS, BACKLOG, PROGRESS, дизайн экран�
 - [Принятые решения](docs/DECISIONS.md)
 - [Ход работ по фазам](docs/PROGRESS.md)
 - [Отложенные задачи](docs/BACKLOG.md)
+- [Вход через Active Directory / LDAP: инструкция для администратора вуза](docs/guides/active-directory.md)
 - [Правила проекта для разработчиков и AI-агентов](CLAUDE.md)
