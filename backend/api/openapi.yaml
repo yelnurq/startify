@@ -575,9 +575,11 @@ paths:
       tags: [me]
       summary: Upload a profile photo
       description: |
-        JPEG, PNG or WebP up to 5 MB. The image is checked for malware, re-encoded (metadata
-        such as GPS position is removed) and scaled to 512 px. Errors: `files.too_large` (413),
-        `files.unsupported_type`, `files.infected` (422), `files.scanner_unavailable` (503).
+        JPEG, PNG or WebP up to 5 MB and 16 megapixels. The image is checked for malware,
+        re-encoded (metadata such as GPS position is removed) and scaled to 512 px. A member
+        uploads at most 30 images an hour. Errors: `files.too_large` (413),
+        `files.unsupported_type`, `files.image_too_large`, `files.infected` (422),
+        `rate_limited` (429), `files.scanner_unavailable` (503).
       requestBody:
         required: true
         content:
@@ -1333,6 +1335,7 @@ paths:
       description: |
         The creator becomes the owner. When the university has an intellectual property
         policy, `ip_policy_version` must name its current version (`project.ip_policy_required`).
+        A member starts at most 10 projects an hour (429 `rate_limited`).
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1418,7 +1421,9 @@ paths:
       summary: Add a member or a supervisor
       description: |
         The owner adds members of the university. A supervisor must have the `supervisor`
-        role and may also be assigned by an `innovation_manager`.
+        role and may also be assigned by an `innovation_manager`. A team has at most 12
+        people (owner and members, `project.team_full`) and up to 3 supervisors
+        (`project.supervisors_full`); supervisors do not count against the team.
       requestBody:
         required: true
         content:
@@ -1445,7 +1450,9 @@ paths:
       summary: Change a member's title or hand over ownership
       description: |
         Members edit their own title; the owner edits anyone's and may make another member
-        the owner (`role: owner`), becoming a member.
+        the owner (`role: owner`), becoming a member. When the owner has left the university
+        or is blocked there, an `innovation_manager` or `tenant_admin` hands the project over
+        (`project.owner_active` while the owner is still active).
       requestBody:
         required: true
         content:
@@ -1465,7 +1472,9 @@ paths:
       operationId: removeProjectMember
       tags: [projects]
       summary: Remove a member or leave the project
-      description: The owner removes others; anyone but the owner may leave.
+      description: |
+        The owner, an `innovation_manager` or a `tenant_admin` removes others; anyone but the
+        owner may leave. Archived projects keep their team (`project.archived`).
       responses:
         "204":
           description: Removed.
@@ -1618,7 +1627,9 @@ paths:
       description: |
         Fails with 422 `incubator.step_incomplete` (field errors list what is missing) unless
         the minimum requirements are met. A completed step stays editable; when an edit
-        breaks the minimum it returns to `in_progress`.
+        breaks the minimum it returns to `in_progress`. Changing the answers of an approved
+        step drops the approval: the step is `completed` again while it meets the minimum,
+        `in_progress` otherwise.
       responses:
         "200":
           description: The completed step.
@@ -1641,8 +1652,12 @@ paths:
       tags: [incubator]
       summary: Approve the step as a supervisor
       description: |
-        The project's supervisor or an `innovation_manager` approves a step, also one that
-        does not meet the minimum, with a comment.
+        The project's supervisor or an `innovation_manager` who is not in the team approves a
+        step, also one that does not meet the minimum, with a comment. `If-Match` names the
+        version the approver reviewed (412 `precondition.failed` when the team has changed the
+        step since); the approval lasts until the answers change.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
       requestBody:
         required: true
         content:
@@ -1670,6 +1685,7 @@ paths:
       operationId: listStepRevisions
       tags: [incubator]
       summary: History of the step's fields
+      description: The history of fields the project withholds from the member (`Step.withheld`) is left out.
       parameters:
         - name: field
           in: query
@@ -1722,7 +1738,10 @@ paths:
       operationId: getMentorConversation
       tags: [incubator]
       summary: The conversation with the AI mentor about the step
-      description: Messages oldest first; `cursor` loads earlier ones.
+      description: |
+        Messages oldest first; `cursor` loads earlier ones. Withheld (`withheld`, no messages)
+        from members outside the team and its supervisors when the project hides sensitive
+        details.
       parameters:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
@@ -1793,7 +1812,10 @@ paths:
       operationId: createProjectComment
       tags: [incubator]
       summary: Comment on a step or a field
-      description: The team, the supervisor and innovation managers may comment and @mention each other.
+      description: |
+        The team, the supervisor and innovation managers may comment and @mention each other
+        while the project is open; leadership and administrators read (`rbac.forbidden`). A
+        member writes at most 120 comments an hour (429 `rate_limited`).
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1840,7 +1862,9 @@ paths:
       operationId: deleteProjectComment
       tags: [incubator]
       summary: Delete a comment
-      description: The author or an innovation manager.
+      description: |
+        The author, or an `innovation_manager` or `tenant_admin` moderating, deletes a comment
+        with its replies while the project is open (`project.archived`).
       responses:
         "204":
           description: Deleted.
@@ -1854,6 +1878,9 @@ paths:
       operationId: listProjectMaterials
       tags: [incubator]
       summary: Generated one-pagers, pitch decks and startup passports
+      description: |
+        Materials generated from sensitive details are left out (and cannot be downloaded) for
+        members outside the team and its supervisors while the project hides them.
       responses:
         "200":
           description: Materials, newest first.
@@ -1869,7 +1896,8 @@ paths:
       summary: Generate a material from the project data
       description: |
         Generation runs in the background (AI texts, then PDF or PPTX); poll the list until
-        the status is `ready`. Pitch decks come as PDF or PPTX, the others as PDF.
+        the status is `ready`. Pitch decks come as PDF or PPTX with 10 to 12 slides in the
+        classic order (a slide the project has no data for says what to add), the others as PDF.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2066,7 +2094,9 @@ paths:
       summary: The project's showcase page as the team edits it
       description: |
         Before the first save the page is prefilled from the incubator answers (`version` 0).
-        Sensitive details are left out when the project hides them.
+        The prefill never uses the fields marked `sensitive` in the template (unit economics,
+        the novelty and the unfair advantage of the solution), whatever `hide_sensitive` says;
+        a video link is prefilled only from YouTube or Vimeo.
       responses:
         "200":
           description: The page.
@@ -2084,9 +2114,13 @@ paths:
       tags: [showcase]
       summary: Save the showcase page
       description: |
-        The team edits the page. A published page shows the changes at once; moving a page
-        to `public` visibility sends it to review (`in_review`) before it is visible outside
-        the university.
+        The team edits the page. A page published for the university shows the changes at
+        once. Moving a page to `public` visibility, and changing what a published public page
+        shows (address, title, tagline, sections, video, tags, needs; the cover through its own
+        operations), sends it to review (`in_review`): until an innovation manager approves the
+        new version it is visible inside the university only. A page a moderator took off the
+        showcase (`held`) is published again only through review. An address another project
+        has taken is a field error (`slug` `taken`).
       parameters:
         - $ref: "#/components/parameters/IfMatch"
       requestBody:
@@ -2115,7 +2149,10 @@ paths:
       operationId: setShowcaseCover
       tags: [showcase]
       summary: Upload the cover image
-      description: JPEG, PNG or WebP up to 10 MiB; stored as a 1600×900 JPEG without metadata.
+      description: |
+        JPEG, PNG or WebP up to 10 MiB and 16 megapixels; stored as a 1600×900 JPEG without
+        metadata. A member uploads at most 30 images an hour (429 `rate_limited`). A new cover
+        of a published public page sends it to review.
       requestBody:
         required: true
         content:
@@ -2130,6 +2167,9 @@ paths:
       responses:
         "200":
           description: The page with the cover.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
           content:
             application/json:
               schema:
@@ -2140,9 +2180,13 @@ paths:
       operationId: deleteShowcaseCover
       tags: [showcase]
       summary: Remove the cover image
+      description: Removing the cover of a published public page sends it to review.
       responses:
         "200":
           description: The page without a cover.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
           content:
             application/json:
               schema:
@@ -2159,11 +2203,15 @@ paths:
       summary: Publish the page
       description: |
         `university` pages are published at once; `public` pages go to an innovation manager
-        for review. The page must be saved and have a problem and a solution
-        (`showcase.incomplete`).
+        for review. A page a moderator took off the showcase (`held`) goes to review whatever
+        its visibility and stays hidden until approved. The page must be saved and have a
+        problem and a solution (`showcase.incomplete`).
       responses:
         "200":
           description: The page with its new status.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
           content:
             application/json:
               schema:
@@ -2178,9 +2226,16 @@ paths:
       operationId: unpublishShowcaseEntry
       tags: [showcase]
       summary: Take the page off the showcase
+      description: |
+        The team, or an `innovation_manager` or `tenant_admin` who is not in the team, takes
+        the page off. A moderator's take-down holds the page (`held`): the team can publish
+        it again only through review.
       responses:
         "200":
           description: The page, back to draft.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
           content:
             application/json:
               schema:
@@ -2196,6 +2251,9 @@ paths:
       tags: [showcase]
       summary: Contact requests addressed to the project
       description: The team sees forwarded requests; innovation managers see all.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
           description: Requests, newest first.
@@ -2235,6 +2293,16 @@ paths:
       operationId: reviewShowcaseEntry
       tags: [showcase]
       summary: Approve or reject a public page
+      description: |
+        Requires `innovation_manager` or `tenant_admin`. An approval names the version the
+        moderator reviewed in `If-Match` (`"<version>"`; 428 without it, 412
+        `precondition.failed` when the team has changed the page since) and publishes exactly
+        that version; approving a page a moderator took down (`held`) publishes it again. A
+        moderator in the project's team or among its supervisors cannot approve its page
+        (`showcase.own_page`). A published public page can be rejected later too: it stays
+        visible inside the university.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -2244,6 +2312,9 @@ paths:
       responses:
         "200":
           description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
           content:
             application/json:
               schema:
@@ -2263,6 +2334,8 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/ContactStatus"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
           description: Requests, newest first.
@@ -2285,6 +2358,9 @@ paths:
       operationId: moderateContactRequest
       tags: [showcase]
       summary: Forward a request to the team or reject it
+      description: |
+        A request is not forwarded once the team has stopped accepting requests
+        (`showcase.contact_disabled`); it can still be rejected.
       requestBody:
         required: true
         content:
@@ -2438,8 +2514,11 @@ paths:
       tags: [showcase]
       summary: Ask the team to get in touch
       description: |
-        Public and rate-limited. Depending on the university's setting the request goes to an
-        innovation manager first or straight to the team; the team's addresses are never shown.
+        Public and rate-limited: 5 requests an hour from an address, 3 a day from an e-mail
+        to a project, 100 a day to a project (429 `showcase.too_many_requests`). Depending on
+        the university's setting the request goes to an innovation manager first or straight
+        to the team; the team's addresses are never shown. Invalid fields, the e-mail
+        included, are 422 field errors.
       security: []
       requestBody:
         required: true
@@ -3924,6 +4003,13 @@ components:
         required:
           type: boolean
           description: Needed to complete the step (with min_length or min_items).
+        sensitive:
+          type: boolean
+          description: |
+            A sensitive detail (unit economics, the novelty and the unfair advantage of the
+            solution): withheld from everyone outside the team and its supervisors when the
+            project hides sensitive details (`Project.hide_sensitive`), and never shown on the
+            showcase. Absent for other fields.
         min_length:
           type: integer
         max_length:
@@ -4131,6 +4217,13 @@ components:
           enum: [private, university, public]
         hide_sensitive:
           type: boolean
+          description: |
+            Hide sensitive details from everyone outside the team (owner, members) and its
+            supervisors, that is from leadership, innovation managers and administrators who
+            are not in the project: the fields marked `sensitive` in the template and their
+            history (`Step.withheld`), the AI review of their steps, mentor conversations, and
+            generated materials that contain them. The showcase never uses these fields. AI
+            evaluation reports are not filtered.
         faculty:
           anyOf:
             - $ref: "#/components/schemas/FacultyRef"
@@ -4439,6 +4532,14 @@ components:
           type: integer
         values:
           $ref: "#/components/schemas/StepValues"
+        withheld:
+          type: array
+          description: |
+            Sensitive fields of the step left out of `values` (and of the history) because the
+            project hides them from the signed-in member; the AI review (`check`) of such a step
+            is left out too. Empty for the team and its supervisors.
+          items:
+            type: string
         missing:
           type: array
           description: What the step lacks to be completed.
@@ -4680,6 +4781,11 @@ components:
         can_ask:
           type: boolean
           description: The signed-in member may ask (team members only).
+        withheld:
+          type: boolean
+          description: |
+            True when the project hides sensitive details from the signed-in member: the team's
+            questions may contain them, so the conversation is not shown (`items` is empty).
     MentorMessageCreate:
       type: object
       additionalProperties: false
@@ -5116,6 +5222,8 @@ components:
         - submitted_at
         - published_at
         - url
+        - version
+        - held
       properties:
         project_id:
           type: string
@@ -5123,6 +5231,14 @@ components:
         saved:
           type: boolean
           description: False while the page is a prefilled suggestion that was never saved.
+        version:
+          type: integer
+          description: The version of the page (its ETag is `"<version>"`); 0 before the first save.
+        held:
+          type: boolean
+          description: |
+            A moderator took the page off the showcase: it is published again only after a
+            moderator approves it.
         slug:
           type: string
         status:
@@ -5407,6 +5523,10 @@ components:
           type: string
           format: email
           maxLength: 254
+          description: Checked by the server; an invalid address is a field error (`email`).
+          # A plain string in Go: a malformed address reaches the service and comes back as
+          # a 422 field error instead of failing to decode (400 request.malformed).
+          x-go-type: string
         organization:
           type: string
           maxLength: 160
@@ -5462,12 +5582,14 @@ components:
     ContactRequestList:
       type: object
       additionalProperties: false
-      required: [items]
+      required: [items, next_cursor]
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/ContactRequest"
+        next_cursor:
+          type: [string, "null"]
     ContactModeration:
       type: object
       additionalProperties: false

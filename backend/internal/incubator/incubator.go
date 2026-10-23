@@ -200,8 +200,13 @@ func streak(days []time.Time, now time.Time) int {
 }
 
 // updateProgress stores the denormalised progress of the project (inside
-// the transaction of ctx).
+// the transaction of ctx). The project row is locked before the steps are
+// read: two steps completed at once are counted one after the other, and the
+// second count sees the first.
 func (s *Service) updateProgress(ctx context.Context, projectID uuid.UUID) error {
+	if err := s.Projects.Lock(ctx, projectID); err != nil {
+		return err
+	}
 	rows, err := s.q(ctx).ListSteps(ctx, projectID)
 	if err != nil {
 		return err
@@ -260,9 +265,25 @@ func decodeValues(raw json.RawMessage) Values {
 	return v
 }
 
-// stepAPI converts a stored step (nil for one never saved).
-func (s *Service) stepAPI(ctx context.Context, st *Step, row *incubatordb.ProjectStepDatum) (apigen.Step, error) {
-	out := apigen.Step{Key: st.Key, Status: StatusNotStarted, Values: apigen.StepValues{}, Missing: []apigen.StepGap{}}
+// withheld lists the sensitive fields of a step the member may not see
+// (none for the team and its supervisors, or while the project shows them).
+func withheld(a project.Access, st *Step) []string {
+	if a.SeesSensitive() {
+		return []string{}
+	}
+	keys := st.SensitiveKeys()
+	if keys == nil {
+		return []string{}
+	}
+	return keys
+}
+
+// stepAPI converts a stored step (nil for one never saved) as the member of
+// a sees it: without the sensitive answers the project hides from them, nor
+// the AI review of such a step, which discusses those answers.
+func (s *Service) stepAPI(ctx context.Context, a project.Access, st *Step, row *incubatordb.ProjectStepDatum) (apigen.Step, error) {
+	hidden := withheld(a, st)
+	out := apigen.Step{Key: st.Key, Status: StatusNotStarted, Values: apigen.StepValues{}, Missing: []apigen.StepGap{}, Withheld: &hidden}
 	values := Values{}
 	if row != nil {
 		values = decodeValues(row.Data)
@@ -270,7 +291,7 @@ func (s *Service) stepAPI(ctx context.Context, st *Step, row *incubatordb.Projec
 		if !row.UpdatedAt.IsZero() && row.Version > 0 {
 			out.UpdatedAt = &row.UpdatedAt
 		}
-		if row.AiCheck != nil {
+		if row.AiCheck != nil && len(hidden) == 0 {
 			var check apigen.StepCheck
 			if json.Unmarshal(row.AiCheck, &check) == nil {
 				out.Check = &check
@@ -295,9 +316,14 @@ func (s *Service) stepAPI(ctx context.Context, st *Step, row *incubatordb.Projec
 			out.ApprovedBy = &b
 		}
 	}
-	for k, v := range values {
+	shown := values
+	if len(hidden) > 0 {
+		shown = st.Redact(values)
+	}
+	for k, v := range shown {
 		out.Values[k] = v
 	}
+	// What is missing is judged on every answer: it names fields, not their contents.
 	for _, g := range st.Missing(values) {
 		gap := apigen.StepGap{Field: g.Field, Code: apigen.StepGapCode(g.Code)}
 		if g.Count > 0 {
@@ -370,7 +396,8 @@ func (s *Service) Steps(ctx context.Context, projectID uuid.UUID) (apigen.StepLi
 
 // Step returns the answers of a step.
 func (s *Service) Step(ctx context.Context, projectID uuid.UUID, key string) (apigen.Step, error) {
-	if _, err := s.Projects.Access(ctx, projectID); err != nil {
+	a, err := s.Projects.Access(ctx, projectID)
+	if err != nil {
 		return apigen.Step{}, err
 	}
 	st, err := s.step(key)
@@ -389,7 +416,7 @@ func (s *Service) Step(ctx context.Context, projectID uuid.UUID, key string) (ap
 	if err != nil {
 		return apigen.Step{}, fmt.Errorf("incubator: step: %w", err)
 	}
-	return s.stepAPI(ctx, st, row)
+	return s.stepAPI(ctx, a, st, row)
 }
 
 // Save stores answers of a step; ifMatch must name the current version.
@@ -421,7 +448,24 @@ func (s *Service) Save(ctx context.Context, projectID uuid.UUID, key string, val
 	if err != nil {
 		return apigen.Step{}, err
 	}
-	return s.stepAPI(ctx, st, &row)
+	return s.stepAPI(ctx, a, st, &row)
+}
+
+// statusAfterSave is the status of a step whose answers changed: a started
+// step is in progress; completion holds while the minimum does; an approval
+// holds only for the answers that were approved, so the step falls back to
+// completed (or in progress below the minimum) until it is approved again.
+func statusAfterSave(current string, st *Step, values Values) string {
+	switch current {
+	case StatusNotStarted:
+		return StatusInProgress
+	case StatusCompleted, StatusApproved:
+		if len(st.Missing(values)) > 0 {
+			return StatusInProgress
+		}
+		return StatusCompleted
+	}
+	return current
 }
 
 func (s *Service) save(ctx context.Context, a project.Access, st *Step, changes Values, source, ifMatch string) (incubatordb.ProjectStepDatum, error) {
@@ -456,12 +500,14 @@ func (s *Service) save(ctx context.Context, a project.Access, st *Step, changes 
 			row = current
 			return nil
 		}
-		status := current.Status
-		switch {
-		case status == StatusNotStarted:
-			status = StatusInProgress
-		case status == StatusCompleted && len(st.Missing(values)) > 0:
-			status = StatusInProgress
+		status := statusAfterSave(current.Status, st, values)
+		if current.Status == StatusApproved {
+			if err := s.Audit.Record(ctx, audit.Event{
+				Action: "incubator.step_approval_dropped", TargetType: "project", TargetID: a.Project.ID.String(),
+				Metadata: map[string]any{"step": st.Key, "approved_by": current.ApprovedBy},
+			}); err != nil {
+				return err
+			}
 		}
 		data, err := json.Marshal(values)
 		if err != nil {
@@ -559,11 +605,12 @@ func (s *Service) Complete(ctx context.Context, projectID uuid.UUID, key string)
 	if err != nil {
 		return apigen.Step{}, fmt.Errorf("incubator: complete: %w", err)
 	}
-	return s.stepAPI(ctx, st, &row)
+	return s.stepAPI(ctx, a, st, &row)
 }
 
-// Approve lets a supervisor or an innovation manager accept a step.
-func (s *Service) Approve(ctx context.Context, projectID uuid.UUID, key, comment string) (apigen.Step, error) {
+// Approve lets a supervisor or an innovation manager outside the team
+// accept the version of a step they reviewed (ifMatch).
+func (s *Service) Approve(ctx context.Context, projectID uuid.UUID, key, comment, ifMatch string) (apigen.Step, error) {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
 		return apigen.Step{}, err
@@ -587,7 +634,15 @@ func (s *Service) Approve(ctx context.Context, projectID uuid.UUID, key, comment
 		if err := q.EnsureStep(ctx, incubatordb.EnsureStepParams{ProjectID: projectID, StepKey: key}); err != nil {
 			return err
 		}
-		var err error
+		// The row stays locked until the approval is stored: a save cannot
+		// slip in between the check of the version and the approval.
+		current, err := q.LockStep(ctx, incubatordb.LockStepParams{ProjectID: projectID, StepKey: key})
+		if err != nil {
+			return err
+		}
+		if !matches(ifMatch, current.Version) {
+			return errStale
+		}
 		if row, err = q.ApproveStep(ctx, incubatordb.ApproveStepParams{ProjectID: projectID, StepKey: key, UserID: &userID, Comment: &comment}); err != nil {
 			return err
 		}
@@ -595,13 +650,14 @@ func (s *Service) Approve(ctx context.Context, projectID uuid.UUID, key, comment
 			return err
 		}
 		return s.Audit.Record(ctx, audit.Event{
-			Action: "incubator.step_approved", TargetType: "project", TargetID: projectID.String(), Metadata: map[string]any{"step": key},
+			Action: "incubator.step_approved", TargetType: "project", TargetID: projectID.String(),
+			Metadata: map[string]any{"step": key, "version": current.Version},
 		})
 	})
 	if err != nil {
 		return apigen.Step{}, fmt.Errorf("incubator: approve: %w", err)
 	}
-	return s.stepAPI(ctx, st, &row)
+	return s.stepAPI(ctx, a, st, &row)
 }
 
 type revisionCursor struct {
@@ -610,14 +666,16 @@ type revisionCursor struct {
 
 // Revisions lists the history of a step, optionally of one field.
 func (s *Service) Revisions(ctx context.Context, projectID uuid.UUID, key string, params apigen.ListStepRevisionsParams) (apigen.RevisionPage, error) {
-	if _, err := s.Projects.Access(ctx, projectID); err != nil {
+	a, err := s.Projects.Access(ctx, projectID)
+	if err != nil {
 		return apigen.RevisionPage{}, err
 	}
 	st, err := s.step(key)
 	if err != nil {
 		return apigen.RevisionPage{}, err
 	}
-	args := incubatordb.ListRevisionsParams{ProjectID: projectID, StepKey: key}
+	// The history of withheld fields is withheld too.
+	args := incubatordb.ListRevisionsParams{ProjectID: projectID, StepKey: key, HiddenFields: withheld(a, st)}
 	if params.Field != nil {
 		if st.Field(*params.Field) == nil {
 			return apigen.RevisionPage{}, apperr.BadRequest("incubator.field_unknown", "the step has no such field")
@@ -711,7 +769,7 @@ func (s *Service) Restore(ctx context.Context, projectID uuid.UUID, key string, 
 	if err != nil {
 		return apigen.Step{}, err
 	}
-	return s.stepAPI(ctx, st, &row)
+	return s.stepAPI(ctx, a, st, &row)
 }
 
 // TemplateAPI is the template as the API returns it.
@@ -740,6 +798,10 @@ func fieldsAPI(fields []Field) []apigen.TemplateField {
 	for i := range fields {
 		f := &fields[i]
 		tf := apigen.TemplateField{Key: f.Key, Type: apigen.FieldType(f.Type), Required: f.Required, Label: f.Label.API()}
+		if f.Sensitive {
+			sensitive := true
+			tf.Sensitive = &sensitive
+		}
 		if len(f.Hint) > 0 {
 			h := f.Hint.API()
 			tf.Hint = &h

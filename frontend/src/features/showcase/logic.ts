@@ -328,6 +328,36 @@ export function presentSections(page: {
   return out;
 }
 
+export interface FormMerge<T> {
+  /** The values to keep editing: others' changes taken, own changes kept. */
+  merged: T;
+  /** Fields both sides changed differently since the common version. */
+  conflicts: (keyof T & string)[];
+}
+
+/**
+ * Three-way merge of a flat form by field, as the step editor merges a step
+ * (D-036): `base` is the version both sides started from, `mine` the local
+ * edits, `theirs` the version on the server. A field both sides changed
+ * differently keeps the local value and is reported.
+ */
+export function mergeForm<T extends object>(base: T, mine: T, theirs: T): FormMerge<T> {
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const merged = { ...theirs };
+  const conflicts: (keyof T & string)[] = [];
+  for (const key of Object.keys(theirs) as (keyof T & string)[]) {
+    if (same(mine[key], base[key]) || same(mine[key], theirs[key])) {
+      merged[key] = theirs[key];
+    } else if (same(theirs[key], base[key])) {
+      merged[key] = mine[key];
+    } else {
+      merged[key] = mine[key];
+      conflicts.push(key);
+    }
+  }
+  return { merged, conflicts };
+}
+
 /** Text cut at a word boundary with an ellipsis, for short previews. */
 export function excerpt(text: string | undefined, max: number): string {
   const clean = (text ?? '').replace(/\s+/g, ' ').trim();

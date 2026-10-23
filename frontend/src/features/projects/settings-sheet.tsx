@@ -211,7 +211,8 @@ function Team({
 }) {
   const { t } = useTranslation('incubator');
   const owner = project.access === 'owner';
-  const manageSupervisor = owner || (project.access === 'manager' && innovationManager);
+  const moderator = project.access === 'manager' && innovationManager;
+  const manageSupervisor = owner || moderator;
   const [adding, setAdding] = useState(false);
   return (
     <section aria-labelledby="team" className="flex flex-col gap-3">
@@ -249,6 +250,7 @@ function Team({
             member={member}
             me={member.user.id === meId}
             owner={owner}
+            moderator={moderator}
           />
         ))}
       </ul>
@@ -261,11 +263,14 @@ function MemberRow({
   member,
   me,
   owner,
+  moderator,
 }: {
   project: Project;
   member: ProjectMember;
   me: boolean;
   owner: boolean;
+  /** An innovation manager outside the team: hands over a project whose owner is gone. */
+  moderator: boolean;
 }) {
   const { t } = useTranslation('incubator');
   const update = useUpdateMember(project.id);
@@ -273,6 +278,9 @@ function MemberRow({
   const [title, setTitle] = useState(member.title);
   const [confirm, setConfirm] = useState<'remove' | 'transfer' | null>(null);
   const canTitle = (me || owner) && !project.archived;
+  const canTransfer =
+    ((owner && !me) || moderator) && member.role === 'member' && !project.archived;
+  const canRemove = owner && !me && member.role !== 'owner' && !project.archived;
   return (
     <li className="flex flex-col gap-2 rounded-xl border border-border p-3">
       <div className="flex items-center gap-3">
@@ -288,9 +296,9 @@ function MemberRow({
             {t('settings.role.owner')}
           </Badge>
         )}
-        {owner && !me && member.role !== 'owner' && !project.archived && (
+        {(canTransfer || canRemove) && (
           <span className="flex">
-            {member.role === 'member' && (
+            {canTransfer && (
               <IconButton
                 size="sm"
                 label={t('settings.transfer')}
@@ -300,14 +308,16 @@ function MemberRow({
                 }}
               />
             )}
-            <IconButton
-              size="sm"
-              label={t('settings.remove')}
-              icon={<X />}
-              onClick={() => {
-                setConfirm('remove');
-              }}
-            />
+            {canRemove && (
+              <IconButton
+                size="sm"
+                label={t('settings.remove')}
+                icon={<X />}
+                onClick={() => {
+                  setConfirm('remove');
+                }}
+              />
+            )}
           </span>
         )}
       </div>
@@ -357,7 +367,13 @@ function MemberRow({
             ? t('settings.transferTitle', { name: member.user.full_name })
             : t('settings.removeTitle', { name: member.user.full_name })
         }
-        description={confirm === 'transfer' ? t('settings.transferText') : t('settings.removeText')}
+        description={
+          confirm === 'transfer'
+            ? owner
+              ? t('settings.transferText')
+              : t('settings.transferModeratorText')
+            : t('settings.removeText')
+        }
         confirmLabel={confirm === 'transfer' ? t('settings.transfer') : t('settings.remove')}
         tone={confirm === 'remove' ? 'danger' : 'primary'}
         loading={update.isPending || remove.isPending}

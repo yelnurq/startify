@@ -227,8 +227,9 @@ func TestStepsHistoryAndCompletion(t *testing.T) {
 	}
 
 	// The supervisor approves; the AI reviews.
-	expectProblem(t, mate.do(http.MethodPost, base+"/steps/audience/approve", apigen.StepApprove{Comment: "ok"}), http.StatusForbidden, "rbac.forbidden")
-	rec = teacher.do(http.MethodPost, base+"/steps/audience/approve", apigen.StepApprove{Comment: "Аудиторию обсудили на консультации"})
+	expectProblem(t, mate.do(http.MethodPost, base+"/steps/audience/approve", apigen.StepApprove{Comment: "ok"}, ifMatchHeader(`"0"`)),
+		http.StatusForbidden, "rbac.forbidden")
+	rec = teacher.do(http.MethodPost, base+"/steps/audience/approve", apigen.StepApprove{Comment: "Аудиторию обсудили на консультации"}, ifMatchHeader(`"0"`))
 	expect(t, rec, http.StatusOK)
 	if s := decode[apigen.Step](t, rec); s.Status != apigen.StepStatusApproved || s.ApprovedBy == nil || s.ApprovedBy.Id != teacherID {
 		t.Fatalf("approved %+v", s)

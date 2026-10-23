@@ -29,6 +29,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
 	"github.com/yelnurq/startify/backend/internal/tenant"
@@ -68,13 +69,14 @@ type Service struct {
 	tenants *tenant.Service
 	audit   *audit.Logger
 	revoker AccessRevoker
+	limiter *ratelimit.Limiter
 }
 
 // NewService returns the user service.
 func NewService(database *db.DB, orgs *org.Service, fs *files.Service, tenants *tenant.Service,
-	auditLog *audit.Logger, revoker AccessRevoker,
+	auditLog *audit.Logger, revoker AccessRevoker, limiter *ratelimit.Limiter,
 ) *Service {
-	return &Service{db: database, org: orgs, files: fs, tenants: tenants, audit: auditLog, revoker: revoker}
+	return &Service{db: database, org: orgs, files: fs, tenants: tenants, audit: auditLog, revoker: revoker, limiter: limiter}
 }
 
 func (s *Service) q(ctx context.Context) *userdb.Queries { return userdb.New(s.db.Conn(ctx)) }
@@ -458,11 +460,14 @@ func (s *Service) SetAvatar(ctx context.Context, form *multipart.Reader) (apigen
 	if err != nil {
 		return apigen.Me{}, err
 	}
+	if err := s.limiter.Allow(ctx, files.ImagesKey(p.UserID), files.LimitImages, "rate_limited"); err != nil {
+		return apigen.Me{}, err
+	}
 	_, part, err := files.ReadForm(form, "file", maxAvatarBytes)
 	if err != nil {
 		return apigen.Me{}, err
 	}
-	image, err := files.ProcessAvatar(part.Data)
+	image, err := files.ProcessAvatar(ctx, part.Data)
 	if err != nil {
 		return apigen.Me{}, err
 	}

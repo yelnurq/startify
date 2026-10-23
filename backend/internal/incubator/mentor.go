@@ -97,6 +97,20 @@ func (s *Service) Conversation(ctx context.Context, projectID uuid.UUID, key str
 	if _, err := s.step(key); err != nil {
 		return apigen.MentorConversation{}, err
 	}
+	settings, err := s.Gateway.Settings(ctx)
+	if err != nil {
+		return apigen.MentorConversation{}, err
+	}
+	// The team's questions and the mentor's answers may quote any answer of
+	// the project: a project that hides its sensitive details keeps its
+	// conversations to the team and its supervisors.
+	if !a.SeesSensitive() {
+		yes := true
+		return apigen.MentorConversation{
+			Items: []apigen.MentorMessage{}, Modes: modes(settings), External: s.Gateway.External(settings, llm.FeatureMentor),
+			Withheld: &yes,
+		}, nil
+	}
 	limit, err := pagination.LimitOr(params.Limit, 30, pagination.MaxLimit)
 	if err != nil {
 		return apigen.MentorConversation{}, err
@@ -113,12 +127,9 @@ func (s *Service) Conversation(ctx context.Context, projectID uuid.UUID, key str
 	if err != nil {
 		return apigen.MentorConversation{}, err
 	}
-	settings, err := s.Gateway.Settings(ctx)
-	if err != nil {
-		return apigen.MentorConversation{}, err
-	}
+	shown := false
 	out := apigen.MentorConversation{
-		Modes: modes(settings), External: s.Gateway.External(settings, llm.FeatureMentor), CanAsk: a.CanEdit(),
+		Modes: modes(settings), External: s.Gateway.External(settings, llm.FeatureMentor), CanAsk: a.CanEdit(), Withheld: &shown,
 	}
 	if len(msgs) > limit {
 		msgs = msgs[:limit]

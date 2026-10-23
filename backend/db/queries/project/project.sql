@@ -10,6 +10,12 @@ SELECT * FROM projects WHERE id = @id AND deleted_at IS NULL;
 -- name: LockProject :one
 SELECT * FROM projects WHERE id = @id AND deleted_at IS NULL FOR UPDATE;
 
+-- name: LockProjectRow :one
+-- Serialises writers of a project's parts. NO KEY UPDATE does not wait for
+-- the KEY SHARE locks that inserting a step, a member or a page takes on the
+-- project (foreign keys), so concurrent writers queue instead of deadlocking.
+SELECT id FROM projects WHERE id = @id AND deleted_at IS NULL FOR NO KEY UPDATE;
+
 -- name: UpdateProject :one
 UPDATE projects
    SET title = coalesce(sqlc.narg('title'), title),

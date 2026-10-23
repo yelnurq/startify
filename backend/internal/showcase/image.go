@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/yelnurq/startify/backend/internal/files"
 	"github.com/yelnurq/startify/backend/internal/platform/gotenberg"
+	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/showcase/showcasedb"
 )
 
@@ -103,13 +105,25 @@ func (d *ogData) hash() string {
 	return hex.EncodeToString(sum[:12])
 }
 
-// Image returns the link preview of a page, drawing it again when the page
-// has changed since the stored one.
-func (s *Service) Image(ctx context.Context, slug string) ([]byte, error) {
+// Preview is the link preview of a page; Public says whether everyone may
+// see the page, so whether shared caches may keep the picture.
+type Preview struct {
+	Data   []byte
+	Public bool
+}
+
+// Image returns the link preview of a page.
+func (s *Service) Image(ctx context.Context, slug string) (Preview, error) {
 	row, t, err := s.published(ctx, slug)
 	if err != nil {
-		return nil, err
+		return Preview{}, err
 	}
+	data, err := s.image(ctx, &row, t)
+	return Preview{Data: data, Public: public(row.Status, row.Visibility)}, err
+}
+
+// image draws the preview again when the page has changed since the stored one.
+func (s *Service) image(ctx context.Context, row *showcasedb.ShowcaseEntry, t tenancy.Tenant) ([]byte, error) {
 	universities, err := s.Tenants.Universities(ctx, []uuid.UUID{t.ID})
 	if err != nil {
 		return nil, err
@@ -240,16 +254,37 @@ func plainImage(hexValue string, cover []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// imageResponse sends a preview; social networks cache it by address.
-type imageResponse struct{ data []byte }
+// imageResponse sends a preview; social networks cache it by address. The
+// preview of a page for members only stays out of shared caches.
+type imageResponse struct{ preview Preview }
 
 func (r imageResponse) VisitGetShowcaseImageResponse(w http.ResponseWriter) error {
 	h := w.Header()
 	h.Set("Content-Type", "image/png")
-	h.Set("Content-Length", strconv.Itoa(len(r.data)))
-	h.Set("Cache-Control", "public, max-age=3600")
-	h.Set("Cross-Origin-Resource-Policy", "cross-origin")
+	h.Set("Content-Length", strconv.Itoa(len(r.preview.Data)))
+	if r.preview.Public {
+		h.Set("Cache-Control", "public, max-age=3600")
+		h.Set("Cross-Origin-Resource-Policy", "cross-origin")
+	} else {
+		h.Set("Cache-Control", "private, no-store")
+		h.Set("Cross-Origin-Resource-Policy", "same-origin")
+	}
+	h.Set("Vary", "Cookie")
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write(r.data)
+	_, err := w.Write(r.preview.Data)
 	return err
+}
+
+// CacheHeaders marks the showcase's JSON as private and varying with the
+// session: members see their university's pages for members, guests do not,
+// so no shared cache may hand one's answer to the other.
+func CacheHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/showcase") {
+			h := w.Header()
+			h.Set("Cache-Control", "private, no-cache")
+			h.Add("Vary", "Cookie")
+		}
+		next.ServeHTTP(w, r)
+	})
 }

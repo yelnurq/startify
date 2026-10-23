@@ -92,7 +92,11 @@ func (h *Handler) CompleteProjectStep(ctx context.Context, req apigen.CompletePr
 
 // ApproveProjectStep implements apigen.StrictServerInterface.
 func (h *Handler) ApproveProjectStep(ctx context.Context, req apigen.ApproveProjectStepRequestObject) (apigen.ApproveProjectStepResponseObject, error) {
-	s, err := h.svc.Approve(ctx, req.ProjectId, req.StepKey, req.Body.Comment)
+	version, err := ifMatch(req.Params.IfMatch)
+	if err != nil {
+		return nil, err
+	}
+	s, err := h.svc.Approve(ctx, req.ProjectId, req.StepKey, req.Body.Comment, version)
 	if err != nil {
 		return nil, err
 	}

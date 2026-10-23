@@ -177,7 +177,10 @@ test.describe('public showcase', () => {
     );
 
     await dialog.getByLabel('Ваше имя').fill('Айдос Сеитов');
-    await dialog.getByLabel('Электронная почта').fill('aidos@agrofund.kz');
+    // A sender writes to a project a few times a day: every run is a new sender.
+    await dialog
+      .getByLabel('Электронная почта')
+      .fill(`aidos.${Date.now().toString(36)}@agrofund.kz`);
     await dialog.getByLabel('Организация').fill('AgroFund');
     await dialog.getByRole('combobox', { name: 'Тема обращения' }).click();
     await page.getByRole('option', { name: 'Пилот' }).click();
@@ -371,6 +374,39 @@ test.describe('showcase publishing and moderation', () => {
       'href',
       'mailto:dina@partner.kz',
     );
+
+    // A change of the approved page goes back to review: meanwhile it is
+    // visible inside the university only.
+    await team.page.getByLabel('Слоган').fill(`Свободная аудитория за минуту (${salt})`);
+    await team.page.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await expect(team.page.getByText('Изменения сохранены')).toBeVisible();
+    await expect(team.page.getByText('На модерации').first()).toBeVisible();
+    await visitor.goto(`/showcase/${slug}`);
+    await expect(
+      visitor.getByRole('heading', { name: 'Страница проекта не найдена' }),
+    ).toBeVisible();
+    await manager.goto('/app/admin/showcase');
+    await manager
+      .getByRole('article')
+      .filter({ hasText: title })
+      .getByRole('button', { name: 'Одобрить' })
+      .click();
+    await expect(manager.getByText('Страница опубликована')).toBeVisible();
+    await visitor.goto(`/showcase/${slug}`);
+    await expect(visitor.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+
+    // A moderator's take-down holds the page until a moderator approves it.
+    await manager.getByRole('tab', { name: /Опубликованы/ }).click();
+    await manager
+      .getByRole('article')
+      .filter({ hasText: title })
+      .getByRole('button', { name: 'Снять с витрины' })
+      .click();
+    await manager.getByRole('alertdialog').getByRole('button', { name: 'Снять с витрины' }).click();
+    await expect(manager.getByText('Страница снята с витрины')).toBeVisible();
+    await team.page.reload();
+    await expect(team.page.getByText('Снята с витрины модератором')).toBeVisible();
+    await expect(team.page.getByRole('button', { name: 'Отправить на модерацию' })).toBeVisible();
 
     await takeDown(team.page, team.projectId);
     await team.context.close();

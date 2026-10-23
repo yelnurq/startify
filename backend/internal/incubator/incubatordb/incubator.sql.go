@@ -184,7 +184,7 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (P
 const createMaterial = `-- name: CreateMaterial :one
 INSERT INTO project_materials (tenant_id, project_id, kind, format, locale, requested_by)
 VALUES (app_current_tenant(), $1, $2, $3, $4, $5)
-RETURNING id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at
+RETURNING id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at, sensitive
 `
 
 type CreateMaterialParams struct {
@@ -217,6 +217,7 @@ func (q *Queries) CreateMaterial(ctx context.Context, arg CreateMaterialParams) 
 		&i.RequestedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Sensitive,
 	)
 	return i, err
 }
@@ -311,7 +312,7 @@ func (q *Queries) GetComment(ctx context.Context, arg GetCommentParams) (Project
 }
 
 const getMaterial = `-- name: GetMaterial :one
-SELECT id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at FROM project_materials WHERE id = $1 AND project_id = $2
+SELECT id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at, sensitive FROM project_materials WHERE id = $1 AND project_id = $2
 `
 
 type GetMaterialParams struct {
@@ -335,6 +336,7 @@ func (q *Queries) GetMaterial(ctx context.Context, arg GetMaterialParams) (Proje
 		&i.RequestedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Sensitive,
 	)
 	return i, err
 }
@@ -517,7 +519,7 @@ func (q *Queries) ListComments(ctx context.Context, arg ListCommentsParams) ([]P
 }
 
 const listMaterials = `-- name: ListMaterials :many
-SELECT id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at FROM project_materials WHERE project_id = $1 ORDER BY id DESC LIMIT 50
+SELECT id, tenant_id, project_id, kind, format, locale, status, file_id, error, requested_by, created_at, updated_at, sensitive FROM project_materials WHERE project_id = $1 ORDER BY id DESC LIMIT 50
 `
 
 func (q *Queries) ListMaterials(ctx context.Context, projectID uuid.UUID) ([]ProjectMaterial, error) {
@@ -542,6 +544,7 @@ func (q *Queries) ListMaterials(ctx context.Context, projectID uuid.UUID) ([]Pro
 			&i.RequestedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Sensitive,
 		); err != nil {
 			return nil, err
 		}
@@ -557,24 +560,28 @@ const listRevisions = `-- name: ListRevisions :many
 SELECT id, tenant_id, project_id, step_key, field_key, value, version, author_id, source, created_at, updated_at FROM project_revisions
  WHERE project_id = $1 AND step_key = $2
    AND ($3::text IS NULL OR field_key = $3::text)
-   AND ($4::uuid IS NULL OR id < $4::uuid)
+   AND NOT (field_key = ANY(coalesce($4::text[], '{}')))
+   AND ($5::uuid IS NULL OR id < $5::uuid)
  ORDER BY id DESC
- LIMIT $5
+ LIMIT $6
 `
 
 type ListRevisionsParams struct {
-	ProjectID uuid.UUID
-	StepKey   string
-	FieldKey  *string
-	BeforeID  *uuid.UUID
-	RowLimit  int32
+	ProjectID    uuid.UUID
+	StepKey      string
+	FieldKey     *string
+	HiddenFields []string
+	BeforeID     *uuid.UUID
+	RowLimit     int32
 }
 
+// hidden_fields are left out: the sensitive fields a project withholds.
 func (q *Queries) ListRevisions(ctx context.Context, arg ListRevisionsParams) ([]ProjectRevision, error) {
 	rows, err := q.db.Query(ctx, listRevisions,
 		arg.ProjectID,
 		arg.StepKey,
 		arg.FieldKey,
+		arg.HiddenFields,
 		arg.BeforeID,
 		arg.RowLimit,
 	)
@@ -892,6 +899,8 @@ UPDATE project_step_data
        status = $2,
        completed_at = CASE WHEN $2::text IN ('completed', 'approved') THEN completed_at END,
        completed_by = CASE WHEN $2::text IN ('completed', 'approved') THEN completed_by END,
+       approved_by = CASE WHEN $2::text = 'approved' THEN approved_by END,
+       approval_comment = CASE WHEN $2::text = 'approved' THEN approval_comment END,
        updated_by = $3
  WHERE project_id = $4 AND step_key = $5
 RETURNING tenant_id, project_id, step_key, data, version, status, completed_at, completed_by, approved_by, approval_comment, ai_check, ai_checked_at, updated_by, created_at, updated_at
@@ -906,7 +915,8 @@ type SaveStepParams struct {
 }
 
 // A save bumps the version; completion survives only while the minimum holds
-// (the caller passes the resulting status).
+// and an approval only while the answers stay as approved (the caller passes
+// the resulting status).
 func (q *Queries) SaveStep(ctx context.Context, arg SaveStepParams) (ProjectStepDatum, error) {
 	row := q.db.QueryRow(ctx, saveStep,
 		arg.Data,
@@ -951,16 +961,18 @@ func (q *Queries) SetMaterialFailed(ctx context.Context, arg SetMaterialFailedPa
 }
 
 const setMaterialReady = `-- name: SetMaterialReady :execrows
-UPDATE project_materials SET status = 'ready', file_id = $1, error = NULL WHERE id = $2 AND status = 'pending'
+UPDATE project_materials SET status = 'ready', file_id = $1, error = NULL, sensitive = $2
+WHERE id = $3 AND status = 'pending'
 `
 
 type SetMaterialReadyParams struct {
-	FileID *uuid.UUID
-	ID     uuid.UUID
+	FileID    *uuid.UUID
+	Sensitive bool
+	ID        uuid.UUID
 }
 
 func (q *Queries) SetMaterialReady(ctx context.Context, arg SetMaterialReadyParams) (int64, error) {
-	result, err := q.db.Exec(ctx, setMaterialReady, arg.FileID, arg.ID)
+	result, err := q.db.Exec(ctx, setMaterialReady, arg.FileID, arg.Sensitive, arg.ID)
 	if err != nil {
 		return 0, err
 	}

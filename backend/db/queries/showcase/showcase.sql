@@ -54,7 +54,8 @@ UPDATE showcase_entries
        submitted_at = sqlc.narg(submitted_at),
        published_at = sqlc.narg(published_at),
        review_comment = sqlc.narg(review_comment),
-       reviewed_by = sqlc.narg(reviewed_by)
+       reviewed_by = sqlc.narg(reviewed_by),
+       held = @held
  WHERE project_id = @project_id
 RETURNING *;
 
@@ -62,6 +63,13 @@ RETURNING *;
 UPDATE showcase_entries
    SET cover_file_id = sqlc.narg(cover_file_id), version = version + 1
  WHERE project_id = @project_id
+RETURNING *;
+
+-- name: SetTeam :one
+-- The team as the page shows it follows the project's members.
+UPDATE showcase_entries
+   SET team = @team, version = version + 1
+ WHERE project_id = @project_id AND tenant_id = app_current_tenant()
 RETURNING *;
 
 -- name: SetImage :exec
@@ -80,6 +88,8 @@ SELECT e.project_id, e.tenant_id, e.slug, e.title, e.tagline, e.industry, e.stag
          WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
          ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
        END
+   -- Pages of suspended universities leave the national showcase.
+   AND NOT (e.tenant_id = ANY(coalesce(@suspended::uuid[], '{}')))
    AND (sqlc.narg(query)::text IS NULL OR e.search @@ to_tsquery('simple', sqlc.narg(query)::text))
    AND (sqlc.narg(industry)::text IS NULL OR e.industry = sqlc.narg(industry)::text)
    AND (sqlc.narg(stage)::text IS NULL OR e.stage = sqlc.narg(stage)::text)
@@ -100,6 +110,7 @@ SELECT e.industry, e.stage, e.needs, e.tags, e.year, e.faculty_id, e.faculty
          WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
          ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
        END
+   AND NOT (e.tenant_id = ANY(coalesce(@suspended::uuid[], '{}')))
  LIMIT 10000;
 
 -- name: ListFeatured :many
@@ -155,8 +166,9 @@ SELECT c.*, coalesce(e.title, '')::text AS project_title
   LEFT JOIN showcase_entries e ON e.project_id = c.project_id
  WHERE c.tenant_id = app_current_tenant()
    AND (sqlc.narg(status)::text IS NULL OR c.status = sqlc.narg(status)::text)
+   AND (sqlc.narg(before_id)::uuid IS NULL OR c.id < sqlc.narg(before_id)::uuid)
  ORDER BY c.id DESC
- LIMIT 200;
+ LIMIT @row_limit;
 
 -- name: ListProjectContacts :many
 SELECT c.*, coalesce(e.title, '')::text AS project_title
@@ -164,5 +176,6 @@ SELECT c.*, coalesce(e.title, '')::text AS project_title
   LEFT JOIN showcase_entries e ON e.project_id = c.project_id
  WHERE c.project_id = @project_id
    AND (NOT @forwarded_only::boolean OR c.status = 'forwarded')
+   AND (sqlc.narg(before_id)::uuid IS NULL OR c.id < sqlc.narg(before_id)::uuid)
  ORDER BY c.id DESC
- LIMIT 200;
+ LIMIT @row_limit;

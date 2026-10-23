@@ -449,9 +449,11 @@ export interface paths {
         get?: never;
         /**
          * Upload a profile photo
-         * @description JPEG, PNG or WebP up to 5 MB. The image is checked for malware, re-encoded (metadata
-         *     such as GPS position is removed) and scaled to 512 px. Errors: `files.too_large` (413),
-         *     `files.unsupported_type`, `files.infected` (422), `files.scanner_unavailable` (503).
+         * @description JPEG, PNG or WebP up to 5 MB and 16 megapixels. The image is checked for malware,
+         *     re-encoded (metadata such as GPS position is removed) and scaled to 512 px. A member
+         *     uploads at most 30 images an hour. Errors: `files.too_large` (413),
+         *     `files.unsupported_type`, `files.image_too_large`, `files.infected` (422),
+         *     `rate_limited` (429), `files.scanner_unavailable` (503).
          */
         put: operations["uploadAvatar"];
         post?: never;
@@ -927,6 +929,7 @@ export interface paths {
          * Start a project
          * @description The creator becomes the owner. When the university has an intellectual property
          *     policy, `ip_policy_version` must name its current version (`project.ip_policy_required`).
+         *     A member starts at most 10 projects an hour (429 `rate_limited`).
          */
         post: operations["createProject"];
         delete?: never;
@@ -976,7 +979,9 @@ export interface paths {
         /**
          * Add a member or a supervisor
          * @description The owner adds members of the university. A supervisor must have the `supervisor`
-         *     role and may also be assigned by an `innovation_manager`.
+         *     role and may also be assigned by an `innovation_manager`. A team has at most 12
+         *     people (owner and members, `project.team_full`) and up to 3 supervisors
+         *     (`project.supervisors_full`); supervisors do not count against the team.
          */
         post: operations["addProjectMember"];
         delete?: never;
@@ -1000,7 +1005,8 @@ export interface paths {
         post?: never;
         /**
          * Remove a member or leave the project
-         * @description The owner removes others; anyone but the owner may leave.
+         * @description The owner, an `innovation_manager` or a `tenant_admin` removes others; anyone but the
+         *     owner may leave. Archived projects keep their team (`project.archived`).
          */
         delete: operations["removeProjectMember"];
         options?: never;
@@ -1008,7 +1014,9 @@ export interface paths {
         /**
          * Change a member's title or hand over ownership
          * @description Members edit their own title; the owner edits anyone's and may make another member
-         *     the owner (`role: owner`), becoming a member.
+         *     the owner (`role: owner`), becoming a member. When the owner has left the university
+         *     or is blocked there, an `innovation_manager` or `tenant_admin` hands the project over
+         *     (`project.owner_active` while the owner is still active).
          */
         patch: operations["updateProjectMember"];
         trace?: never;
@@ -1141,7 +1149,9 @@ export interface paths {
          * Mark the step done
          * @description Fails with 422 `incubator.step_incomplete` (field errors list what is missing) unless
          *     the minimum requirements are met. A completed step stays editable; when an edit
-         *     breaks the minimum it returns to `in_progress`.
+         *     breaks the minimum it returns to `in_progress`. Changing the answers of an approved
+         *     step drops the approval: the step is `completed` again while it meets the minimum,
+         *     `in_progress` otherwise.
          */
         post: operations["completeProjectStep"];
         delete?: never;
@@ -1164,8 +1174,10 @@ export interface paths {
         put?: never;
         /**
          * Approve the step as a supervisor
-         * @description The project's supervisor or an `innovation_manager` approves a step, also one that
-         *     does not meet the minimum, with a comment.
+         * @description The project's supervisor or an `innovation_manager` who is not in the team approves a
+         *     step, also one that does not meet the minimum, with a comment. `If-Match` names the
+         *     version the approver reviewed (412 `precondition.failed` when the team has changed the
+         *     step since); the approval lasts until the answers change.
          */
         post: operations["approveProjectStep"];
         delete?: never;
@@ -1184,7 +1196,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** History of the step's fields */
+        /**
+         * History of the step's fields
+         * @description The history of fields the project withholds from the member (`Step.withheld`) is left out.
+         */
         get: operations["listStepRevisions"];
         put?: never;
         post?: never;
@@ -1230,7 +1245,9 @@ export interface paths {
         };
         /**
          * The conversation with the AI mentor about the step
-         * @description Messages oldest first; `cursor` loads earlier ones.
+         * @description Messages oldest first; `cursor` loads earlier ones. Withheld (`withheld`, no messages)
+         *     from members outside the team and its supervisors when the project hides sensitive
+         *     details.
          */
         get: operations["getMentorConversation"];
         put?: never;
@@ -1266,7 +1283,9 @@ export interface paths {
         put?: never;
         /**
          * Comment on a step or a field
-         * @description The team, the supervisor and innovation managers may comment and @mention each other.
+         * @description The team, the supervisor and innovation managers may comment and @mention each other
+         *     while the project is open; leadership and administrators read (`rbac.forbidden`). A
+         *     member writes at most 120 comments an hour (429 `rate_limited`).
          */
         post: operations["createProjectComment"];
         delete?: never;
@@ -1290,7 +1309,8 @@ export interface paths {
         post?: never;
         /**
          * Delete a comment
-         * @description The author or an innovation manager.
+         * @description The author, or an `innovation_manager` or `tenant_admin` moderating, deletes a comment
+         *     with its replies while the project is open (`project.archived`).
          */
         delete: operations["deleteProjectComment"];
         options?: never;
@@ -1311,13 +1331,18 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Generated one-pagers, pitch decks and startup passports */
+        /**
+         * Generated one-pagers, pitch decks and startup passports
+         * @description Materials generated from sensitive details are left out (and cannot be downloaded) for
+         *     members outside the team and its supervisors while the project hides them.
+         */
         get: operations["listProjectMaterials"];
         put?: never;
         /**
          * Generate a material from the project data
          * @description Generation runs in the background (AI texts, then PDF or PPTX); poll the list until
-         *     the status is `ready`. Pitch decks come as PDF or PPTX, the others as PDF.
+         *     the status is `ready`. Pitch decks come as PDF or PPTX with 10 to 12 slides in the
+         *     classic order (a slide the project has no data for says what to add), the others as PDF.
          */
         post: operations["createProjectMaterial"];
         delete?: never;
@@ -1471,14 +1496,20 @@ export interface paths {
         /**
          * The project's showcase page as the team edits it
          * @description Before the first save the page is prefilled from the incubator answers (`version` 0).
-         *     Sensitive details are left out when the project hides them.
+         *     The prefill never uses the fields marked `sensitive` in the template (unit economics,
+         *     the novelty and the unfair advantage of the solution), whatever `hide_sensitive` says;
+         *     a video link is prefilled only from YouTube or Vimeo.
          */
         get: operations["getShowcaseEntry"];
         /**
          * Save the showcase page
-         * @description The team edits the page. A published page shows the changes at once; moving a page
-         *     to `public` visibility sends it to review (`in_review`) before it is visible outside
-         *     the university.
+         * @description The team edits the page. A page published for the university shows the changes at
+         *     once. Moving a page to `public` visibility, and changing what a published public page
+         *     shows (address, title, tagline, sections, video, tags, needs; the cover through its own
+         *     operations), sends it to review (`in_review`): until an innovation manager approves the
+         *     new version it is visible inside the university only. A page a moderator took off the
+         *     showcase (`held`) is published again only through review. An address another project
+         *     has taken is a field error (`slug` `taken`).
          */
         put: operations["updateShowcaseEntry"];
         post?: never;
@@ -1500,11 +1531,16 @@ export interface paths {
         get?: never;
         /**
          * Upload the cover image
-         * @description JPEG, PNG or WebP up to 10 MiB; stored as a 1600×900 JPEG without metadata.
+         * @description JPEG, PNG or WebP up to 10 MiB and 16 megapixels; stored as a 1600×900 JPEG without
+         *     metadata. A member uploads at most 30 images an hour (429 `rate_limited`). A new cover
+         *     of a published public page sends it to review.
          */
         put: operations["setShowcaseCover"];
         post?: never;
-        /** Remove the cover image */
+        /**
+         * Remove the cover image
+         * @description Removing the cover of a published public page sends it to review.
+         */
         delete: operations["deleteShowcaseCover"];
         options?: never;
         head?: never;
@@ -1525,8 +1561,9 @@ export interface paths {
         /**
          * Publish the page
          * @description `university` pages are published at once; `public` pages go to an innovation manager
-         *     for review. The page must be saved and have a problem and a solution
-         *     (`showcase.incomplete`).
+         *     for review. A page a moderator took off the showcase (`held`) goes to review whatever
+         *     its visibility and stays hidden until approved. The page must be saved and have a
+         *     problem and a solution (`showcase.incomplete`).
          */
         post: operations["publishShowcaseEntry"];
         delete?: never;
@@ -1546,7 +1583,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Take the page off the showcase */
+        /**
+         * Take the page off the showcase
+         * @description The team, or an `innovation_manager` or `tenant_admin` who is not in the team, takes
+         *     the page off. A moderator's take-down holds the page (`held`): the team can publish
+         *     it again only through review.
+         */
         post: operations["unpublishShowcaseEntry"];
         delete?: never;
         options?: never;
@@ -1607,7 +1649,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve or reject a public page */
+        /**
+         * Approve or reject a public page
+         * @description Requires `innovation_manager` or `tenant_admin`. An approval names the version the
+         *     moderator reviewed in `If-Match` (`"<version>"`; 428 without it, 412
+         *     `precondition.failed` when the team has changed the page since) and publishes exactly
+         *     that version; approving a page a moderator took down (`held`) publishes it again. A
+         *     moderator in the project's team or among its supervisors cannot approve its page
+         *     (`showcase.own_page`). A published public page can be rejected later too: it stays
+         *     visible inside the university.
+         */
         post: operations["reviewShowcaseEntry"];
         delete?: never;
         options?: never;
@@ -1646,7 +1697,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Forward a request to the team or reject it */
+        /**
+         * Forward a request to the team or reject it
+         * @description A request is not forwarded once the team has stopped accepting requests
+         *     (`showcase.contact_disabled`); it can still be rejected.
+         */
         post: operations["moderateContactRequest"];
         delete?: never;
         options?: never;
@@ -1745,8 +1800,11 @@ export interface paths {
         put?: never;
         /**
          * Ask the team to get in touch
-         * @description Public and rate-limited. Depending on the university's setting the request goes to an
-         *     innovation manager first or straight to the team; the team's addresses are never shown.
+         * @description Public and rate-limited: 5 requests an hour from an address, 3 a day from an e-mail
+         *     to a project, 100 a day to a project (429 `showcase.too_many_requests`). Depending on
+         *     the university's setting the request goes to an innovation manager first or straight
+         *     to the team; the team's addresses are never shown. Invalid fields, the e-mail
+         *     included, are 422 field errors.
          */
         post: operations["contactShowcaseProject"];
         delete?: never;
@@ -2368,6 +2426,13 @@ export interface components {
             type: components["schemas"]["FieldType"];
             /** @description Needed to complete the step (with min_length or min_items). */
             required: boolean;
+            /**
+             * @description A sensitive detail (unit economics, the novelty and the unfair advantage of the
+             *     solution): withheld from everyone outside the team and its supervisors when the
+             *     project hides sensitive details (`Project.hide_sensitive`), and never shown on the
+             *     showcase. Absent for other fields.
+             */
+            sensitive?: boolean;
             min_length?: number;
             max_length?: number;
             min_items?: number;
@@ -2452,6 +2517,14 @@ export interface components {
             industry: components["schemas"]["Industry"];
             /** @enum {string} */
             visibility: "private" | "university" | "public";
+            /**
+             * @description Hide sensitive details from everyone outside the team (owner, members) and its
+             *     supervisors, that is from leadership, innovation managers and administrators who
+             *     are not in the project: the fields marked `sensitive` in the template and their
+             *     history (`Step.withheld`), the AI review of their steps, mentor conversations, and
+             *     generated materials that contain them. The showcase never uses these fields. AI
+             *     evaluation reports are not filtered.
+             */
             hide_sensitive: boolean;
             faculty: components["schemas"]["FacultyRef"] | null;
             members: components["schemas"]["ProjectMember"][];
@@ -2593,6 +2666,12 @@ export interface components {
             status: components["schemas"]["StepStatus"];
             version: number;
             values: components["schemas"]["StepValues"];
+            /**
+             * @description Sensitive fields of the step left out of `values` (and of the history) because the
+             *     project hides them from the signed-in member; the AI review (`check`) of such a step
+             *     is left out too. Empty for the team and its supervisors.
+             */
+            withheld?: string[];
             /** @description What the step lacks to be completed. */
             missing: components["schemas"]["StepGap"][];
             check: components["schemas"]["StepCheck"] | null;
@@ -2699,6 +2778,11 @@ export interface components {
             external: boolean;
             /** @description The signed-in member may ask (team members only). */
             can_ask: boolean;
+            /**
+             * @description True when the project hides sensitive details from the signed-in member: the team's
+             *     questions may contain them, so the conversation is not shown (`items` is empty).
+             */
+            withheld?: boolean;
         };
         MentorMessageCreate: {
             content: string;
@@ -2887,6 +2971,13 @@ export interface components {
             project_id: string;
             /** @description False while the page is a prefilled suggestion that was never saved. */
             saved: boolean;
+            /** @description The version of the page (its ETag is `"<version>"`); 0 before the first save. */
+            version: number;
+            /**
+             * @description A moderator took the page off the showcase: it is published again only after a
+             *     moderator approves it.
+             */
+            held: boolean;
             slug: string;
             status: components["schemas"]["ShowcaseStatus"];
             visibility: components["schemas"]["ShowcaseVisibility"];
@@ -3000,7 +3091,10 @@ export interface components {
         ContactStatus: "pending" | "forwarded" | "rejected";
         ContactCreate: {
             name: string;
-            /** Format: email */
+            /**
+             * Format: email
+             * @description Checked by the server; an invalid address is a field error (`email`).
+             */
             email: string;
             organization?: string;
             kind: components["schemas"]["ContactKind"];
@@ -3031,6 +3125,7 @@ export interface components {
         };
         ContactRequestList: {
             items: components["schemas"]["ContactRequest"][];
+            next_cursor: string | null;
         };
         ContactModeration: {
             forward: boolean;
@@ -4752,7 +4847,10 @@ export interface operations {
     approveProjectStep: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match": components["parameters"]["IfMatchRequired"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
                 stepKey: components["parameters"]["StepKey"];
@@ -5331,6 +5429,7 @@ export interface operations {
             /** @description The page with the cover. */
             200: {
                 headers: {
+                    ETag: components["headers"]["ETag"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5354,6 +5453,7 @@ export interface operations {
             /** @description The page without a cover. */
             200: {
                 headers: {
+                    ETag: components["headers"]["ETag"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5377,6 +5477,7 @@ export interface operations {
             /** @description The page with its new status. */
             200: {
                 headers: {
+                    ETag: components["headers"]["ETag"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5400,6 +5501,7 @@ export interface operations {
             /** @description The page, back to draft. */
             200: {
                 headers: {
+                    ETag: components["headers"]["ETag"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5411,7 +5513,11 @@ export interface operations {
     };
     listProjectContacts: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
             header?: never;
             path: {
                 projectId: components["parameters"]["ProjectId"];
@@ -5458,7 +5564,10 @@ export interface operations {
     reviewShowcaseEntry: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description ETag of the version being edited; the update fails with 412 if it is stale. */
+                "If-Match"?: components["parameters"]["IfMatch"];
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
             };
@@ -5473,6 +5582,7 @@ export interface operations {
             /** @description The page. */
             200: {
                 headers: {
+                    ETag: components["headers"]["ETag"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5486,6 +5596,9 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["ContactStatus"];
+                /** @description Opaque cursor from `next_cursor` of the previous page. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path?: never;

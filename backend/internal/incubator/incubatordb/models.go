@@ -41,6 +41,7 @@ type ProjectMaterial struct {
 	RequestedBy *uuid.UUID
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Sensitive   bool
 }
 
 type ProjectRevision struct {

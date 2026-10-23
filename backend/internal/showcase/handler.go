@@ -32,13 +32,21 @@ func (h *Handler) UpdateShowcaseEntry(ctx context.Context, req apigen.UpdateShow
 	return apigen.UpdateShowcaseEntry200JSONResponse{Body: e, Headers: apigen.UpdateShowcaseEntry200ResponseHeaders{ETag: &tag}}, nil
 }
 
+// tagOf is the ETag of a page as the API returns it: every change of the
+// page, its cover or its status included, answers with the version to send
+// back in If-Match.
+func tagOf(e apigen.ShowcaseEntry) *string {
+	t := ETag(int32(e.Version)) //nolint:gosec // versions are small
+	return &t
+}
+
 // SetShowcaseCover implements apigen.StrictServerInterface.
 func (h *Handler) SetShowcaseCover(ctx context.Context, req apigen.SetShowcaseCoverRequestObject) (apigen.SetShowcaseCoverResponseObject, error) {
 	e, err := h.svc.SetCover(ctx, req.ProjectId, req.Body)
 	if err != nil {
 		return nil, err
 	}
-	return apigen.SetShowcaseCover200JSONResponse(e), nil
+	return apigen.SetShowcaseCover200JSONResponse{Body: e, Headers: apigen.SetShowcaseCover200ResponseHeaders{ETag: tagOf(e)}}, nil
 }
 
 // DeleteShowcaseCover implements apigen.StrictServerInterface.
@@ -47,7 +55,7 @@ func (h *Handler) DeleteShowcaseCover(ctx context.Context, req apigen.DeleteShow
 	if err != nil {
 		return nil, err
 	}
-	return apigen.DeleteShowcaseCover200JSONResponse(e), nil
+	return apigen.DeleteShowcaseCover200JSONResponse{Body: e, Headers: apigen.DeleteShowcaseCover200ResponseHeaders{ETag: tagOf(e)}}, nil
 }
 
 // PublishShowcaseEntry implements apigen.StrictServerInterface.
@@ -56,7 +64,7 @@ func (h *Handler) PublishShowcaseEntry(ctx context.Context, req apigen.PublishSh
 	if err != nil {
 		return nil, err
 	}
-	return apigen.PublishShowcaseEntry200JSONResponse(e), nil
+	return apigen.PublishShowcaseEntry200JSONResponse{Body: e, Headers: apigen.PublishShowcaseEntry200ResponseHeaders{ETag: tagOf(e)}}, nil
 }
 
 // UnpublishShowcaseEntry implements apigen.StrictServerInterface.
@@ -65,12 +73,12 @@ func (h *Handler) UnpublishShowcaseEntry(ctx context.Context, req apigen.Unpubli
 	if err != nil {
 		return nil, err
 	}
-	return apigen.UnpublishShowcaseEntry200JSONResponse(e), nil
+	return apigen.UnpublishShowcaseEntry200JSONResponse{Body: e, Headers: apigen.UnpublishShowcaseEntry200ResponseHeaders{ETag: tagOf(e)}}, nil
 }
 
 // ListProjectContacts implements apigen.StrictServerInterface.
 func (h *Handler) ListProjectContacts(ctx context.Context, req apigen.ListProjectContactsRequestObject) (apigen.ListProjectContactsResponseObject, error) {
-	list, err := h.svc.ProjectContacts(ctx, req.ProjectId)
+	list, err := h.svc.ProjectContacts(ctx, req.ProjectId, req.Params.Cursor, req.Params.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -88,16 +96,16 @@ func (h *Handler) ListShowcaseReviews(ctx context.Context, req apigen.ListShowca
 
 // ReviewShowcaseEntry implements apigen.StrictServerInterface.
 func (h *Handler) ReviewShowcaseEntry(ctx context.Context, req apigen.ReviewShowcaseEntryRequestObject) (apigen.ReviewShowcaseEntryResponseObject, error) {
-	e, err := h.svc.Review(ctx, req.ProjectId, *req.Body)
+	e, err := h.svc.Review(ctx, req.ProjectId, *req.Body, req.Params.IfMatch)
 	if err != nil {
 		return nil, err
 	}
-	return apigen.ReviewShowcaseEntry200JSONResponse(e), nil
+	return apigen.ReviewShowcaseEntry200JSONResponse{Body: e, Headers: apigen.ReviewShowcaseEntry200ResponseHeaders{ETag: tagOf(e)}}, nil
 }
 
 // ListContactRequests implements apigen.StrictServerInterface.
 func (h *Handler) ListContactRequests(ctx context.Context, req apigen.ListContactRequestsRequestObject) (apigen.ListContactRequestsResponseObject, error) {
-	list, err := h.svc.Contacts(ctx, req.Params.Status)
+	list, err := h.svc.Contacts(ctx, req.Params.Status, req.Params.Cursor, req.Params.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +169,9 @@ func (h *Handler) ContactShowcaseProject(ctx context.Context, req apigen.Contact
 
 // GetShowcaseImage implements apigen.StrictServerInterface.
 func (h *Handler) GetShowcaseImage(ctx context.Context, req apigen.GetShowcaseImageRequestObject) (apigen.GetShowcaseImageResponseObject, error) {
-	data, err := h.svc.Image(ctx, req.Slug)
+	preview, err := h.svc.Image(ctx, req.Slug)
 	if err != nil {
 		return nil, err
 	}
-	return imageResponse{data: data}, nil
+	return imageResponse{preview: preview}, nil
 }

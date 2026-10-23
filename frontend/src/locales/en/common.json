@@ -214,7 +214,10 @@
       "supervisor_role_required": "Only a teacher with the supervisor role can supervise a project",
       "member_not_found": "Member not found",
       "team_full_one": "A team can have at most {{count}} member",
-      "team_full_other": "A team can have at most {{count}} members"
+      "team_full_other": "A team can have at most {{count}} members",
+      "supervisors_full_one": "A project can have at most {{count}} supervisor",
+      "supervisors_full_other": "A project can have at most {{count}} supervisors",
+      "owner_active": "The owner is active: only they can hand the project over"
     },
     "incubator": {
       "step_not_found": "There is no such step",
@@ -249,7 +252,8 @@
       "incomplete": "Fill in the problem and the solution to publish the page",
       "not_in_review": "The page is no longer in review — refresh the list",
       "contact_disabled": "The team does not accept contact requests now",
-      "too_many_requests": "Too many requests. Try again in {{retry_after_seconds}} s"
+      "too_many_requests": "Too many requests. Try again in {{retry_after_seconds}} s",
+      "own_page": "You cannot approve the page of your own project: another moderator will"
     },
     "contact": {
       "not_found": "Contact request not found",

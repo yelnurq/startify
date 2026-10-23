@@ -205,9 +205,17 @@ func (s *Service) Metadata(ctx context.Context, id uuid.UUID) (filesdb.File, err
 	return f, nil
 }
 
+// canRead decides who downloads a file through /files/{id}/content. Access
+// follows what a file belongs to, not only who stored it.
 func canRead(ctx context.Context, f filesdb.File) bool {
 	if f.Visibility == VisibilityPublic {
 		return true
+	}
+	// Private generated files are a project's materials: only the project's
+	// own download checks who may read them now (someone who has left the
+	// team keeps no access to what they once ordered).
+	if f.Purpose == PurposeGenerated {
+		return false
 	}
 	p, ok := authz.FromContext(ctx)
 	if !ok {
@@ -218,6 +226,11 @@ func canRead(ctx context.Context, f filesdb.File) bool {
 	}
 	if p.TenantID != f.TenantID {
 		return false
+	}
+	// The sources of the knowledge base are for those who keep it; students
+	// see the mentor's excerpts, not the files.
+	if f.Purpose == PurposeKnowledge {
+		return p.Has(authz.RoleTenantAdmin, authz.RoleInnovationManager)
 	}
 	if f.Visibility == VisibilityTenant {
 		return true

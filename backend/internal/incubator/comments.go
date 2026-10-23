@@ -19,6 +19,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
 	"github.com/yelnurq/startify/backend/internal/project"
 )
@@ -102,10 +103,20 @@ func (s *Service) Comments(ctx context.Context, projectID uuid.UUID, params apig
 	return page, nil
 }
 
-// canComment: the team, the supervisor and managers, while the project is open.
+var errArchived = apperr.Conflict("project.archived", "the project is archived")
+
+// limitComments bounds the comments a member writes: a busy review is a few
+// dozen an hour.
+var limitComments = ratelimit.Limit{Rate: 120, Burst: 30, Period: time.Hour}
+
+// canComment: the team, the supervisor and innovation managers, while the
+// project is open.
 func canComment(a project.Access) error {
-	if a.Archived() {
-		return apperr.Conflict("project.archived", "the project is archived")
+	switch {
+	case a.Archived():
+		return errArchived
+	case !a.CanComment():
+		return errForbidden
 	}
 	return nil
 }
@@ -151,6 +162,9 @@ func (s *Service) AddComment(ctx context.Context, projectID uuid.UUID, body apig
 		return apigen.Comment{}, err
 	}
 	author := a.Principal.UserID
+	if err := s.Limiter.Allow(ctx, "comment:"+author.String(), limitComments, "rate_limited"); err != nil {
+		return apigen.Comment{}, err
+	}
 	var row incubatordb.ProjectComment
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
@@ -218,8 +232,28 @@ func (s *Service) UpdateComment(ctx context.Context, projectID, commentID uuid.U
 			}
 			args.Body = &text
 		}
-		row, err = q.UpdateComment(ctx, args)
-		return err
+		if row, err = q.UpdateComment(ctx, args); err != nil {
+			return err
+		}
+		for _, change := range []struct {
+			happened bool
+			action   string
+		}{
+			{body.Body != nil && *args.Body != c.Body, "incubator.comment_edited"},
+			{row.ResolvedAt != nil && c.ResolvedAt == nil, "incubator.comment_resolved"},
+			{row.ResolvedAt == nil && c.ResolvedAt != nil, "incubator.comment_reopened"},
+		} {
+			if !change.happened {
+				continue
+			}
+			if err := s.Audit.Record(ctx, audit.Event{
+				Action: change.action, TargetType: "project", TargetID: projectID.String(),
+				Metadata: map[string]any{"step": c.StepKey, "comment_id": commentID},
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return apigen.Comment{}, fmt.Errorf("incubator: update comment: %w", err)
@@ -231,11 +265,15 @@ func (s *Service) UpdateComment(ctx context.Context, projectID, commentID uuid.U
 	return out[0], nil
 }
 
-// DeleteComment removes a comment with its replies (the author or a moderator).
+// DeleteComment removes a comment with its replies (the author or a
+// moderator) while the project is open.
 func (s *Service) DeleteComment(ctx context.Context, projectID, commentID uuid.UUID) error {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
 		return err
+	}
+	if a.Archived() {
+		return errArchived
 	}
 	err = s.DB.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
@@ -246,10 +284,20 @@ func (s *Service) DeleteComment(ctx context.Context, projectID, commentID uuid.U
 		if err != nil {
 			return err
 		}
-		if (c.AuthorID == nil || *c.AuthorID != a.Principal.UserID) && !a.CanModerate() {
+		own := c.AuthorID != nil && *c.AuthorID == a.Principal.UserID
+		if !own && !a.CanModerate() {
 			return errForbidden
 		}
-		return q.DeleteComment(ctx, commentID)
+		if err := q.DeleteComment(ctx, commentID); err != nil {
+			return err
+		}
+		// A moderator removing someone's thread is recorded with its author.
+		return s.Audit.Record(ctx, audit.Event{
+			Action: "incubator.comment_deleted", TargetType: "project", TargetID: projectID.String(),
+			Metadata: map[string]any{
+				"step": c.StepKey, "comment_id": commentID, "author_id": c.AuthorID, "thread": c.ParentID == nil, "moderated": !own,
+			},
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("incubator: delete comment: %w", err)

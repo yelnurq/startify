@@ -151,7 +151,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	if a.Scanner != nil {
 		fileSvc.WithScanner(a.Scanner)
 	}
-	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations)
+	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations, limiter)
 	authSvc := auth.NewService(auth.Deps{
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,
@@ -173,7 +173,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		return nil, err
 	}
 	knowledgeSvc := knowledge.NewService(a.DB, gateway, fileSvc, a.Queue, auditLog)
-	projects := project.NewService(a.DB, users, orgs, tenants, auditLog)
+	projects := project.NewService(a.DB, users, orgs, tenants, auditLog, limiter)
 	incubatorSvc := incubator.NewService(incubator.Deps{
 		DB: a.DB, Projects: projects, Users: users, Tenants: tenants, Gateway: gateway, Knowledge: knowledgeSvc,
 		Files: fileSvc, Queue: a.Queue, Audit: auditLog, Limiter: limiter, Cache: a.Cache, Zone: zone,
@@ -188,6 +188,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Gotenberg: gotenberg.New(cfg.Gotenberg.URL, cfg.Gotenberg.Timeout), ShellURL: cfg.App.ShellURL,
 	})
 	incubatorSvc.UsePages(showcaseSvc)
+	projects.UseTeamListener(showcaseSvc)
 	return &Services{
 		Showcase:    showcaseSvc,
 		AI:          gateway,
@@ -290,6 +291,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 			auth.CSRF,
 			svc.Auth.Authenticate,
 			httpx.Idempotency(idempotency.NewStore(a.DB), idempotencyScope, IdempotencyTTL),
+			showcase.CacheHeaders,
 		)
 		api.NotFound(httpx.NotFoundHandler)
 		api.MethodNotAllowed(httpx.MethodNotAllowedHandler)

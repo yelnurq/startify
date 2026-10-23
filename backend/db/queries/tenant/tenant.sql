@@ -62,3 +62,7 @@ SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id, t.co
        coalesce((SELECT d.domain FROM tenant_domains d WHERE d.tenant_id = t.id AND d.is_primary LIMIT 1), '')::text AS primary_domain
   FROM tenants t
  WHERE t.id = ANY(@ids::uuid[]);
+
+-- name: ListSuspendedTenantIDs :many
+-- Suspended universities drop out of the national showcase.
+SELECT id FROM tenants WHERE status = 'suspended';

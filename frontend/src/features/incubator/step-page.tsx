@@ -32,7 +32,7 @@ import {
 } from '@/design-system';
 import { AiNotice } from '@/features/ai/ai-notice';
 import { EvaluationTeaser } from '@/features/evaluation/evaluation-page';
-import { canApprove, canEdit, type Project } from '@/features/projects/api';
+import { canApprove, canComment, canEdit, type Project } from '@/features/projects/api';
 import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
 import { useLocalized } from '@/shared/i18n/localized';
@@ -270,6 +270,15 @@ function StepEditorView({
 
   const done = isDone(saved.status);
   const checkStale = saved.check !== null && saved.check.version !== saved.version;
+  // The team hides sensitive details from people outside it (managers,
+  // leadership): those fields are not sent, nor are the mentor's conversations.
+  const withheld = new Set(saved.withheld ?? []);
+  const hiddenFromMe = project.hide_sensitive && project.access === 'manager';
+  const shownFields = step.fields.filter((f) => !withheld.has(f.key));
+  const withheldLabels = step.fields
+    .filter((f) => withheld.has(f.key))
+    .map((f) => t('step.withheld.quote', { label: text(f.label) }))
+    .join(', ');
 
   return (
     <div className="flex flex-col gap-8">
@@ -304,6 +313,13 @@ function StepEditorView({
 
       {project.archived && <Callout tone="warning">{t('workspace.archived')}</Callout>}
       {!project.archived && !editable && <Callout tone="info">{t('workspace.readOnly')}</Callout>}
+      {hiddenFromMe && (
+        <Callout tone="info" title={t('step.withheld.title')}>
+          {withheldLabels
+            ? t('step.withheld.fields', { fields: withheldLabels })
+            : t('step.withheld.mentor')}
+        </Callout>
+      )}
       {saved.status === 'approved' && (
         <Callout
           tone="success"
@@ -340,7 +356,7 @@ function StepEditorView({
           e.preventDefault();
         }}
       >
-        {step.fields.map((field) => {
+        {shownFields.map((field) => {
           const count = openComments.get(field.key) ?? 0;
           const label = text(field.label);
           return (
@@ -394,7 +410,9 @@ function StepEditorView({
         })}
       </form>
 
-      {stepKey === 'unit_economics' && <UnitEconomicsPanel values={snapshot.values} />}
+      {stepKey === 'unit_economics' && withheld.size === 0 && (
+        <UnitEconomicsPanel values={snapshot.values} />
+      )}
       {stepKey === 'business_model' && (
         <LeanCanvas projectId={projectId} template={template} values={snapshot.values} />
       )}
@@ -504,7 +522,7 @@ function StepEditorView({
         step={step}
         field={commentsFor}
         people={people}
-        canComment={!project.archived}
+        canComment={canComment(project, innovationManager)}
         canModerate={project.access === 'manager' && innovationManager}
         onOpenChange={(open) => {
           if (!open) setCommentsFor(undefined);
@@ -526,16 +544,26 @@ function StepEditorView({
         onOpenChange={setApproving}
         loading={approve.isPending}
         onApprove={(comment) => {
-          approve.mutate(comment, {
-            onSuccess: (result) => {
-              editor.replace(result);
-              setApproving(false);
-              toast.success(t('approve.done'));
+          approve.mutate(
+            { comment, etag: editor.currentEtag },
+            {
+              onSuccess: (result) => {
+                editor.replace(result);
+                setApproving(false);
+                toast.success(t('approve.done'));
+              },
+              onError: (err) => {
+                // The team changed the step meanwhile: show the new answers before approving.
+                if (err instanceof ApiError && err.status === 412) {
+                  setApproving(false);
+                  void editor.refresh();
+                  toast.error(t('approve.stale'));
+                  return;
+                }
+                toast.error(errorMessage(err));
+              },
             },
-            onError: (err) => {
-              toast.error(errorMessage(err));
-            },
-          });
+          );
         }}
       />
     </div>

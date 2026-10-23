@@ -17,6 +17,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/httpx"
+	"github.com/yelnurq/startify/backend/internal/platform/pagination"
 	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
@@ -36,10 +37,13 @@ var (
 	errContactNotFound  = apperr.NotFound("contact.not_found", "the request does not exist")
 	errAlreadyModerated = apperr.Conflict("contact.already_moderated", "the request has already been moderated")
 
-	// A partner writes a few letters an hour; a project receives at most a
-	// few dozen a day.
+	// A partner writes a few letters an hour, and to one project a few a
+	// day. The cap per project only bounds what a flood can store: it is far
+	// above what a project receives, so a flood from many addresses cannot
+	// shut the form for real partners for a whole day.
 	limitContactSender  = ratelimit.PerHour(5)
-	limitContactProject = ratelimit.Limit{Rate: 20, Burst: 20, Period: 24 * time.Hour}
+	limitContactEmail   = ratelimit.Limit{Rate: 3, Burst: 3, Period: 24 * time.Hour}
+	limitContactProject = ratelimit.Limit{Rate: 100, Burst: 100, Period: 24 * time.Hour}
 
 	contactKinds = []string{"investment", "partnership", "pilot", "mentoring", "hiring", "other"}
 )
@@ -89,7 +93,7 @@ func (s *Service) Contact(ctx context.Context, slug string, body apigen.ContactC
 	}
 	var v validate.Errors
 	name := v.Text("name", body.Name, 2, 120)
-	email := strings.ToLower(strings.TrimSpace(string(body.Email)))
+	email := strings.ToLower(strings.TrimSpace(body.Email))
 	if a, err := mail.ParseAddress(email); err != nil || a.Address != email || len(email) > 254 {
 		v.Add("email", "email", nil)
 	}
@@ -105,11 +109,17 @@ func (s *Service) Contact(ctx context.Context, slug string, body apigen.ContactC
 	if ip := httpx.ClientIPFrom(ctx); ip.IsValid() {
 		sender = ip.String()
 	}
-	if err := s.Limiter.Allow(ctx, "showcase.contact:"+sender, limitContactSender, "showcase.too_many_requests"); err != nil {
-		return apigen.ContactAccepted{}, err
-	}
-	if err := s.Limiter.Allow(ctx, "showcase.contact:"+row.ProjectID.String(), limitContactProject, "showcase.too_many_requests"); err != nil {
-		return apigen.ContactAccepted{}, err
+	for _, l := range []struct {
+		key   string
+		limit ratelimit.Limit
+	}{
+		{"showcase.contact:" + sender, limitContactSender},
+		{"showcase.contact:" + row.ProjectID.String() + ":" + email, limitContactEmail},
+		{"showcase.contact:" + row.ProjectID.String(), limitContactProject},
+	} {
+		if err := s.Limiter.Allow(ctx, l.key, l.limit, "showcase.too_many_requests"); err != nil {
+			return apigen.ContactAccepted{}, err
+		}
 	}
 	settings, err := s.Tenants.CurrentSettings(ctx)
 	if err != nil {
@@ -179,9 +189,44 @@ func (s *Service) forward(ctx context.Context, c *showcasedb.ContactRequest, e *
 	return nil
 }
 
+// contactPage reads the cursor and the size of a page of requests.
+func contactPage(cursor *string, size *int) (*uuid.UUID, int, error) {
+	limit, err := pagination.Limit(size)
+	if err != nil {
+		return nil, 0, err
+	}
+	if cursor == nil {
+		return nil, limit, nil
+	}
+	var before uuid.UUID
+	if err := pagination.Decode(*cursor, &before); err != nil {
+		return nil, limit, err
+	}
+	return &before, limit, nil
+}
+
+// contactList turns rows (one more than limit when another page follows)
+// into a page.
+func contactList(rows []showcasedb.ContactRequest, titles []string, limit int) apigen.ContactRequestList {
+	out := apigen.ContactRequestList{Items: []apigen.ContactRequest{}}
+	if len(rows) > limit {
+		rows = rows[:limit]
+		next := pagination.Encode(rows[len(rows)-1].ID)
+		out.NextCursor = &next
+	}
+	for i := range rows {
+		out.Items = append(out.Items, contactAPI(&rows[i], titles[i]))
+	}
+	return out
+}
+
 // Contacts lists the requests of the university for moderation, newest first.
-func (s *Service) Contacts(ctx context.Context, status *apigen.ContactStatus) (apigen.ContactRequestList, error) {
+func (s *Service) Contacts(ctx context.Context, status *apigen.ContactStatus, cursor *string, size *int) (apigen.ContactRequestList, error) {
 	if _, err := authz.RequireRole(ctx, reviewRoles...); err != nil {
+		return apigen.ContactRequestList{}, err
+	}
+	before, limit, err := contactPage(cursor, size)
+	if err != nil {
 		return apigen.ContactRequestList{}, err
 	}
 	var want *string
@@ -189,29 +234,32 @@ func (s *Service) Contacts(ctx context.Context, status *apigen.ContactStatus) (a
 		v := string(*status)
 		want = &v
 	}
-	out := apigen.ContactRequestList{Items: []apigen.ContactRequest{}}
-	err := s.DB.ReadTx(ctx, func(ctx context.Context) error {
-		rows, err := s.q(ctx).ListContacts(ctx, want)
-		for i := range rows {
-			r := &rows[i]
-			c := showcasedb.ContactRequest{
+	var rows []showcasedb.ContactRequest
+	var titles []string
+	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
+		found, err := s.q(ctx).ListContacts(ctx, showcasedb.ListContactsParams{
+			Status: want, BeforeID: before, RowLimit: int32(limit + 1), //nolint:gosec // bounded by MaxLimit
+		})
+		for i := range found {
+			r := &found[i]
+			rows = append(rows, showcasedb.ContactRequest{
 				ID: r.ID, TenantID: r.TenantID, ProjectID: r.ProjectID, Name: r.Name, Email: r.Email, Organization: r.Organization,
 				Kind: r.Kind, Message: r.Message, Locale: r.Locale, Status: r.Status, ModeratedBy: r.ModeratedBy,
 				ModeratedAt: r.ModeratedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
-			}
-			out.Items = append(out.Items, contactAPI(&c, r.ProjectTitle))
+			})
+			titles = append(titles, r.ProjectTitle)
 		}
 		return err
 	})
 	if err != nil {
-		return out, fmt.Errorf("showcase: contacts: %w", err)
+		return apigen.ContactRequestList{Items: []apigen.ContactRequest{}}, fmt.Errorf("showcase: contacts: %w", err)
 	}
-	return out, nil
+	return contactList(rows, titles, limit), nil
 }
 
 // ProjectContacts lists the requests to a project: forwarded ones for the
 // team, all of them for innovation managers.
-func (s *Service) ProjectContacts(ctx context.Context, projectID uuid.UUID) (apigen.ContactRequestList, error) {
+func (s *Service) ProjectContacts(ctx context.Context, projectID uuid.UUID, cursor *string, size *int) (apigen.ContactRequestList, error) {
 	a, err := s.Projects.Access(ctx, projectID)
 	if err != nil {
 		return apigen.ContactRequestList{}, err
@@ -219,26 +267,32 @@ func (s *Service) ProjectContacts(ctx context.Context, projectID uuid.UUID) (api
 	if !a.Team() && !a.CanModerate() {
 		return apigen.ContactRequestList{}, errForbidden
 	}
-	out := apigen.ContactRequestList{Items: []apigen.ContactRequest{}}
+	before, limit, err := contactPage(cursor, size)
+	if err != nil {
+		return apigen.ContactRequestList{}, err
+	}
+	var rows []showcasedb.ContactRequest
+	var titles []string
 	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
-		rows, err := s.q(ctx).ListProjectContacts(ctx, showcasedb.ListProjectContactsParams{
-			ProjectID: projectID, ForwardedOnly: !a.CanModerate(),
+		found, err := s.q(ctx).ListProjectContacts(ctx, showcasedb.ListProjectContactsParams{
+			ProjectID: projectID, ForwardedOnly: !a.CanModerate(), BeforeID: before,
+			RowLimit: int32(limit + 1), //nolint:gosec // bounded by MaxLimit
 		})
-		for i := range rows {
-			r := &rows[i]
-			c := showcasedb.ContactRequest{
+		for i := range found {
+			r := &found[i]
+			rows = append(rows, showcasedb.ContactRequest{
 				ID: r.ID, TenantID: r.TenantID, ProjectID: r.ProjectID, Name: r.Name, Email: r.Email, Organization: r.Organization,
 				Kind: r.Kind, Message: r.Message, Locale: r.Locale, Status: r.Status, ModeratedBy: r.ModeratedBy,
 				ModeratedAt: r.ModeratedAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
-			}
-			out.Items = append(out.Items, contactAPI(&c, r.ProjectTitle))
+			})
+			titles = append(titles, r.ProjectTitle)
 		}
 		return err
 	})
 	if err != nil {
-		return out, fmt.Errorf("showcase: project contacts: %w", err)
+		return apigen.ContactRequestList{Items: []apigen.ContactRequest{}}, fmt.Errorf("showcase: project contacts: %w", err)
 	}
-	return out, nil
+	return contactList(rows, titles, limit), nil
 }
 
 // Moderate forwards a pending request to the team or rejects it.
@@ -263,6 +317,10 @@ func (s *Service) Moderate(ctx context.Context, contactID uuid.UUID, forward boo
 		e, err := q.GetEntry(ctx, c.ProjectID)
 		if err != nil {
 			return err
+		}
+		// The team closed the form meanwhile: the request is not sent to them.
+		if forward && !e.ContactEnabled {
+			return errContactDisabled
 		}
 		status, action := ContactRejected, "showcase.contact_rejected"
 		if forward {

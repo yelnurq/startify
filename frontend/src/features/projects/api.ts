@@ -239,6 +239,18 @@ export function canEdit(project: Pick<Project, 'access' | 'archived'>): boolean 
   return !project.archived && (project.access === 'owner' || project.access === 'member');
 }
 
+/**
+ * The team, its supervisors and innovation managers write comments while the
+ * project is open; leadership and administrators read them.
+ */
+export function canComment(
+  project: Pick<Project, 'access' | 'archived'>,
+  innovationManager: boolean,
+): boolean {
+  if (project.archived) return false;
+  return project.access !== 'manager' || innovationManager;
+}
+
 /** The project's supervisor or an innovation manager may approve steps. */
 export function canApprove(
   project: Pick<Project, 'access' | 'archived'>,

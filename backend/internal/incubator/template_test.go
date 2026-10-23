@@ -161,10 +161,34 @@ func TestTemplateChecks(t *testing.T) {
 		"unknown type": "version: 1\nstages: [{key: a, steps: [{key: s, fields: [{key: f, type: date, " +
 			"label: {kk: a, ru: a, en: a}}]}]}]",
 		"no steps": "version: 1\nstages: []",
+		"sensitive column": "version: 1\nstages: [{key: a, steps: [{key: s, fields: [{key: f, type: table, label: {kk: a, ru: a, en: a}, " +
+			"columns: [{key: c, type: text, sensitive: true, label: {kk: a, ru: a, en: a}}]}]}]}]",
 	}
 	for name, doc := range bad {
 		if _, err := parseTemplate([]byte(doc)); err == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+func TestSensitiveFieldsAreRedacted(t *testing.T) {
+	tmpl := Default()
+	ue, _ := tmpl.Step("unit_economics")
+	solution, _ := tmpl.Step("solution")
+	if strings.Join(ue.SensitiveKeys(), ",") != "unit,price,variable_cost,cac,purchases,assumptions" ||
+		strings.Join(solution.SensitiveKeys(), ",") != "novelty,unfair_advantage" {
+		t.Fatalf("sensitive: %v %v", ue.SensitiveKeys(), solution.SensitiveKeys())
+	}
+	for _, key := range tmpl.Keys() {
+		if st, _ := tmpl.Step(key); key != "unit_economics" && key != "solution" && len(st.SensitiveKeys()) > 0 {
+			t.Errorf("%s has sensitive fields %v", key, st.SensitiveKeys())
+		}
+	}
+	values := Values{"solution": "Фото листа → диагноз", "uvp": "Диагноз за 10 секунд", "novelty": "Своя нейросеть"}
+	if got := solution.Redact(values); len(got) != 2 || got["novelty"] != nil || got["uvp"] == nil {
+		t.Fatalf("redacted %v", got)
+	}
+	if !solution.HasSensitive(values) || solution.HasSensitive(Values{"novelty": "  "}) || !ue.HasSensitive(Values{"price": 0.0}) {
+		t.Fatal("HasSensitive")
 	}
 }

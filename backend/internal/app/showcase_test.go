@@ -179,12 +179,12 @@ func TestShowcasePublishing(t *testing.T) {
 	if e = decode[apigen.ShowcaseEntry](t, rec); e.Status != apigen.ShowcaseStatusRejected || e.ReviewComment == nil {
 		t.Fatalf("rejected %+v", e)
 	}
-	expectProblem(t, manager.do(http.MethodPost, review, apigen.ShowcaseReview{Approve: true}), http.StatusConflict, "showcase.not_in_review")
+	expectProblem(t, manager.do(http.MethodPost, review, apigen.ShowcaseReview{Approve: true}, ifMatchHeader(pageTag(e))), http.StatusConflict, "showcase.not_in_review")
 	expect(t, student.do(http.MethodGet, "/api/v1/showcase/entries/agroscan", nil), http.StatusOK)
 	if e = decode[apigen.ShowcaseEntry](t, owner.do(http.MethodPost, path+"/publish", nil)); e.Status != apigen.ShowcaseStatusInReview {
 		t.Fatalf("resubmitted %+v", e)
 	}
-	if e = decode[apigen.ShowcaseEntry](t, manager.do(http.MethodPost, review, apigen.ShowcaseReview{Approve: true})); e.Status != apigen.ShowcaseStatusPublished {
+	if e = decode[apigen.ShowcaseEntry](t, manager.do(http.MethodPost, review, apigen.ShowcaseReview{Approve: true}, ifMatchHeader(pageTag(e)))); e.Status != apigen.ShowcaseStatusPublished {
 		t.Fatalf("approved %+v", e)
 	}
 	if card := decode[apigen.Project](t, owner.do(http.MethodGet, base, nil)); card.Visibility != apigen.ProjectVisibilityPublic {
@@ -264,13 +264,17 @@ func TestShowcasePublishing(t *testing.T) {
 	}
 }
 
+// pageTag is the ETag of a page version.
+func pageTag(e apigen.ShowcaseEntry) string { return `"` + strconv.Itoa(e.Version) + `"` }
+
 // publicPage publishes an approved public page of a new project.
 func publicPage(t *testing.T, h *harness, owner, manager *browser) (apigen.Project, string) {
 	t.Helper()
 	p, base := showcaseProject(t, h, owner, "AgroScan")
 	expect(t, owner.do(http.MethodPut, base+"/showcase", pageUpdate("agroscan", apigen.ShowcaseVisibilityPublic), ifMatchHeader(`"0"`)), http.StatusOK)
-	expect(t, owner.do(http.MethodPost, base+"/showcase/publish", nil), http.StatusOK)
-	expect(t, manager.do(http.MethodPost, "/api/v1/admin/showcase/"+p.Id.String()+"/review", apigen.ShowcaseReview{Approve: true}), http.StatusOK)
+	e := decode[apigen.ShowcaseEntry](t, owner.do(http.MethodPost, base+"/showcase/publish", nil))
+	expect(t, manager.do(http.MethodPost, "/api/v1/admin/showcase/"+p.Id.String()+"/review", apigen.ShowcaseReview{Approve: true}, ifMatchHeader(pageTag(e))),
+		http.StatusOK)
 	return p, base
 }
 
@@ -361,11 +365,22 @@ func TestShowcaseContacts(t *testing.T) {
 		t.Fatalf("letters %d → %d", before, after)
 	}
 
-	// A sender writes a few requests an hour.
-	for range 3 {
-		expect(t, partner.do(http.MethodPost, contact, request), http.StatusAccepted)
-	}
+	// An address writes to a project a few times a day…
+	expect(t, partner.do(http.MethodPost, contact, request), http.StatusAccepted)
 	expectProblem(t, partner.do(http.MethodPost, contact, request), http.StatusTooManyRequests, "showcase.too_many_requests")
+	// …and a sender a few requests an hour.
+	other := request
+	other.Email = "dina@agroinvest.kz"
+	expect(t, partner.do(http.MethodPost, contact, other), http.StatusAccepted)
+	other.Email = "aidos@agroinvest.kz"
+	expectProblem(t, partner.do(http.MethodPost, contact, other), http.StatusTooManyRequests, "showcase.too_many_requests")
+	// A malformed address is a field error, like every other field.
+	malformed := request
+	malformed.Email = "not an e-mail"
+	if p := expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, contact, malformed), http.StatusUnprocessableEntity, "validation.failed"); len(p.Errors) != 1 ||
+		p.Errors[0].Field != "email" || p.Errors[0].Code != "email" {
+		t.Fatalf("malformed e-mail %+v", p.Errors)
+	}
 
 	// The team can close the form.
 	closed := pageUpdate("agroscan", apigen.ShowcaseVisibilityPublic)
@@ -405,6 +420,11 @@ func TestShowcaseSEO(t *testing.T) {
 		`<title>AgroScan — ҚазТБУ витринасы</title>`,
 		`<meta name="description" content="Болезни пшеницы по фото за 10 секунд" />`,
 		`<link rel="canonical" href="http://kazutb.localhost:3000/showcase/agroscan" />`,
+		`<link rel="alternate" hreflang="kk" href="http://kazutb.localhost:3000/showcase/agroscan?lang=kk" />`,
+		`<link rel="alternate" hreflang="ru" href="http://kazutb.localhost:3000/showcase/agroscan?lang=ru" />`,
+		`<link rel="alternate" hreflang="en" href="http://kazutb.localhost:3000/showcase/agroscan?lang=en" />`,
+		`<link rel="alternate" hreflang="x-default" href="http://kazutb.localhost:3000/showcase/agroscan" />`,
+		`<meta property="og:locale:alternate" content="ru_RU" />`,
 		`<meta property="og:image" content="http://kazutb.localhost:3000/api/v1/showcase/entries/agroscan/og.png?v=1" />`,
 		`<meta name="twitter:card" content="summary_large_image" />`,
 		`"@type":"CreativeWork"`, `<script type="module" src="/assets/index-abc.js"></script>`,
@@ -422,10 +442,20 @@ func TestShowcaseSEO(t *testing.T) {
 		rec.Header().Get("Vary") != "Accept-Language, Cookie" {
 		t.Fatalf("first screen: %s\n%s", rec.Header(), page)
 	}
+	// The whole page follows the visitor's language: the description too.
 	ru := func(r *http.Request) { r.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8") }
 	if page = crawler.do(http.MethodGet, "/showcase/agroscan", nil, ru).Body.String(); !strings.Contains(page, `<div id="boot" lang="ru"`) ||
-		!strings.Contains(page, `href="/showcase">Витрина</a>`) || !strings.Contains(page, "<title>AgroScan — ҚазТБУ витринасы</title>") {
+		!strings.Contains(page, `href="/showcase">Витрина</a>`) || !strings.Contains(page, "<title>AgroScan — витрина КазУТБ</title>") ||
+		!strings.Contains(page, `<html lang="ru">`) || !strings.Contains(page, `<link rel="canonical" href="http://kazutb.localhost:3000/showcase/agroscan" />`) {
 		t.Fatalf("first screen in Russian:\n%s", page)
+	}
+	// A language version has its own address, its own canonical, and wins
+	// over the saved choice and the browser's languages.
+	enCookie := func(r *http.Request) { r.AddCookie(&http.Cookie{Name: "qadam_locale", Value: "kk"}) }
+	if page = crawler.do(http.MethodGet, "/showcase/agroscan?lang=en", nil, ru, enCookie).Body.String(); !strings.Contains(page, `<div id="boot" lang="en"`) ||
+		!strings.Contains(page, "<title>AgroScan — KazUTB showcase</title>") || !strings.Contains(page, `<html lang="en">`) ||
+		!strings.Contains(page, `<link rel="canonical" href="http://kazutb.localhost:3000/showcase/agroscan?lang=en" />`) {
+		t.Fatalf("English version:\n%s", page)
 	}
 	rec = crawler.do(http.MethodGet, "/showcase/missing", nil)
 	expect(t, rec, http.StatusNotFound)
@@ -438,22 +468,27 @@ func TestShowcaseSEO(t *testing.T) {
 	}
 	rec = crawler.do(http.MethodGet, "/", nil, func(r *http.Request) { r.AddCookie(&http.Cookie{Name: "qadam_locale", Value: "en"}) })
 	expect(t, rec, http.StatusOK)
-	if body := rec.Body.String(); !strings.Contains(body, "<title>Qadam — ҚазТБУ инновациялық платформасы</title>") ||
+	if body := rec.Body.String(); !strings.Contains(body, "<title>Qadam — innovation platform of KazUTB</title>") ||
 		!strings.Contains(body, `<link rel="canonical" href="http://kazutb.localhost:3000/" />`) || !strings.Contains(body, `"@type":"WebSite"`) ||
+		!strings.Contains(body, `<link rel="alternate" hreflang="ru" href="http://kazutb.localhost:3000/?lang=ru" />`) ||
 		!strings.Contains(body, `<div id="boot" lang="en"`) || !strings.Contains(body, `From idea to market — <em class="text-primary-300">one step</em>`) {
 		t.Fatalf("landing page: %s", body)
 	}
+	// Every university shows the same national list: one canonical address,
+	// on the platform's site.
 	rec = crawler.do(http.MethodGet, "/showcase?scope=national", nil)
 	expect(t, rec, http.StatusOK)
 	if body := rec.Body.String(); !strings.Contains(body, "Қазақстан университеттерінің жобалар витринасы") || !strings.Contains(body, `"@type":"CollectionPage"`) ||
 		!strings.Contains(body, `<a href="http://kazutb.localhost:3000/showcase/agroscan">AgroScan</a>`) ||
+		!strings.Contains(body, `<link rel="canonical" href="http://localhost:3000/showcase?scope=national" />`) ||
+		!strings.Contains(body, `<link rel="alternate" hreflang="en" href="http://localhost:3000/showcase?scope=national&amp;lang=en" />`) ||
 		!strings.Contains(body, "Қазақстан университеттерінің жобалары</h1>") {
 		t.Fatalf("catalog page: %s", body)
 	}
 	rec = crawler.do(http.MethodGet, "/sitemap.xml", nil)
 	expect(t, rec, http.StatusOK)
 	if body := rec.Body.String(); !strings.Contains(body, "<loc>http://kazutb.localhost:3000/showcase/agroscan</loc>") ||
-		!strings.Contains(body, "<lastmod>") {
+		!strings.Contains(body, "<lastmod>") || strings.Contains(body, "scope=national") {
 		t.Fatalf("sitemap: %s", body)
 	}
 	rec = crawler.do(http.MethodGet, "/robots.txt", nil)

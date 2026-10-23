@@ -2,44 +2,92 @@ package files
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"image"
 	"image/color"
 	_ "image/gif" // registers the GIF decoder
 	"image/jpeg"
 	_ "image/png" // registers the PNG decoder
+	"time"
 
+	"github.com/google/uuid"
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp" // registers the WebP decoder
 
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 )
 
 // Avatar limits.
 const (
-	AvatarSize      = 512
-	avatarMinSide   = 64
-	avatarMaxPixels = 40_000_000
+	AvatarSize    = 512
+	avatarMinSide = 64
 )
+
+// Limits of an uploaded picture, read from its header before it is decoded.
+// A 12-megapixel phone photo fits; a decoded 16-megapixel image takes 64 MB
+// (128 MB for 16-bit PNG), and at most decodeSlots are decoded at once.
+const (
+	maxPixels   = 16_000_000
+	maxSide     = 8192
+	decodeSlots = 2
+)
+
+// decoding bounds the pictures decoded at the same time, whatever the number
+// of uploads: decoding is what takes the memory.
+var decoding = make(chan struct{}, decodeSlots)
+
+// LimitImages bounds the pictures a member uploads, avatars and covers
+// together: a few at once, thirty an hour.
+var LimitImages = ratelimit.Limit{Rate: 30, Burst: 10, Period: time.Hour}
+
+// ImagesKey is the rate-limit key of a member's picture uploads.
+func ImagesKey(userID uuid.UUID) string { return "images:" + userID.String() }
+
+// acquire waits for a decoding slot, or for the request to end.
+func acquire(ctx context.Context) (func(), error) {
+	select {
+	case decoding <- struct{}{}:
+		return func() { <-decoding }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// inspect reads the size and format of a picture from its header and
+// refuses what is too large to decode.
+func inspect(data []byte) (image.Config, string, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return cfg, "", apperr.New(apperr.KindValidation, "files.unsupported_type",
+			"upload a JPEG, PNG, WebP or GIF image")
+	}
+	if cfg.Width > maxSide || cfg.Height > maxSide || cfg.Width*cfg.Height > maxPixels {
+		return cfg, "", apperr.New(apperr.KindValidation, "files.image_too_large", "the image has too many pixels").
+			WithParams(map[string]any{"max_megapixels": maxPixels / 1_000_000})
+	}
+	return cfg, format, nil
+}
 
 // ProcessAvatar turns an uploaded photo into a square JPEG of at most
 // AvatarSize pixels: it applies the EXIF orientation of phone photos, crops
 // the centre, scales it and re-encodes it, which also drops all metadata
 // (location, camera) from the published file.
-func ProcessAvatar(data []byte) ([]byte, error) {
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+func ProcessAvatar(ctx context.Context, data []byte) ([]byte, error) {
+	cfg, format, err := inspect(data)
 	if err != nil {
-		return nil, apperr.New(apperr.KindValidation, "files.unsupported_type",
-			"upload a JPEG, PNG, WebP or GIF image")
-	}
-	if cfg.Width*cfg.Height > avatarMaxPixels {
-		return nil, apperr.New(apperr.KindValidation, "files.image_too_large", "the image has too many pixels").
-			WithParams(map[string]any{"max_megapixels": avatarMaxPixels / 1_000_000})
+		return nil, err
 	}
 	if min(cfg.Width, cfg.Height) < avatarMinSide {
 		return nil, apperr.New(apperr.KindValidation, "files.image_too_small", "the image is too small").
 			WithParams(map[string]any{"min_pixels": avatarMinSide})
 	}
+	release, err := acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, apperr.New(apperr.KindValidation, "files.image_invalid", "the image is damaged")
@@ -180,45 +228,57 @@ const (
 
 // ProcessCover turns an uploaded picture into a 16:9 JPEG of at most
 // CoverWidth×CoverHeight: it applies the EXIF orientation, crops the centre,
-// scales it and re-encodes it without metadata.
-func ProcessCover(data []byte) ([]byte, error) {
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+// scales it and re-encodes it without metadata. The crop is scaled straight
+// from the decoded picture and only the small result is turned upright: no
+// second full-size copy is made.
+func ProcessCover(ctx context.Context, data []byte) ([]byte, error) {
+	cfg, format, err := inspect(data)
 	if err != nil {
-		return nil, apperr.New(apperr.KindValidation, "files.unsupported_type",
-			"upload a JPEG, PNG, WebP or GIF image")
+		return nil, err
 	}
-	if cfg.Width*cfg.Height > avatarMaxPixels {
-		return nil, apperr.New(apperr.KindValidation, "files.image_too_large", "the image has too many pixels").
-			WithParams(map[string]any{"max_megapixels": avatarMaxPixels / 1_000_000})
+	if max(cfg.Width, cfg.Height) < coverMinWidth {
+		return nil, apperr.New(apperr.KindValidation, "files.image_too_small", "the image is too small").
+			WithParams(map[string]any{"min_pixels": coverMinWidth})
 	}
+	orientation := 1
+	if format == "jpeg" {
+		orientation = jpegOrientation(data)
+	}
+	release, err := acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, apperr.New(apperr.KindValidation, "files.image_invalid", "the image is damaged")
 	}
-	src := image.NewRGBA(img.Bounds())
-	xdraw.Draw(src, src.Bounds(), img, img.Bounds().Min, xdraw.Src)
-	oriented := src
-	if format == "jpeg" {
-		oriented = orientRect(src, jpegOrientation(data))
+	b := img.Bounds()
+	// The picture as it is shown: orientations 5-8 swap width and height.
+	ow, oh := b.Dx(), b.Dy()
+	transposed := orientation >= 5 && orientation <= 8
+	if transposed {
+		ow, oh = oh, ow
 	}
-	b := oriented.Bounds()
-	if max(b.Dx(), b.Dy()) < coverMinWidth {
-		return nil, apperr.New(apperr.KindValidation, "files.image_too_small", "the image is too small").
-			WithParams(map[string]any{"min_pixels": coverMinWidth})
+	// The largest 16:9 rectangle in the centre of the upright picture.
+	w, h := ow, ow*CoverHeight/CoverWidth
+	if h > oh {
+		w, h = oh*CoverWidth/CoverHeight, oh
 	}
-	// The largest 16:9 rectangle in the centre.
-	w, h := b.Dx(), b.Dx()*CoverHeight/CoverWidth
-	if h > b.Dy() {
-		w, h = b.Dy()*CoverWidth/CoverHeight, b.Dy()
-	}
-	x0, y0 := b.Min.X+(b.Dx()-w)/2, b.Min.Y+(b.Dy()-h)/2
 	outW := min(w, CoverWidth)
 	outH := outW * CoverHeight / CoverWidth
-	dst := image.NewRGBA(image.Rect(0, 0, outW, outH))
+	// Turning a picture maps its centred rectangle to the centred rectangle
+	// of the source with the sides swapped when it is transposed.
+	sw, sh, dw, dh := w, h, outW, outH
+	if transposed {
+		sw, sh, dw, dh = h, w, outH, outW
+	}
+	x0, y0 := b.Min.X+(b.Dx()-sw)/2, b.Min.Y+(b.Dy()-sh)/2
+	dst := image.NewRGBA(image.Rect(0, 0, dw, dh))
 	xdraw.Draw(dst, dst.Bounds(), image.NewUniform(color.White), image.Point{}, xdraw.Src)
-	xdraw.CatmullRom.Scale(dst, dst.Bounds(), oriented, image.Rect(x0, y0, x0+w, y0+h), xdraw.Over, nil)
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), img, image.Rect(x0, y0, x0+sw, y0+sh), xdraw.Over, nil)
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 85}); err != nil {
+	if err := jpeg.Encode(&buf, orientRect(dst, orientation), &jpeg.Options{Quality: 85}); err != nil {
 		return nil, apperr.Internal(err)
 	}
 	return buf.Bytes(), nil

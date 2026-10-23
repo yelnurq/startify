@@ -16,6 +16,12 @@ describe('detectLocale', () => {
   it('ignores unsupported saved values and falls back to Kazakh', () => {
     expect(detectLocale('fr', ['de-DE'])).toBe('kk');
   });
+
+  it('follows the language of the link first, as the server does', () => {
+    expect(detectLocale('kk', ['ru-RU'], 'en')).toBe('en');
+    expect(detectLocale('ru', ['en-US'], 'de')).toBe('ru');
+    expect(detectLocale(null, [], null)).toBe('kk');
+  });
 });
 
 describe('formatters', () => {

@@ -32,8 +32,12 @@ type Slide struct {
 	Bullets []string `json:"bullets"`
 }
 
-// DeckSlides is the length of the pitch deck.
-const DeckSlides = 12
+// DeckSlides is the length of the pitch deck; a model may merge slides down
+// to deckMinSlides (the terms of reference ask for 10 to 12).
+const (
+	DeckSlides    = 12
+	deckMinSlides = 10
+)
 
 func text(maxLength int) map[string]any {
 	return map[string]any{"type": "string", "maxLength": maxLength}
@@ -49,7 +53,7 @@ var pitchSchema = llm.Schema{Name: "pitch_content", JSON: map[string]any{
 		"tagline": text(160), "problem": text(700), "customer": text(500), "solution": text(700), "market": text(500),
 		"competition": text(500), "business_model": text(500), "traction": text(500), "team": text(500), "ask": text(500),
 		"slides": map[string]any{
-			"type": "array", "minItems": 1, "maxItems": DeckSlides,
+			"type": "array", "minItems": deckMinSlides, "maxItems": DeckSlides,
 			"items": map[string]any{
 				"type": "object", "required": []any{"title", "bullets"},
 				"properties": map[string]any{
@@ -65,6 +69,14 @@ var slideTitles = map[string][DeckSlides]string{
 	"kk": {"", "Мәселе", "Клиент", "Шешім", "Нарық", "Бәсекелестер", "Бизнес-модель", "Трекшн және метрикалар", "Команда", "Жол картасы", "Бізге не қажет", "Байланыс"},
 	"ru": {"", "Проблема", "Клиент", "Решение", "Рынок", "Конкуренты", "Бизнес-модель", "Трекшн и метрики", "Команда", "Дорожная карта", "Что нам нужно", "Контакты"},
 	"en": {"", "Problem", "Customer", "Solution", "Market", "Competitors", "Business model", "Traction and metrics", "Team", "Roadmap", "The ask", "Contact"},
+}
+
+// slideGap is the bullet of a slide the project has no data for yet: the
+// deck keeps its classic order and shows what to add, without guessing.
+var slideGap = map[string]string{
+	"kk": "Команда бұл бөлімді әлі толтырған жоқ",
+	"ru": "Команда ещё не заполнила этот раздел",
+	"en": "The team has not filled in this section yet",
 }
 
 // nbsp keeps an amount on one line.
@@ -212,13 +224,15 @@ func assemble(d promptData, locale string) PitchContent {
 		ask,
 		nonEmpty(get("pitch", "contact")),
 	}
+	gap := firstNonEmpty(slideGap[locale], slideGap["ru"])
 	for i, b := range bullets {
 		title := titles[i]
 		if i == 0 {
 			title = d.Project.Title
 		}
-		if len(b) == 0 && i != 0 {
-			continue
+		// Every slide stays: one without data says what the team has to add.
+		if len(b) == 0 {
+			b = []string{gap}
 		}
 		b = limit(b, 4)
 		for j := range b {

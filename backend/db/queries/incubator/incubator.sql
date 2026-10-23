@@ -14,13 +14,16 @@ SELECT * FROM project_step_data WHERE project_id = @project_id;
 
 -- name: SaveStep :one
 -- A save bumps the version; completion survives only while the minimum holds
--- (the caller passes the resulting status).
+-- and an approval only while the answers stay as approved (the caller passes
+-- the resulting status).
 UPDATE project_step_data
    SET data = @data,
        version = version + 1,
        status = @status,
        completed_at = CASE WHEN @status::text IN ('completed', 'approved') THEN completed_at END,
        completed_by = CASE WHEN @status::text IN ('completed', 'approved') THEN completed_by END,
+       approved_by = CASE WHEN @status::text = 'approved' THEN approved_by END,
+       approval_comment = CASE WHEN @status::text = 'approved' THEN approval_comment END,
        updated_by = @updated_by
  WHERE project_id = @project_id AND step_key = @step_key
 RETURNING *;
@@ -57,9 +60,11 @@ VALUES (app_current_tenant(), @project_id, @step_key, @field_key, @value, @versi
 UPDATE project_revisions SET value = @value, version = @version WHERE id = @id;
 
 -- name: ListRevisions :many
+-- hidden_fields are left out: the sensitive fields a project withholds.
 SELECT * FROM project_revisions
  WHERE project_id = @project_id AND step_key = @step_key
    AND (sqlc.narg('field_key')::text IS NULL OR field_key = sqlc.narg('field_key')::text)
+   AND NOT (field_key = ANY(coalesce(@hidden_fields::text[], '{}')))
    AND (sqlc.narg('before_id')::uuid IS NULL OR id < sqlc.narg('before_id')::uuid)
  ORDER BY id DESC
  LIMIT @row_limit;
@@ -142,7 +147,8 @@ SELECT * FROM project_materials WHERE id = @id AND project_id = @project_id;
 SELECT * FROM project_materials WHERE project_id = @project_id ORDER BY id DESC LIMIT 50;
 
 -- name: SetMaterialReady :execrows
-UPDATE project_materials SET status = 'ready', file_id = @file_id, error = NULL WHERE id = @id AND status = 'pending';
+UPDATE project_materials SET status = 'ready', file_id = @file_id, error = NULL, sensitive = @sensitive
+WHERE id = @id AND status = 'pending';
 
 -- name: SetMaterialFailed :exec
 UPDATE project_materials SET status = 'failed', error = @error WHERE id = @id AND status = 'pending';

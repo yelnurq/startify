@@ -191,6 +191,31 @@ func (q *Queries) ListEnabledOidcProviders(ctx context.Context, tenantID uuid.UU
 	return items, nil
 }
 
+const listSuspendedTenantIDs = `-- name: ListSuspendedTenantIDs :many
+SELECT id FROM tenants WHERE status = 'suspended'
+`
+
+// Suspended universities drop out of the national showcase.
+func (q *Queries) ListSuspendedTenantIDs(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listSuspendedTenantIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTenantsByIDs = `-- name: ListTenantsByIDs :many
 SELECT t.id, t.slug, t.name, t.short_name, t.primary_color, t.logo_file_id, t.cover_file_id,
        coalesce((SELECT d.domain FROM tenant_domains d WHERE d.tenant_id = t.id AND d.is_primary LIMIT 1), '')::text AS primary_domain

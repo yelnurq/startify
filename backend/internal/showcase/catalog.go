@@ -45,6 +45,15 @@ func member(ctx context.Context, t tenancy.Tenant) bool {
 	return ok && p.TenantID == t.ID
 }
 
+// hiddenUniversities are the universities whose pages a scope leaves out:
+// suspended ones drop out of the national showcase (their sites do not open).
+func (s *Service) hiddenUniversities(ctx context.Context, scope string) ([]uuid.UUID, error) {
+	if scope != scopeNational {
+		return nil, nil
+	}
+	return s.Tenants.Suspended(ctx)
+}
+
 func scopeOf(ctx context.Context, national bool) (string, error) {
 	t, err := tenancy.Require(ctx)
 	switch {
@@ -151,6 +160,9 @@ func (s *Service) List(ctx context.Context, params apigen.ListShowcaseParams) (a
 	args := showcasedb.ListLiveParams{
 		Scope: scope, FacultyID: params.Faculty, Tag: lower(params.Tag), RowLimit: int32(limit + 1), //nolint:gosec // bounded by MaxLimit
 	}
+	if args.Suspended, err = s.hiddenUniversities(ctx, scope); err != nil {
+		return apigen.ShowcasePage{}, err
+	}
 	if params.Q != nil {
 		args.Query = tsQuery(*params.Q)
 	}
@@ -223,10 +235,14 @@ func (s *Service) Facets(ctx context.Context, national bool) (apigen.ShowcaseFac
 	if err != nil {
 		return apigen.ShowcaseFacets{}, err
 	}
+	hidden, err := s.hiddenUniversities(ctx, scope)
+	if err != nil {
+		return apigen.ShowcaseFacets{}, err
+	}
 	var rows []showcasedb.ListFacetRowsRow
 	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		var err error
-		rows, err = s.q(ctx).ListFacetRows(ctx, scope)
+		rows, err = s.q(ctx).ListFacetRows(ctx, showcasedb.ListFacetRowsParams{Scope: scope, Suspended: hidden})
 		return err
 	})
 	if err != nil {

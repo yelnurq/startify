@@ -13,11 +13,18 @@ export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
 }
 
-/** Picks the saved language, then the first supported browser language, then the default. */
+/**
+ * Picks the language of the link (`?lang=`, the address of one language
+ * version that search engines index), then the saved language, then the
+ * first supported browser language, then the default. The server draws the
+ * first screen in the same order (backend internal/showcase/boot.go).
+ */
 export function detectLocale(
   saved: string | null = readSaved(),
   preferred: readonly string[] = typeof navigator === 'undefined' ? [] : navigator.languages,
+  requested: string | null = readRequested(),
 ): Locale {
+  if (isLocale(requested)) return requested;
   if (isLocale(saved)) return saved;
   for (const tag of preferred) {
     const base = tag.toLowerCase().split('-')[0];
@@ -32,6 +39,11 @@ function readSaved(): string | null {
   } catch {
     return null;
   }
+}
+
+function readRequested(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('lang');
 }
 
 export async function changeLocale(locale: Locale): Promise<void> {

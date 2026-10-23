@@ -124,17 +124,31 @@ type bootPage struct {
 
 func bootString(key, locale string) string { return bootText[key].Best(locale) }
 
-// bootLocale picks the language the web client will show: the saved choice,
+// supportedLocale is the interface language of a language tag, or "".
+func supportedLocale(tag string) string {
+	base := strings.ToLower(strings.SplitN(tag, "-", 2)[0])
+	for _, l := range bootLocales {
+		if base == l {
+			return l
+		}
+	}
+	return ""
+}
+
+// explicitLocale is the language a link names (?lang=): the address of one
+// language version of a page, which search engines index apart.
+func explicitLocale(r *http.Request) (string, bool) {
+	l := supportedLocale(r.URL.Query().Get("lang"))
+	return l, l != ""
+}
+
+// bootLocale picks the language the web client will show (public/theme-init.js
+// and src/shared/i18n agree): the language of the link, the saved choice,
 // then the browser's languages in order, then Kazakh.
 func bootLocale(r *http.Request) string {
-	supported := func(tag string) string {
-		base := strings.ToLower(strings.SplitN(tag, "-", 2)[0])
-		for _, l := range bootLocales {
-			if base == l {
-				return l
-			}
-		}
-		return ""
+	supported := supportedLocale
+	if l, ok := explicitLocale(r); ok {
+		return l
 	}
 	if c, err := r.Cookie(localeCookie); err == nil {
 		if l := supported(c.Value); l != "" {

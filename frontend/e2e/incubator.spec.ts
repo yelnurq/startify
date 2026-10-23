@@ -322,6 +322,16 @@ test.describe('incubator', () => {
     await expect(
       student.getByRole('button', { name: /«Формулировка проблемы»: 1 открытый комментарий/ }),
     ).toBeVisible();
+
+    // New answers withdraw the approval until the supervisor approves them again.
+    await student
+      .getByRole('textbox', { name: 'Формулировка проблемы', exact: true })
+      .fill(
+        'Первокурсники тратят до получаса в день на поиск свободной аудитории для работы в командах.',
+      );
+    await expect(student.getByText(/Проблема описана честно/)).toHaveCount(0);
+    await supervisor.reload();
+    await expect(supervisor.getByRole('button', { name: 'Одобрить' })).toBeVisible();
     await studentContext.close();
     await supervisorContext.close();
   });
