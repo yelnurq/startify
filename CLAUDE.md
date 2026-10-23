@@ -14,21 +14,25 @@ Qadam — мультитенантная AI-платформа проектно�
 - **Frontend**: React 19 + TypeScript 5.9 strict, Vite 8, TanStack Router (file-based,
   `src/app/routes`) и Query, Tailwind v4 + собственная дизайн-система на Radix,
   i18next (kk / ru / en), openapi-fetch с типами из `openapi.yaml`.
-- **Infra**: Docker Compose (`deploy/docker-compose.yml`), Nginx, GitHub Actions.
+- **Infra**: Docker Compose (`deploy/docker-compose.yml` — базовый, наружу только web;
+  `deploy/docker-compose.dev.yml` — порты служб на 127.0.0.1 и Mailpit, только для разработки),
+  Nginx, GitHub Actions.
 
 ## Команды
 
 ```bash
 cp .env.example .env
-make dev            # весь стек в Docker → http://localhost:3000
+make dev            # весь стек в Docker (базовый + dev-файл) → http://localhost:3000
 make infra          # только инфраструктура, затем make migrate / run-api / run-worker / run-web
 make gen            # oapi-codegen + sqlc (Docker) + openapi-typescript
 make lint           # golangci-lint, tsc, eslint, prettier, i18n:check
 make test           # go test (+ интеграционные на testcontainers) и vitest
 make e2e            # Playwright против запущенного стека
+make compose-check  # docker compose config для базового файла и для пары с dev-файлом
 ```
 
-На Windows без `make`: команды из Makefile запускаются напрямую; race detector
+На Windows без `make`: команды из Makefile запускаются напрямую (compose — всегда с
+`-f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml`); race detector
 требует cgo, поэтому локально `go test ./...` (в CI — `-race`).
 
 ## Порядок работы над фичей
