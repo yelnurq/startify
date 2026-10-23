@@ -7,6 +7,7 @@ import {
 
 import { api, unwrap, unwrapTagged } from '@/shared/api/client';
 import { useIdempotencyKey } from '@/shared/api/idempotency';
+import { finishedSince } from '@/shared/api/polling';
 import type { components } from '@/shared/api/schema.gen';
 
 export type IncubatorTemplate = components['schemas']['IncubatorTemplate'];
@@ -268,12 +269,19 @@ export function mentorQuery(projectId: string, stepKey: string) {
 export function materialsQuery(projectId: string) {
   return queryOptions({
     queryKey: ['projects', projectId, 'materials'],
-    queryFn: async () =>
-      (
-        await unwrap(
-          api.GET('/projects/{projectId}/materials', { params: { path: { projectId } } }),
-        )
-      ).items,
+    queryFn: async ({ client, queryKey }) => {
+      const before = client.getQueryData<Material[]>(queryKey);
+      const { items } = await unwrap(
+        api.GET('/projects/{projectId}/materials', { params: { path: { projectId } } }),
+      );
+      // A finished material earns the badge and shows in the activity.
+      if (finishedSince(before, items, (m) => m.status === 'pending')) {
+        void client.invalidateQueries({ queryKey: ['projects', projectId, 'card'] });
+        void client.invalidateQueries({ queryKey: ['projects', projectId, 'activity'] });
+        void client.invalidateQueries({ queryKey: ['projects', 'list'] });
+      }
+      return items;
+    },
     // Generation runs in the background: poll while anything is pending.
     refetchInterval: (query) =>
       query.state.data?.some((m) => m.status === 'pending') ? 3_000 : false,

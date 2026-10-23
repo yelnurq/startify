@@ -1,5 +1,10 @@
-import type { Query } from '@tanstack/react-query';
-import { describe, expect, it } from 'vitest';
+import { QueryClient, type Query } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+
+import { materialsQuery } from '@/features/incubator/api';
+import { finishedSince } from '@/shared/api/polling';
 
 import {
   evaluationQuery,
@@ -46,5 +51,103 @@ describe('evaluation polling', () => {
 
   it('builds the report address in a language', () => {
     expect(reportUrl('p1', 'e1', 'kk')).toBe('/api/v1/projects/p1/evaluations/e1/report?locale=kk');
+  });
+});
+
+describe('finishedSince', () => {
+  const running = (item: { id: string; status: string }) => item.status === 'running';
+  it('notices an item that finished between two refreshes', () => {
+    expect(finishedSince(undefined, [{ id: 'a', status: 'ready' }], running)).toBe(false);
+    expect(
+      finishedSince([{ id: 'a', status: 'running' }], [{ id: 'a', status: 'running' }], running),
+    ).toBe(false);
+    expect(
+      finishedSince([{ id: 'a', status: 'running' }], [{ id: 'a', status: 'failed' }], running),
+    ).toBe(true);
+    // A new evaluation that is already done was never seen running here.
+    expect(finishedSince([], [{ id: 'b', status: 'ready' }], running)).toBe(false);
+  });
+});
+
+const server = setupServer();
+beforeAll(() => {
+  server.listen({ onUnhandledFrame: 'error' });
+});
+afterEach(() => {
+  server.resetHandlers();
+});
+afterAll(() => {
+  server.close();
+});
+
+function summary(status: EvaluationSummary['status']): EvaluationSummary {
+  return {
+    id: 'e1',
+    status,
+    total: status === 'ready' ? 72 : null,
+    level: null,
+    overridden: false,
+    created_at: '2026-10-23T10:00:00Z',
+    completed_at: null,
+  };
+}
+
+/** A client with the project's card and lists cached and fresh. */
+function clientWithScores() {
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+  client.setQueryData(['projects', 'p1', 'card'], { data: {}, etag: '"1"' });
+  client.setQueryData(['projects', 'list', 'mine', ''], { pages: [] });
+  return client;
+}
+
+function invalidated(client: QueryClient, key: readonly unknown[]): boolean {
+  return client.getQueryState(key)?.isInvalidated ?? false;
+}
+
+describe('results of background work', () => {
+  it('refresh the project’s score once a running evaluation finishes', async () => {
+    let status: EvaluationSummary['status'] = 'running';
+    server.use(
+      http.get('*/api/v1/projects/p1/evaluations', () =>
+        HttpResponse.json({ items: [summary(status)] }),
+      ),
+    );
+    const client = clientWithScores();
+    await client.query(evaluationsQuery('p1'));
+    expect(invalidated(client, ['projects', 'p1', 'card'])).toBe(false);
+
+    status = 'ready';
+    await client.query({ ...evaluationsQuery('p1'), staleTime: 0 });
+    expect(invalidated(client, ['projects', 'p1', 'card'])).toBe(true);
+    expect(invalidated(client, ['projects', 'list', 'mine', ''])).toBe(true);
+  });
+
+  it('refresh the project once a material is generated', async () => {
+    let status = 'pending';
+    server.use(
+      http.get('*/api/v1/projects/p1/materials', () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: 'm1',
+              kind: 'one_pager',
+              format: 'pdf',
+              locale: 'ru',
+              status,
+              error: null,
+              download_url: null,
+              created_at: '2026-10-23T10:00:00Z',
+              updated_at: '2026-10-23T10:00:00Z',
+            },
+          ],
+        }),
+      ),
+    );
+    const client = clientWithScores();
+    await client.query(materialsQuery('p1'));
+    expect(invalidated(client, ['projects', 'p1', 'card'])).toBe(false);
+    status = 'ready';
+    await client.query({ ...materialsQuery('p1'), staleTime: 0 });
+    expect(invalidated(client, ['projects', 'p1', 'card'])).toBe(true);
   });
 });
