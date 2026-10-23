@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapTagged } from '@/shared/api/client';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
 import type { components } from '@/shared/api/schema.gen';
 
 export type Project = components['schemas']['Project'];
@@ -130,14 +131,18 @@ export function peopleQuery(q: string, role?: components['schemas']['Role']) {
 
 export function useCreateProject() {
   const queryClient = useQueryClient();
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: (body: ProjectCreate) =>
       unwrap(
         api.POST('/projects', {
           body,
-          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+          params: { header: { 'Idempotency-Key': submission.for(body) } },
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projects', 'list'] }),
   });
 }

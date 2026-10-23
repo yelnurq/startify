@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapTagged } from '@/shared/api/client';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
 import type { components } from '@/shared/api/schema.gen';
 import type { Locale } from '@/shared/i18n';
 
@@ -69,16 +70,20 @@ function useInvalidateEvaluations(projectId: string) {
 export function useRequestEvaluation(projectId: string) {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateEvaluations(projectId);
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: () =>
       unwrap(
         api.POST('/projects/{projectId}/evaluations', {
           params: {
             path: { projectId },
-            header: { 'Idempotency-Key': crypto.randomUUID() },
+            header: { 'Idempotency-Key': submission.for({ projectId }) },
           },
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: (evaluation) => {
       queryClient.setQueryData(evaluationQuery(projectId, evaluation.id).queryKey, evaluation);
       void invalidate();

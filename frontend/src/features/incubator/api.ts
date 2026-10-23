@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 
 import { api, unwrap, unwrapTagged } from '@/shared/api/client';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
 import type { components } from '@/shared/api/schema.gen';
 
 export type IncubatorTemplate = components['schemas']['IncubatorTemplate'];
@@ -194,17 +195,21 @@ function useInvalidateComments(projectId: string, stepKey: string) {
 
 export function useCreateComment(projectId: string, stepKey: string) {
   const invalidate = useInvalidateComments(projectId, stepKey);
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: (body: CommentCreate) =>
       unwrap(
         api.POST('/projects/{projectId}/comments', {
           params: {
             path: { projectId },
-            header: { 'Idempotency-Key': crypto.randomUUID() },
+            header: { 'Idempotency-Key': submission.for({ projectId, body }) },
           },
           body,
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: invalidate,
   });
 }
@@ -277,14 +282,21 @@ export function materialsQuery(projectId: string) {
 
 export function useCreateMaterial(projectId: string) {
   const queryClient = useQueryClient();
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: (body: components['schemas']['MaterialCreate']) =>
       unwrap(
         api.POST('/projects/{projectId}/materials', {
-          params: { path: { projectId }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+          params: {
+            path: { projectId },
+            header: { 'Idempotency-Key': submission.for({ projectId, body }) },
+          },
           body,
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: materialsQuery(projectId).queryKey }),
   });

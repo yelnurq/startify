@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 
 import { api, unwrap } from '@/shared/api/client';
+import { useIdempotencyKey } from '@/shared/api/idempotency';
 import type { components } from '@/shared/api/schema.gen';
 
 export type TeamRequest = components['schemas']['TeamRequest'];
@@ -98,14 +99,18 @@ function useInvalidateRequests() {
 
 export function useCreateTeamRequest() {
   const invalidate = useInvalidateRequests();
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: (body: TeamRequestCreate) =>
       unwrap(
         api.POST('/team-requests', {
           body,
-          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+          params: { header: { 'Idempotency-Key': submission.for(body) } },
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: invalidate,
   });
 }
@@ -123,17 +128,21 @@ export function useUpdateTeamRequest() {
 
 export function useRespondToTeamRequest() {
   const invalidate = useInvalidateRequests();
+  const submission = useIdempotencyKey();
   return useMutation({
     mutationFn: ({ id, message }: { id: string; message: string }) =>
       unwrap(
         api.POST('/team-requests/{requestId}/responses', {
           params: {
             path: { requestId: id },
-            header: { 'Idempotency-Key': crypto.randomUUID() },
+            header: { 'Idempotency-Key': submission.for({ id, message }) },
           },
           body: { message },
         }),
       ),
+    onSettled: (_data, error) => {
+      submission.settle(error);
+    },
     onSuccess: invalidate,
   });
 }
