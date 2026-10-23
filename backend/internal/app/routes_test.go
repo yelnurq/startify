@@ -12,7 +12,7 @@ func TestSpecRoutes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range []struct {
-		method, path      string
+		method, path   string
 		stream, upload bool
 	}{
 		{http.MethodPost, "/api/v1/admin/ai/check", true, false},

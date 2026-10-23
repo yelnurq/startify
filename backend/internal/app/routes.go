@@ -17,7 +17,7 @@ const apiBase = "/api/v1"
 // body limit). Reading them from the contract means a new operation cannot
 // be forgotten in a hand-written list.
 func specRoutes() (streams, uploads httpx.Routes, err error) {
-	spec, err := apigen.GetSwagger()
+	spec, err := apigen.GetSpec()
 	if err != nil {
 		return httpx.Routes{}, httpx.Routes{}, fmt.Errorf("app: read openapi.yaml: %w", err)
 	}
