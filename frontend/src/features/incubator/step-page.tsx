@@ -133,7 +133,7 @@ function StepEditorView({
   const { t } = useTranslation(['incubator', 'common']);
   const text = useLocalized();
   const projectId = project.id;
-  const { editor, snapshot } = useStepEditor(projectId, stepKey, initial);
+  const { editor, snapshot } = useStepEditor(projectId, stepKey, initial, meId);
   const editable = canEdit(project);
   const approver = canApprove(project, innovationManager);
   const check = useStepAction(projectId, stepKey, 'check');
@@ -153,6 +153,12 @@ function StepEditorView({
   useEffect(() => {
     onStatus(snapshot.status, snapshot.savedAt);
   }, [snapshot.status, snapshot.savedAt, onStatus]);
+
+  // Edits that had not reached the server on an earlier visit are back.
+  const restored = snapshot.restored;
+  useEffect(() => {
+    if (restored) toast.info(t('save.restored'), { id: `step-restored-${stepKey}` });
+  }, [restored, stepKey, t]);
 
   useEffect(() => {
     if (!editable) return;

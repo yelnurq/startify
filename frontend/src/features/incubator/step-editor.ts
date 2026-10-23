@@ -1,6 +1,13 @@
 import { ApiError, NetworkError, type FieldError } from '@/shared/api/client';
 
 import type { Step } from './api';
+import {
+  claimDraft,
+  releaseDraft,
+  type DraftStore,
+  type PendingEditor,
+  type StepDraft,
+} from './drafts';
 import { mergeStep, resolveConflicts, type Resolution } from './merge';
 import { changedKeys, pick, type FieldValue, type StepValues } from './values';
 
@@ -31,6 +38,8 @@ export interface EditorSnapshot {
   error: unknown;
   /** Field errors of the last rejected save, by path (`fields.<key>…`). */
   fieldErrors: FieldError[];
+  /** Unsaved edits of an earlier visit were brought back. */
+  restored: boolean;
 }
 
 export interface EditorBackend {
@@ -49,8 +58,13 @@ function tagOf(tagged: Tagged): string {
  * the edits are merged into it field by field; overlapping changes wait for
  * the person to choose. Local values are never replaced by the server's
  * while they differ from what the server had.
+ *
+ * Unsaved edits are also kept in a draft store until the server has them:
+ * after a reload, a lost connection or leaving the step they come back and
+ * are merged into the server's version the same way. A step left with
+ * unsaved edits keeps saving them in the background until it is opened again.
  */
-export class StepEditor {
+export class StepEditor implements PendingEditor {
   private values: StepValues;
   private base: StepValues;
   private step: Step;
@@ -66,25 +80,62 @@ export class StepEditor {
   private inflight: Promise<void> | undefined;
   private again = false;
   private source: SaveSource = 'edit';
+  /** Unmounted: no form any more, pending edits are still being saved. */
   private disposed = false;
+  /** Given up for good: a new editor of the step took over, or the session ended. */
+  private abandoned = false;
+  /** Writes the step's draft (from `resume` until its work is done). */
+  private owned = false;
+  private restored = false;
   private readonly backend: EditorBackend;
   private readonly delay: number;
   private readonly onSaved: ((step: Step) => void) | undefined;
+  private readonly drafts: DraftStore | undefined;
+  private readonly ownerKey: string | symbol;
 
   constructor(
     initial: Tagged,
     backend: EditorBackend,
     delay = 1200,
     onSaved?: (step: Step) => void,
+    drafts?: DraftStore,
   ) {
     this.backend = backend;
     this.delay = delay;
     this.onSaved = onSaved;
+    this.drafts = drafts;
+    this.ownerKey = drafts?.id ?? Symbol('step-editor');
     this.values = { ...initial.data.values };
     this.base = { ...initial.data.values };
     this.step = initial.data;
     this.etag = tagOf(initial);
+    const draft = drafts?.read();
+    if (draft) this.restore(draft, initial);
     this.snapshot = this.build();
+  }
+
+  /**
+   * Brings back the edits of an earlier visit, merged into the server's
+   * version as if a save had found a newer one.
+   */
+  private restore(draft: StepDraft, initial: Tagged) {
+    const server = this.base;
+    const base = { ...server, ...draft.base };
+    const mine = { ...server, ...draft.values };
+    const { merged, conflicts } = mergeStep(base, mine, server);
+    if (conflicts.length) {
+      this.base = base;
+      this.values = mine;
+      this.conflict = { fields: conflicts, mine, theirs: server, merged, latest: initial };
+      this.status = 'conflict';
+      this.restored = true;
+      return;
+    }
+    this.values = merged;
+    if (changedKeys(this.base, this.values).length) {
+      this.status = 'dirty';
+      this.restored = true;
+    }
   }
 
   subscribe = (listener: () => void) => {
@@ -106,12 +157,25 @@ export class StepEditor {
       conflict: this.conflict,
       error: this.error,
       fieldErrors: this.fieldErrors,
+      restored: this.restored,
     };
   }
 
   private emit() {
     this.snapshot = this.build();
+    this.persist();
     for (const listener of this.listeners) listener();
+  }
+
+  /** The draft holds exactly the fields the server does not have yet. */
+  private persist() {
+    if (!this.drafts || !this.owned) return;
+    const keys = changedKeys(this.base, this.values);
+    if (keys.length === 0) {
+      this.drafts.clear();
+      return;
+    }
+    this.drafts.write({ values: pick(this.values, keys), base: pick(this.base, keys) });
   }
 
   /** An edit typed by the person; saved after a pause. */
@@ -139,9 +203,11 @@ export class StepEditor {
   }
 
   private schedule(ms: number) {
-    if (this.disposed) return;
+    // An unmounted editor still finishes its saves (retries while offline).
+    if (this.abandoned) return;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
+      this.timer = undefined;
       void this.save();
     }, ms);
   }
@@ -149,19 +215,24 @@ export class StepEditor {
   /** Saves pending edits now and waits until the server has them. */
   async flush() {
     clearTimeout(this.timer);
+    this.timer = undefined;
     while (this.inflight) await this.inflight;
     if (changedKeys(this.base, this.values).length && !this.conflict) await this.save();
   }
 
   save(): Promise<void> {
+    if (this.abandoned) return Promise.resolve();
     if (this.inflight) {
       this.again = true;
       return this.inflight;
     }
-    if (this.conflict) return Promise.resolve();
     const keys = changedKeys(this.base, this.values);
-    if (keys.length === 0) return Promise.resolve();
+    if (this.conflict || keys.length === 0) {
+      this.settle();
+      return Promise.resolve();
+    }
     clearTimeout(this.timer);
+    this.timer = undefined;
     this.status = 'saving';
     this.emit();
     this.inflight = this.send(keys).finally(() => {
@@ -169,6 +240,8 @@ export class StepEditor {
       if (this.again) {
         this.again = false;
         void this.save();
+      } else {
+        this.settle();
       }
     });
     return this.inflight;
@@ -293,17 +366,52 @@ export class StepEditor {
     return this.etag;
   }
 
-  /** Arms the editor again after `dispose` (React may unmount and remount effects). */
+  /**
+   * Arms the editor once its form is on screen (again after `dispose`: React
+   * may unmount and remount effects). It owns the step's draft from now on,
+   * and restored edits are saved.
+   */
   resume() {
+    if (this.abandoned) return;
     this.disposed = false;
+    this.owned = true;
+    claimDraft(this.ownerKey, this);
+    this.persist();
+    if (!this.conflict && changedKeys(this.base, this.values).length) this.schedule(this.delay);
   }
 
-  /** Stops timers; unsaved edits are sent one last time. */
+  /**
+   * The form is gone: unsaved edits are sent once more and retried in the
+   * background while offline. Whatever does not reach the server stays in
+   * the draft for the next visit.
+   */
   dispose() {
     clearTimeout(this.timer);
+    this.timer = undefined;
     if (!this.disposed && !this.conflict && changedKeys(this.base, this.values).length) {
       void this.save();
     }
     this.disposed = true;
+    this.settle();
+  }
+
+  /** Unsaved, saving, offline or conflicting edits the server does not have. */
+  hasUnsaved(): boolean {
+    return !this.abandoned && this.busy();
+  }
+
+  abandon() {
+    this.abandoned = true;
+    this.disposed = true;
+    this.owned = false;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+  }
+
+  /** An unmounted editor with nothing left to do lets go of the draft. */
+  private settle() {
+    if (!this.disposed || this.inflight !== undefined || this.timer !== undefined) return;
+    this.owned = false;
+    releaseDraft(this.ownerKey, this);
   }
 }

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 
 import { sessionQuery } from '@/features/auth/api';
+import { abandonEditors, discardDraftsExcept } from '@/features/incubator/drafts';
 import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
@@ -68,8 +69,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Whoever signs in next at this computer sees nothing cached for the previous user.
-watchSessionUser(queryClient);
+// Whoever signs in next at this computer sees nothing cached for the previous
+// user. Step editors still saving stop with the session; unsaved drafts stay
+// only for the person who wrote them.
+watchSessionUser(queryClient, (user) => {
+  abandonEditors();
+  if (user !== null) discardDraftsExcept(user);
+});
 
 // A session lost while working (expired, revoked in another tab): forget it and
 // everything fetched with it, and return to sign-in. Initial visits are handled

@@ -16,10 +16,14 @@ import {
   type MentorMessage,
   type MentorMode,
 } from './api';
+import { sessionDraftStore } from './drafts';
 import { StepEditor, type Tagged } from './step-editor';
 
-/** One editor per mounted step form; it keeps edits across re-renders. */
-export function useStepEditor(projectId: string, stepKey: string, initial: Tagged) {
+/**
+ * One editor per mounted step form; it keeps edits across re-renders, and
+ * unsaved ones in the tab's session storage until the server has them.
+ */
+export function useStepEditor(projectId: string, stepKey: string, initial: Tagged, userId: string) {
   const queryClient = useQueryClient();
   const [editor] = useState(
     () =>
@@ -35,6 +39,7 @@ export function useStepEditor(projectId: string, stepKey: string, initial: Tagge
           void queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'card'] });
           void queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'activity'] });
         },
+        sessionDraftStore(userId, projectId, stepKey),
       ),
   );
   const snapshot = useSyncExternalStore(editor.subscribe, editor.getSnapshot);

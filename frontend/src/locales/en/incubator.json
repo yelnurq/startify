@@ -92,7 +92,8 @@
     "offline": "Offline — will save when back online",
     "conflict": "Version conflict",
     "error": "Could not save",
-    "updatedByOthers": "Other members have just changed this step. Your edits will be merged with their version when saved."
+    "updatedByOthers": "Other members have just changed this step. Your edits will be merged with their version when saved.",
+    "restored": "Brought back edits that had not been saved yet"
   },
   "step": {
     "of": "Step {{number}} of {{total}} · {{stage}}",
