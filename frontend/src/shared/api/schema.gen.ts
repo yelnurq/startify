@@ -325,7 +325,11 @@ export interface paths {
         get?: never;
         /**
          * Change the password
-         * @description Other sessions are revoked. Errors `auth.password_incorrect`, `auth.password_weak`.
+         * @description Other sessions are revoked, in every university of the account. An account without a password
+         *     (created by single sign-on) sets its first one with an empty `current_password` and a sign-in
+         *     `code` e-mailed by `POST /auth/otp/request`: a session alone must not become a lasting password.
+         *     Errors: `auth.password_incorrect`, `auth.code_invalid`, `auth.password_weak` (422),
+         *     `auth.reauth_required` (403, the code is missing), `auth.too_many_attempts` (429).
          */
         put: operations["changePassword"];
         post?: never;
@@ -2075,6 +2079,8 @@ export interface components {
         PasswordChangeRequest: {
             current_password: string;
             new_password: string;
+            /** @description A sign-in code from the e-mail; required instead of the current password to set a first password. */
+            code?: string;
         };
         ProfileLinks: {
             website?: string | null;

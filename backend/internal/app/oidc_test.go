@@ -14,6 +14,7 @@ import (
 
 	"github.com/yelnurq/startify/backend/internal/apiconv"
 	"github.com/yelnurq/startify/backend/internal/apigen"
+	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/tenant/tenantdb"
 )
@@ -166,6 +167,39 @@ func TestSingleSignOn(t *testing.T) {
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/login?error=auth.oidc_failed" {
 		t.Fatalf("foreign provider: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
+}
+
+func TestFirstPasswordNeedsAnEmailedCode(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	idp, provider := startIDP(t, h, ts.kazutb)
+	const email = "sso-only@qadam.test"
+	b := h.browser(t, kazutbHost)
+	idp.QueueUser(ssoUser{sub: "kazutb-6006", email: email, name: "Тек SSO", verified: true})
+	signInWithSSO(t, b, provider, nil)
+	first := apigen.PasswordChangeRequest{CurrentPassword: "", NewPassword: "First-Steppe-Password-6"}
+
+	// A session alone does not add a password, nor does a wrong code.
+	expectProblem(t, b.do(http.MethodPut, "/api/v1/auth/password", first), http.StatusForbidden, "auth.reauth_required")
+	expect(t, b.do(http.MethodPost, "/api/v1/auth/otp/request", apigen.EmailRequest{Email: openapiEmail(email)}), http.StatusAccepted)
+	code := h.lastMail(t, email, mail.TemplateLoginCode).Data["code"]
+	wrong := "000000"
+	if code == wrong {
+		wrong = "111111"
+	}
+	first.Code = &wrong
+	expectProblem(t, b.do(http.MethodPut, "/api/v1/auth/password", first), http.StatusUnprocessableEntity, "auth.code_invalid")
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/login",
+		apigen.LoginRequest{Email: openapiEmail(email), Password: first.NewPassword}), http.StatusUnauthorized, "auth.invalid_credentials")
+
+	// The code from the mailbox does.
+	first.Code = &code
+	expect(t, b.do(http.MethodPut, "/api/v1/auth/password", first), http.StatusNoContent)
+	expect(t, b.do(http.MethodGet, "/api/v1/me", nil), http.StatusOK)
+	login(t, h.browser(t, kazutbHost), email, first.NewPassword)
+	// The code is used up.
+	first.NewPassword = "Second-Steppe-Password-6"
+	expectProblem(t, b.do(http.MethodPut, "/api/v1/auth/password", first), http.StatusUnprocessableEntity, "auth.password_incorrect")
 }
 
 func TestSingleSignOnTakesUnverifiedAccountsOfItsDomains(t *testing.T) {

@@ -64,6 +64,7 @@ var (
 	errSuspended          = apperr.Forbidden("auth.account_suspended", "access to the account is suspended")
 	errEmailTaken         = apperr.Conflict("auth.email_taken", "the e-mail is already registered")
 	errEmailUnverified    = apperr.Forbidden("auth.email_unverified", "confirm the e-mail address with the link from the letter first")
+	errReauthRequired     = apperr.Forbidden("auth.reauth_required", "confirm with a sign-in code from the e-mail to set a first password")
 	errSessionNotFound    = apperr.NotFound("session.not_found", "the session does not exist")
 	errTooManyAttempts    = "auth.too_many_attempts"
 )
@@ -660,6 +661,44 @@ func (s *Service) createToken(ctx context.Context, userID uuid.UUID, purpose str
 	return nil
 }
 
+// useLoginCode consumes the active sign-in code of the account that matches
+// (inside the transaction of ctx). A wrong code counts an attempt against
+// every active code, burns those that reached the limit and is recorded; the
+// caller commits the transaction either way.
+func (s *Service) useLoginCode(ctx context.Context, userID uuid.UUID, code string) (bool, error) {
+	q := s.q(ctx)
+	tokens, err := q.ListActiveLoginCodes(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	var match *authdb.AuthToken
+	for i := range tokens {
+		if hmac.Equal(tokens[i].TokenHash, codeHash(s.keys, tokens[i].ID, userID, code)) {
+			match = &tokens[i]
+		}
+	}
+	if match != nil {
+		n, err := q.ConsumeAuthToken(ctx, match.ID)
+		return n == 1, err
+	}
+	for i := range tokens {
+		t := &tokens[i]
+		attempts, err := q.CountLoginCodeAttempt(ctx, t.ID)
+		if err != nil {
+			return false, err
+		}
+		if attempts >= maxCodeAttempts {
+			if _, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
+				return false, err
+			}
+		}
+	}
+	return false, s.audit.Record(ctx, audit.Event{
+		Action: "auth.login_code_failed", ActorID: userID, TargetType: "user", TargetID: userID.String(),
+		Metadata: map[string]any{"active_codes": len(tokens)},
+	})
+}
+
 // VerifyLoginCode signs in with an e-mailed code.
 func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequest) (apigen.Session, []*http.Cookie, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
@@ -691,40 +730,13 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	var out outcome
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
-		tokens, err := q.ListActiveLoginCodes(ctx, u.ID)
+		matched, err := s.useLoginCode(ctx, u.ID, code)
 		if err != nil {
 			return err
 		}
-		var match *authdb.AuthToken
-		for i := range tokens {
-			if hmac.Equal(tokens[i].TokenHash, codeHash(s.keys, tokens[i].ID, u.ID, code)) {
-				match = &tokens[i]
-			}
-		}
-		if match == nil {
-			for i := range tokens {
-				t := &tokens[i]
-				attempts, err := q.CountLoginCodeAttempt(ctx, t.ID)
-				if err != nil {
-					return err
-				}
-				if attempts >= maxCodeAttempts {
-					if _, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
-						return err
-					}
-				}
-			}
+		if !matched {
 			out.err = errCodeInvalid
-			return s.audit.Record(ctx, audit.Event{
-				Action: "auth.login_code_failed", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
-				Metadata: map[string]any{"active_codes": len(tokens)},
-			})
-		}
-		if n, err := q.ConsumeAuthToken(ctx, match.ID); err != nil || n == 0 {
-			if err == nil {
-				out.err = errCodeInvalid
-			}
-			return err
+			return nil
 		}
 		if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
 			return err
@@ -1260,7 +1272,11 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 }
 
 // ChangePassword replaces the password and ends the other sessions, in every
-// university.
+// university. An account without a password (created by single sign-on)
+// sets its first one with a sign-in code from the e-mail: a session alone is
+// not enough, or a stolen session would become a lasting password that
+// outlives the account being switched off at the university's identity
+// provider (audit Н-3).
 func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChangeRequest) error {
 	p, err := authz.Require(ctx)
 	if err != nil {
@@ -1273,40 +1289,75 @@ func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChange
 	if err != nil {
 		return fmt.Errorf("auth: user: %w", err)
 	}
+	errIncorrect := apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+	first := false
 	current, err := s.q(ctx).GetPasswordHash(ctx, p.UserID)
 	switch {
 	case db.IsNoRows(err):
-		// Accounts created by single sign-on or invitation may set a first password.
+		first = true
 		if body.CurrentPassword != "" {
-			return apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+			return errIncorrect
+		}
+		if body.Code == nil || strings.TrimSpace(*body.Code) == "" {
+			return errReauthRequired
 		}
 	case err != nil:
 		return fmt.Errorf("auth: password: %w", err)
 	default:
 		if ok, err := VerifyPassword(current, body.CurrentPassword); err != nil || !ok {
-			return apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+			return errIncorrect
 		}
 	}
 	if err := CheckPassword(body.NewPassword, u.Email, u.FullName); err != nil {
 		return err
+	}
+	email := normalizeEmail(u.Email)
+	if first {
+		if err := s.limiter.Allow(ctx, "otp-verify:email:"+email, limitCodeGuessEmail, errTooManyAttempts); err != nil {
+			return err
+		}
 	}
 	hash, err := HashPassword(body.NewPassword)
 	if err != nil {
 		return err
 	}
 	var sids []uuid.UUID
+	var out outcome
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
+		if first {
+			matched, err := s.useLoginCode(ctx, u.ID, strings.TrimSpace(*body.Code))
+			if err != nil {
+				return err
+			}
+			if !matched {
+				out.err = apperr.New(apperr.KindValidation, errCodeInvalid.Code, "the code is wrong or expired")
+				return nil
+			}
+			// The code proves control of the mailbox.
+			if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
+				return err
+			}
+		}
 		if err := q.UpsertPasswordIdentity(ctx, authdb.UpsertPasswordIdentityParams{UserID: u.ID, Subject: u.ID.String(), PasswordHash: &hash}); err != nil {
 			return err
 		}
 		if sids, err = s.revokeEverywhere(ctx, u.ID, "password_changed", &p.SessionID); err != nil {
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{Action: "auth.password_changed", TargetType: "user", TargetID: u.ID.String()})
+		return s.audit.Record(ctx, audit.Event{
+			Action: "auth.password_changed", TargetType: "user", TargetID: u.ID.String(),
+			Metadata: map[string]any{"first": first},
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("auth: change password: %w", err)
+	}
+	if out.err != nil {
+		return out.err
+	}
+	if first {
+		_ = s.limiter.Reset(ctx, "otp-verify:email:"+email)
 	}
 	return s.revocations.deny(ctx, sids...)
 }
