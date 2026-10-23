@@ -177,7 +177,10 @@ test.describe('public showcase', () => {
     );
 
     await dialog.getByLabel('Ваше имя').fill('Айдос Сеитов');
-    await dialog.getByLabel('Электронная почта').fill('aidos@agrofund.kz');
+    // A sender writes to a project a few times a day: every run is a new sender.
+    await dialog
+      .getByLabel('Электронная почта')
+      .fill(`aidos.${Date.now().toString(36)}@agrofund.kz`);
     await dialog.getByLabel('Организация').fill('AgroFund');
     await dialog.getByRole('combobox', { name: 'Тема обращения' }).click();
     await page.getByRole('option', { name: 'Пилот' }).click();
