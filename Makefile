@@ -35,6 +35,7 @@ dev: .env ## Build and start the whole development stack in Docker (web on http:
 	@echo "  API:           http://localhost:$(API_PORT)/api/v1/meta"
 	@echo "  Mail catcher:  http://localhost:$(MAILPIT_UI_PORT)"
 	@echo "  MinIO console: http://localhost:$(MINIO_CONSOLE_PORT)"
+	@echo "  Demo LDAP:     ldap://localhost:$(LDAP_PORT)"
 
 down: ## Stop the stack (data volumes are kept)
 	$(COMPOSE) down
@@ -46,7 +47,7 @@ ps: ## Show the state of every service
 	$(COMPOSE) ps
 
 infra: .env ## Start only infrastructure, for running api/worker/web natively
-	$(COMPOSE) up -d --wait postgres valkey minio gotenberg mailpit
+	$(COMPOSE) up -d --wait postgres valkey minio gotenberg mailpit openldap
 	$(COMPOSE) run --rm minio-init
 
 seed: .env ## Load demo data into the running stack (KazUTB, demo accounts)

@@ -5,6 +5,8 @@
 # - Infrastructure ports on DEV_BIND (127.0.0.1 by default), for running the
 #   API, the worker and Vite natively and for looking inside the services.
 # - Mailpit catches every outgoing letter: http://localhost:8025.
+# - OpenLDAP with the demo directory of KazUTB (deploy/ldap) for sign-in
+#   through the university directory.
 #
 # Never use this file on a server: Mailpit shows every sign-in code and
 # password reset link to whoever opens it, and the ports bypass Nginx.
@@ -50,3 +52,28 @@ services:
     ports:
       - "${DEV_BIND:-127.0.0.1}:${MAILPIT_UI_PORT:-8025}:8025"
       - "${DEV_BIND:-127.0.0.1}:${MAILPIT_SMTP_PORT:-1025}:1025"
+
+  # Demo directory of KazUTB for sign-in through LDAP (README, "Демо-каталог"):
+  # users and groups from deploy/ldap, loaded on the first start. The API
+  # reaches it as ldap://openldap:389 (the seed points KazUTB at it, turned
+  # off); the port on DEV_BIND serves a natively run API and LDAP browsers.
+  openldap:
+    image: osixia/openldap:1.5.0
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: KazUTB demo
+      LDAP_DOMAIN: kazutb.local
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-qadam-dev-ldap-admin}
+      LDAP_CONFIG_PASSWORD: ${LDAP_ADMIN_PASSWORD:-qadam-dev-ldap-admin}
+      LDAP_TLS_VERIFY_CLIENT: never
+      LDAP_SEED_INTERNAL_LDIF_PATH: /ldif
+    volumes:
+      - ./ldap:/ldif:ro
+    ports:
+      - "${DEV_BIND:-127.0.0.1}:${LDAP_PORT:-3389}:389"
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "", "-s", "base", "namingContexts"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
