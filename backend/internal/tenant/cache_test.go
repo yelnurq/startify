@@ -33,16 +33,17 @@ func TestResolverCacheIsBounded(t *testing.T) {
 }
 
 func TestNormalizeHost(t *testing.T) {
-	for in, want := range map[string]string{
-		"KazUTB.qadam.kz":       "kazutb.qadam.kz",
-		"kazutb.qadam.kz:3000":  "kazutb.qadam.kz",
-		"kazutb.qadam.kz.":      "kazutb.qadam.kz",
-		"[::1]:8080":            "::1",
-		" localhost:8080 ":      "localhost",
-		"innovation.kazutb.kz.": "innovation.kazutb.kz",
-	} {
-		if got := normalizeHost(in); got != want {
-			t.Errorf("normalizeHost(%q) = %q, want %q", in, got, want)
+	cases := []struct{ in, want string }{
+		{"KazUTB.qadam.kz", "kazutb.qadam.kz"},
+		{"kazutb.qadam.kz:3000", "kazutb.qadam.kz"},
+		{"kazutb.qadam.kz.", "kazutb.qadam.kz"},
+		{"[::1]:8080", "::1"},
+		{" localhost:8080 ", "localhost"},
+		{"innovation.kazutb.kz.", "innovation.kazutb.kz"},
+	}
+	for _, c := range cases {
+		if got := normalizeHost(c.in); got != c.want {
+			t.Errorf("normalizeHost(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
 }
