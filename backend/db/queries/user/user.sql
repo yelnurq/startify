@@ -2,9 +2,10 @@
 SELECT * FROM users WHERE id = @id;
 
 -- name: GetUsersByIDs :many
+-- Users are global: only members of the current university are described.
 SELECT u.id, u.full_name, u.avatar_file_id, m.faculty_id
   FROM users u
-  LEFT JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
+  JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
  WHERE u.id = ANY(@ids::uuid[]);
 
 -- name: UpdateUser :one

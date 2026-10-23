@@ -509,7 +509,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Faculties with their departments */
+        /**
+         * Faculties with their departments
+         * @description For members of the university (onboarding and administration); visitors get 401.
+         */
         get: operations["listFaculties"];
         put?: never;
         post?: never;
@@ -526,7 +529,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Study groups */
+        /**
+         * Study groups
+         * @description For members of the university (onboarding and administration); visitors get 401.
+         */
         get: operations["listStudyGroups"];
         put?: never;
         post?: never;
@@ -870,7 +876,8 @@ export interface paths {
         /**
          * Find members of the university
          * @description Members by name for adding to a team or mentioning in a comment. Returns
-         *     active members only, at most `limit`.
+         *     active members only, at most `limit`. The directory is for the university's own people:
+         *     a member who is only a `partner` gets 403 `rbac.forbidden`.
          */
         get: operations["searchPeople"];
         put?: never;

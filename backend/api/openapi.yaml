@@ -662,7 +662,7 @@ paths:
       operationId: listFaculties
       tags: [structure]
       summary: Faculties with their departments
-      security: []
+      description: For members of the university (onboarding and administration); visitors get 401.
       responses:
         "200":
           description: Faculties sorted by name.
@@ -685,6 +685,7 @@ paths:
       operationId: listStudyGroups
       tags: [structure]
       summary: Study groups
+      description: For members of the university (onboarding and administration); visitors get 401.
       parameters:
         - name: faculty_id
           in: query
@@ -1243,7 +1244,8 @@ paths:
       summary: Find members of the university
       description: |
         Members by name for adding to a team or mentioning in a comment. Returns
-        active members only, at most `limit`.
+        active members only, at most `limit`. The directory is for the university's own people:
+        a member who is only a `partner` gets 403 `rbac.forbidden`.
       parameters:
         - name: q
           in: query

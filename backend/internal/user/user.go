@@ -808,10 +808,18 @@ func (s *Service) member(ctx context.Context, userID uuid.UUID) (apigen.Member, 
 	return out, nil
 }
 
+// directoryRoles may search the member directory: the university's own
+// people. Outside partners see projects on the showcase, not the list of the
+// university's members.
+var directoryRoles = []authz.Role{
+	authz.RoleStudent, authz.RoleSupervisor, authz.RoleMentor, authz.RoleJury,
+	authz.RoleInnovationManager, authz.RoleTenantAdmin, authz.RoleLeadership,
+}
+
 // People finds active members of the university by name, for adding to a
 // team or mentioning in a comment.
 func (s *Service) People(ctx context.Context, params apigen.SearchPeopleParams) ([]apigen.Person, error) {
-	if _, err := authz.Require(ctx); err != nil {
+	if _, err := authz.RequireRole(ctx, directoryRoles...); err != nil {
 		return nil, err
 	}
 	limit := 20
@@ -866,7 +874,8 @@ func (s *Service) People(ctx context.Context, params apigen.SearchPeopleParams) 
 	return out, nil
 }
 
-// Briefs describes users for lists (authors of requests, replies).
+// Briefs describes users for lists (authors of requests, replies). Only
+// members of the current university are described.
 func (s *Service) Briefs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]apigen.MemberBrief, error) {
 	out := map[uuid.UUID]apigen.MemberBrief{}
 	if len(userIDs) == 0 {

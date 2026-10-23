@@ -12,6 +12,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apiconv"
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/org/orgdb"
+	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
@@ -28,9 +29,13 @@ func NewService(database *db.DB) *Service { return &Service{db: database} }
 
 func (s *Service) q(ctx context.Context) *orgdb.Queries { return orgdb.New(s.db.Conn(ctx)) }
 
-// Faculties lists faculties with their departments.
+// Faculties lists faculties with their departments, for members (onboarding
+// and administration sign in first; visitors have no use for the structure).
 func (s *Service) Faculties(ctx context.Context) ([]apigen.Faculty, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
+		return nil, err
+	}
+	if _, err := authz.Require(ctx); err != nil {
 		return nil, err
 	}
 	var out []apigen.Faculty
@@ -69,9 +74,13 @@ func (s *Service) Faculties(ctx context.Context) ([]apigen.Faculty, error) {
 	return out, nil
 }
 
-// StudyGroups lists groups filtered by faculty, department or code prefix.
+// StudyGroups lists groups filtered by faculty, department or code prefix,
+// for members.
 func (s *Service) StudyGroups(ctx context.Context, params apigen.ListStudyGroupsParams) ([]apigen.StudyGroup, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
+		return nil, err
+	}
+	if _, err := authz.Require(ctx); err != nil {
 		return nil, err
 	}
 	var prefix *string

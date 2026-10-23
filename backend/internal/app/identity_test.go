@@ -19,6 +19,7 @@ import (
 
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/mail"
+	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/seed"
 )
 
@@ -115,23 +116,59 @@ func TestTenantResolution(t *testing.T) {
 
 	expectProblem(t, h.browser(t, "unknown.example.org").do(http.MethodGet, "/api/v1/tenant", nil), http.StatusNotFound, "tenant.not_found")
 
-	rec = h.browser(t, kazutbHost).do(http.MethodGet, "/api/v1/faculties", nil)
+	// The structure is for members: visitors (registration needs none of it) do not read it.
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodGet, "/api/v1/faculties", nil), http.StatusUnauthorized, "auth.unauthenticated")
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodGet, "/api/v1/study-groups?q=%D0%B8%D1%81-23", nil),
+		http.StatusUnauthorized, "auth.unauthenticated")
+	member := h.browser(t, kazutbHost)
+	register(t, member, "structure@qadam.test", "Құрылым Оқушы")
+	rec = member.do(http.MethodGet, "/api/v1/faculties", nil)
 	expect(t, rec, http.StatusOK)
 	h.validate(t, http.MethodGet, "/api/v1/faculties", rec)
 	faculties := decode[struct{ Items []apigen.Faculty }](t, rec)
 	if len(faculties.Items) != len(seed.KazUTBStructure) || len(faculties.Items[0].Departments) == 0 {
 		t.Fatalf("faculties: %+v", faculties)
 	}
-	rec = h.browser(t, kazutbHost).do(http.MethodGet, "/api/v1/study-groups?q=%D0%B8%D1%81-23", nil)
+	rec = member.do(http.MethodGet, "/api/v1/study-groups?q=%D0%B8%D1%81-23", nil)
 	expect(t, rec, http.StatusOK)
 	groups := decode[struct{ Items []apigen.StudyGroup }](t, rec)
 	if len(groups.Items) != 1 || groups.Items[0].Code != "ИС-23-1" {
 		t.Fatalf("group search: %+v", groups)
 	}
 	// Structure of one university is invisible on another.
-	rec = h.browser(t, sandboxHost).do(http.MethodGet, "/api/v1/faculties", nil)
+	other := h.browser(t, sandboxHost)
+	register(t, other, "structure@qadam.test", "Құрылым Оқушы")
+	rec = other.do(http.MethodGet, "/api/v1/faculties", nil)
 	if items := decode[struct{ Items []apigen.Faculty }](t, rec).Items; len(items) != 0 {
 		t.Fatalf("sandbox sees faculties: %+v", items)
+	}
+}
+
+func TestMemberDirectoryIsForTheUniversitysPeople(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	student := h.browser(t, kazutbHost)
+	register(t, student, "directory@qadam.test", "Каталог Студент")
+	rec := student.do(http.MethodGet, "/api/v1/people?q=%D0%9A%D0%B0%D1%82", nil)
+	expect(t, rec, http.StatusOK)
+	h.validate(t, http.MethodGet, "/api/v1/people", rec)
+
+	// A partner from outside the university does not list its members.
+	partner := h.browser(t, kazutbHost)
+	session := register(t, partner, "investor@qadam.test", "Инвестор Серіктес")
+	h.db.Exec(t, "UPDATE memberships SET roles = '{partner}' WHERE user_id = '"+session.User.Id.String()+"'")
+	login(t, partner, "investor@qadam.test", password)
+	expectProblem(t, partner.do(http.MethodGet, "/api/v1/people", nil), http.StatusForbidden, "rbac.forbidden")
+
+	// Users are global, yet only members of the university are described by id.
+	outsider := register(t, h.browser(t, sandboxHost), "outside@qadam.test", "Сырттағы Адам")
+	ctx := db.WithTenant(context.Background(), ts.kazutb)
+	briefs, err := h.services.Users.Briefs(ctx, []uuid.UUID{outsider.User.Id, session.User.Id})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := briefs[outsider.User.Id]; ok || len(briefs) != 1 {
+		t.Fatalf("briefs of another university's user: %+v", briefs)
 	}
 }
 

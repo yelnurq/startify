@@ -245,7 +245,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 const getUsersByIDs = `-- name: GetUsersByIDs :many
 SELECT u.id, u.full_name, u.avatar_file_id, m.faculty_id
   FROM users u
-  LEFT JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
+  JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
  WHERE u.id = ANY($1::uuid[])
 `
 
@@ -256,6 +256,7 @@ type GetUsersByIDsRow struct {
 	FacultyID    *uuid.UUID
 }
 
+// Users are global: only members of the current university are described.
 func (q *Queries) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]GetUsersByIDsRow, error) {
 	rows, err := q.db.Query(ctx, getUsersByIDs, ids)
 	if err != nil {
