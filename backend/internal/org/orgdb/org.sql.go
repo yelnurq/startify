@@ -226,11 +226,11 @@ func (q *Queries) GetStudyGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]S
 }
 
 const listDepartments = `-- name: ListDepartments :many
-SELECT id, tenant_id, faculty_id, code, name, created_at, updated_at FROM departments ORDER BY code
+SELECT id, tenant_id, faculty_id, code, name, created_at, updated_at FROM departments WHERE tenant_id = app_current_tenant() ORDER BY code LIMIT $1
 `
 
-func (q *Queries) ListDepartments(ctx context.Context) ([]Department, error) {
-	rows, err := q.db.Query(ctx, listDepartments)
+func (q *Queries) ListDepartments(ctx context.Context, rowLimit int32) ([]Department, error) {
+	rows, err := q.db.Query(ctx, listDepartments, rowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -258,11 +258,13 @@ func (q *Queries) ListDepartments(ctx context.Context) ([]Department, error) {
 }
 
 const listFaculties = `-- name: ListFaculties :many
-SELECT id, tenant_id, code, name, created_at, updated_at FROM faculties ORDER BY code
+SELECT id, tenant_id, code, name, created_at, updated_at FROM faculties WHERE tenant_id = app_current_tenant() ORDER BY code LIMIT $1
 `
 
-func (q *Queries) ListFaculties(ctx context.Context) ([]Faculty, error) {
-	rows, err := q.db.Query(ctx, listFaculties)
+// A university has dozens of faculties and hundreds of departments; the
+// caps only guard the response (the service logs when one is reached).
+func (q *Queries) ListFaculties(ctx context.Context, rowLimit int32) ([]Faculty, error) {
+	rows, err := q.db.Query(ctx, listFaculties, rowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +292,8 @@ func (q *Queries) ListFaculties(ctx context.Context) ([]Faculty, error) {
 
 const listStudyGroups = `-- name: ListStudyGroups :many
 SELECT id, tenant_id, faculty_id, department_id, code, study_level, admission_year, created_at, updated_at FROM study_groups
- WHERE ($1::uuid IS NULL OR faculty_id = $1::uuid)
+ WHERE tenant_id = app_current_tenant()
+   AND ($1::uuid IS NULL OR faculty_id = $1::uuid)
    AND ($2::uuid IS NULL OR department_id = $2::uuid)
    AND ($3::text IS NULL OR lower(code) LIKE lower($3::text) || '%')
  ORDER BY code

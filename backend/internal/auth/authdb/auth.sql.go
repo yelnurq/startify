@@ -230,6 +230,35 @@ func (q *Queries) DeleteStaleSessions(ctx context.Context) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
+const findUsersByEmails = `-- name: FindUsersByEmails :many
+SELECT id, email FROM users WHERE email = ANY($1::citext[])
+`
+
+type FindUsersByEmailsRow struct {
+	ID    uuid.UUID
+	Email string
+}
+
+func (q *Queries) FindUsersByEmails(ctx context.Context, emails []string) ([]FindUsersByEmailsRow, error) {
+	rows, err := q.db.Query(ctx, findUsersByEmails, emails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindUsersByEmailsRow{}
+	for rows.Next() {
+		var i FindUsersByEmailsRow
+		if err := rows.Scan(&i.ID, &i.Email); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAuthToken = `-- name: GetAuthToken :one
 SELECT id, tenant_id, user_id, purpose, token_hash, attempts, expires_at, consumed_at, created_at FROM auth_tokens
  WHERE token_hash = $1 AND purpose = ANY($2::text[])
@@ -448,12 +477,20 @@ func (q *Queries) ListActiveLoginCodes(ctx context.Context, userID uuid.UUID) ([
 
 const listActiveSessions = `-- name: ListActiveSessions :many
 SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason, updated_at FROM sessions
- WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()
+ WHERE tenant_id = app_current_tenant() AND user_id = $1 AND revoked_at IS NULL AND expires_at > now()
  ORDER BY last_used_at DESC
+ LIMIT $2
 `
 
-func (q *Queries) ListActiveSessions(ctx context.Context, userID uuid.UUID) ([]Session, error) {
-	rows, err := q.db.Query(ctx, listActiveSessions, userID)
+type ListActiveSessionsParams struct {
+	UserID   uuid.UUID
+	RowLimit int32
+}
+
+// The newest sessions of the account in this university; older ones beyond
+// the page are still revoked by "sign out everywhere".
+func (q *Queries) ListActiveSessions(ctx context.Context, arg ListActiveSessionsParams) ([]Session, error) {
+	rows, err := q.db.Query(ctx, listActiveSessions, arg.UserID, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}

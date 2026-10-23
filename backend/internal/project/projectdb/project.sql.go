@@ -174,7 +174,7 @@ func (q *Queries) GetProject(ctx context.Context, id uuid.UUID) (Project, error)
 
 const listAllProjects = `-- name: ListAllProjects :many
 SELECT p.id, p.tenant_id, p.title, p.tagline, p.industry, p.visibility, p.hide_sensitive, p.faculty_id, p.template_version, p.current_step, p.completed_steps, p.ip_policy_version, p.ip_accepted_at, p.created_by, p.created_at, p.updated_at, p.archived_at, p.deleted_at FROM projects p
- WHERE p.deleted_at IS NULL
+ WHERE p.tenant_id = app_current_tenant() AND p.deleted_at IS NULL
    AND ($1::text IS NULL OR p.title ILIKE '%' || $1::text || '%')
    AND ($2::timestamptz IS NULL
         OR (p.updated_at, p.id) < ($2::timestamptz, $3::uuid))
@@ -269,8 +269,8 @@ func (q *Queries) ListMembers(ctx context.Context, projectIds []uuid.UUID) ([]Pr
 
 const listMyProjects = `-- name: ListMyProjects :many
 SELECT p.id, p.tenant_id, p.title, p.tagline, p.industry, p.visibility, p.hide_sensitive, p.faculty_id, p.template_version, p.current_step, p.completed_steps, p.ip_policy_version, p.ip_accepted_at, p.created_by, p.created_at, p.updated_at, p.archived_at, p.deleted_at FROM projects p
-  JOIN project_members m ON m.project_id = p.id AND m.user_id = $1
- WHERE p.deleted_at IS NULL
+  JOIN project_members m ON m.project_id = p.id AND m.tenant_id = app_current_tenant() AND m.user_id = $1
+ WHERE p.tenant_id = app_current_tenant() AND p.deleted_at IS NULL
    AND ($2::text IS NULL OR p.title ILIKE '%' || $2::text || '%')
    AND ($3::timestamptz IS NULL
         OR (p.updated_at, p.id) < ($3::timestamptz, $4::uuid))
@@ -286,6 +286,8 @@ type ListMyProjectsParams struct {
 	RowLimit      int32
 }
 
+// The explicit tenant conditions let the indexes find the university's rows;
+// row-level security alone (… OR app_is_system()) cannot use an index.
 func (q *Queries) ListMyProjects(ctx context.Context, arg ListMyProjectsParams) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listMyProjects,
 		arg.UserID,

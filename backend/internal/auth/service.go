@@ -51,6 +51,10 @@ const (
 	rotationGrace = 30 * time.Second
 
 	providerPassword = "password"
+
+	// maxListedSessions bounds the list of active sessions; "sign out
+	// everywhere" still ends all of them.
+	maxListedSessions = 100
 )
 
 // Errors with stable codes.
@@ -928,7 +932,7 @@ func (s *Service) Sessions(ctx context.Context) ([]apigen.SessionInfo, error) {
 	}
 	var out []apigen.SessionInfo
 	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
-		rows, err := s.q(ctx).ListActiveSessions(ctx, p.UserID)
+		rows, err := s.q(ctx).ListActiveSessions(ctx, authdb.ListActiveSessionsParams{UserID: p.UserID, RowLimit: maxListedSessions})
 		if err != nil {
 			return err
 		}
@@ -1376,6 +1380,31 @@ func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChange
 		_ = s.limiter.Reset(ctx, "otp-verify:email:"+email)
 	}
 	return s.revocations.deny(ctx, sids...)
+}
+
+// Accounts finds the accounts of e-mail addresses (inside the transaction of
+// ctx), keyed by the lower-cased address. Accounts are global (D-007): an
+// address may already have one from another university.
+func (s *Service) Accounts(ctx context.Context, emails []string) (map[string]uuid.UUID, error) {
+	rows, err := s.q(ctx).FindUsersByEmails(ctx, emails)
+	if err != nil {
+		return nil, fmt.Errorf("auth: accounts: %w", err)
+	}
+	out := make(map[string]uuid.UUID, len(rows))
+	for _, r := range rows {
+		out[strings.ToLower(r.Email)] = r.ID
+	}
+	return out, nil
+}
+
+// CreateInvitedAccount creates the account of an invited address, without a
+// password: the invitation link sets one (inside the transaction of ctx).
+func (s *Service) CreateInvitedAccount(ctx context.Context, email, fullName, locale string) (uuid.UUID, error) {
+	u, err := s.q(ctx).CreateUser(ctx, authdb.CreateUserParams{Email: email, FullName: fullName, Locale: locale})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("auth: invited account: %w", err)
+	}
+	return u.ID, nil
 }
 
 // Invitee is an account to invite to the current university.

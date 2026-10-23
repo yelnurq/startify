@@ -32,9 +32,11 @@ UPDATE projects SET archived_at = coalesce(archived_at, now()) WHERE id = @id;
 UPDATE projects SET completed_steps = @completed_steps, current_step = @current_step WHERE id = @id;
 
 -- name: ListMyProjects :many
+-- The explicit tenant conditions let the indexes find the university's rows;
+-- row-level security alone (… OR app_is_system()) cannot use an index.
 SELECT p.* FROM projects p
-  JOIN project_members m ON m.project_id = p.id AND m.user_id = @user_id
- WHERE p.deleted_at IS NULL
+  JOIN project_members m ON m.project_id = p.id AND m.tenant_id = app_current_tenant() AND m.user_id = @user_id
+ WHERE p.tenant_id = app_current_tenant() AND p.deleted_at IS NULL
    AND (sqlc.narg('q')::text IS NULL OR p.title ILIKE '%' || sqlc.narg('q')::text || '%')
    AND (sqlc.narg('before_updated')::timestamptz IS NULL
         OR (p.updated_at, p.id) < (sqlc.narg('before_updated')::timestamptz, sqlc.narg('before_id')::uuid))
@@ -43,7 +45,7 @@ SELECT p.* FROM projects p
 
 -- name: ListAllProjects :many
 SELECT p.* FROM projects p
- WHERE p.deleted_at IS NULL
+ WHERE p.tenant_id = app_current_tenant() AND p.deleted_at IS NULL
    AND (sqlc.narg('q')::text IS NULL OR p.title ILIKE '%' || sqlc.narg('q')::text || '%')
    AND (sqlc.narg('before_updated')::timestamptz IS NULL
         OR (p.updated_at, p.id) < (sqlc.narg('before_updated')::timestamptz, sqlc.narg('before_id')::uuid))

@@ -405,6 +405,9 @@ const (
 	// maxIndexFailures: after that many failed rounds a document is no longer
 	// retried by the hourly reindexing (an administrator uploads it again).
 	maxIndexFailures = 3
+	// reindexBatch: documents an hourly run schedules per university; the
+	// next run takes the rest.
+	reindexBatch = 500
 )
 
 // errIndexFailed is the error of a document that could not be indexed.
@@ -579,6 +582,7 @@ func (w *ReindexWorker) reindex(ctx context.Context, tenantID uuid.UUID) error {
 	return w.DB.Tx(ctx, func(ctx context.Context) error {
 		ids, err := knowledgedb.New(w.DB.Conn(ctx)).ListDocumentsForReindex(ctx, knowledgedb.ListDocumentsForReindexParams{
 			EmbeddingModel: model, FailedBefore: time.Now().Add(-failedRetryPause), MaxFailures: maxIndexFailures,
+			RowLimit: reindexBatch,
 		})
 		if err != nil {
 			return fmt.Errorf("knowledge: reindex list: %w", err)

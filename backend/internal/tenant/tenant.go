@@ -306,6 +306,27 @@ type Settings struct {
 	ContactModeration bool
 }
 
+// ErrNoProvider means the current university has no enabled SSO provider
+// with the id.
+var ErrNoProvider = errors.New("tenant: no such SSO provider")
+
+// OIDCProvider loads an enabled SSO provider of the current university.
+func (s *Service) OIDCProvider(ctx context.Context, id uuid.UUID) (tenantdb.TenantOidcProvider, error) {
+	var prov tenantdb.TenantOidcProvider
+	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		var err error
+		prov, err = tenantdb.New(s.db.Conn(ctx)).GetOidcProvider(ctx, id)
+		return err
+	})
+	if db.IsNoRows(err) {
+		return prov, ErrNoProvider
+	}
+	if err != nil {
+		return prov, fmt.Errorf("tenant: provider: %w", err)
+	}
+	return prov, nil
+}
+
 // CurrentSettings loads the sign-up rules of the request's tenant.
 func (s *Service) CurrentSettings(ctx context.Context) (Settings, error) {
 	t, err := tenancy.Require(ctx)

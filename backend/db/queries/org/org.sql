@@ -1,8 +1,10 @@
 -- name: ListFaculties :many
-SELECT * FROM faculties ORDER BY code;
+-- A university has dozens of faculties and hundreds of departments; the
+-- caps only guard the response (the service logs when one is reached).
+SELECT * FROM faculties WHERE tenant_id = app_current_tenant() ORDER BY code LIMIT @row_limit;
 
 -- name: ListDepartments :many
-SELECT * FROM departments ORDER BY code;
+SELECT * FROM departments WHERE tenant_id = app_current_tenant() ORDER BY code LIMIT @row_limit;
 
 -- name: GetFaculty :one
 SELECT * FROM faculties WHERE id = @id;
@@ -24,7 +26,8 @@ SELECT * FROM study_groups WHERE id = ANY(@ids::uuid[]);
 
 -- name: ListStudyGroups :many
 SELECT * FROM study_groups
- WHERE (sqlc.narg('faculty_id')::uuid IS NULL OR faculty_id = sqlc.narg('faculty_id')::uuid)
+ WHERE tenant_id = app_current_tenant()
+   AND (sqlc.narg('faculty_id')::uuid IS NULL OR faculty_id = sqlc.narg('faculty_id')::uuid)
    AND (sqlc.narg('department_id')::uuid IS NULL OR department_id = sqlc.narg('department_id')::uuid)
    AND (sqlc.narg('prefix')::text IS NULL OR lower(code) LIKE lower(sqlc.narg('prefix')::text) || '%')
  ORDER BY code

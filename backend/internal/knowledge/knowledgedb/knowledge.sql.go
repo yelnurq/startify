@@ -143,7 +143,8 @@ const listDocuments = `-- name: ListDocuments :many
 SELECT id, title, file_id, status, chunk_count, error, created_by, created_at, updated_at,
        length(body)::int AS body_length
   FROM knowledge_documents
- WHERE $1::uuid IS NULL OR id < $1::uuid
+ WHERE tenant_id = app_current_tenant()
+   AND ($1::uuid IS NULL OR id < $1::uuid)
  ORDER BY id DESC
  LIMIT $2
 `
@@ -199,22 +200,31 @@ func (q *Queries) ListDocuments(ctx context.Context, arg ListDocumentsParams) ([
 
 const listDocumentsForReindex = `-- name: ListDocumentsForReindex :many
 SELECT id FROM knowledge_documents d
- WHERE (d.status = 'failed' AND d.updated_at < $1 AND d.index_failures < $2)
+ WHERE d.tenant_id = app_current_tenant()
+   AND ((d.status = 'failed' AND d.updated_at < $1 AND d.index_failures < $2)
     OR (d.status <> 'failed' AND (d.status <> 'ready' OR d.chunk_count > 0) AND NOT EXISTS (
-         SELECT 1 FROM knowledge_chunks c WHERE c.document_id = d.id AND c.embedding_model = $3))
+         SELECT 1 FROM knowledge_chunks c WHERE c.document_id = d.id AND c.embedding_model = $3)))
  ORDER BY d.id
+ LIMIT $4
 `
 
 type ListDocumentsForReindexParams struct {
 	FailedBefore   time.Time
 	MaxFailures    int32
 	EmbeddingModel string
+	RowLimit       int32
 }
 
 // Documents without passages of the current model, and failed ones after a
 // pause until they failed max_failures times.
+// The hourly run takes a batch; the next one continues.
 func (q *Queries) ListDocumentsForReindex(ctx context.Context, arg ListDocumentsForReindexParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listDocumentsForReindex, arg.FailedBefore, arg.MaxFailures, arg.EmbeddingModel)
+	rows, err := q.db.Query(ctx, listDocumentsForReindex,
+		arg.FailedBefore,
+		arg.MaxFailures,
+		arg.EmbeddingModel,
+		arg.RowLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +248,7 @@ SELECT c.id, c.document_id, d.title, c.heading, c.content,
        (c.embedding <=> $1::vector)::float8 AS distance
   FROM knowledge_chunks c
   JOIN knowledge_documents d ON d.id = c.document_id
- WHERE c.embedding_model = $2 AND d.status = 'ready'
+ WHERE c.tenant_id = app_current_tenant() AND c.embedding_model = $2 AND d.status = 'ready'
    -- Vectors of another size cannot be compared (a model reconfigured under the same name).
    AND vector_dims(c.embedding) = vector_dims($1::vector)
  ORDER BY c.embedding <=> $1::vector
@@ -292,7 +302,7 @@ SELECT c.id, c.document_id, d.title, c.heading, c.content,
        ts_rank(c.search, plainto_tsquery('simple', $1))::float8 AS rank
   FROM knowledge_chunks c
   JOIN knowledge_documents d ON d.id = c.document_id
- WHERE c.search @@ plainto_tsquery('simple', $1) AND d.status = 'ready'
+ WHERE c.tenant_id = app_current_tenant() AND c.search @@ plainto_tsquery('simple', $1) AND d.status = 'ready'
  ORDER BY rank DESC
  LIMIT $2
 `

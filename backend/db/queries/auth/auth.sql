@@ -6,6 +6,9 @@ SELECT * FROM users WHERE email = @email;
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = @id;
 
+-- name: FindUsersByEmails :many
+SELECT id, email FROM users WHERE email = ANY(@emails::citext[]);
+
 -- name: CreateUser :one
 INSERT INTO users (email, full_name, locale, email_verified_at)
 VALUES (@email, @full_name, @locale, @email_verified_at)
@@ -91,9 +94,12 @@ SELECT revoked::uuid AS id
   FROM app_revoke_user_sessions(@user_id::uuid, @reason::text, sqlc.narg('except_id')::uuid) AS revoked;
 
 -- name: ListActiveSessions :many
+-- The newest sessions of the account in this university; older ones beyond
+-- the page are still revoked by "sign out everywhere".
 SELECT * FROM sessions
- WHERE user_id = @user_id AND revoked_at IS NULL AND expires_at > now()
- ORDER BY last_used_at DESC;
+ WHERE tenant_id = app_current_tenant() AND user_id = @user_id AND revoked_at IS NULL AND expires_at > now()
+ ORDER BY last_used_at DESC
+ LIMIT @row_limit;
 
 -- name: DeleteStaleSessions :execrows
 DELETE FROM sessions

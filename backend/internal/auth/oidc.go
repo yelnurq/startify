@@ -26,6 +26,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/secrets"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
+	"github.com/yelnurq/startify/backend/internal/tenant"
 	"github.com/yelnurq/startify/backend/internal/tenant/tenantdb"
 	"github.com/yelnurq/startify/backend/internal/user"
 )
@@ -93,16 +94,12 @@ func (s *Service) oidcSetup(ctx context.Context, providerID uuid.UUID) (oidcSetu
 	if err != nil {
 		return oidcSetup{}, err
 	}
-	var prov tenantdb.TenantOidcProvider
-	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
-		prov, err = tenantdb.New(s.db.Conn(ctx)).GetOidcProvider(ctx, providerID)
-		return err
-	})
-	if db.IsNoRows(err) {
+	prov, err := s.tenants.OIDCProvider(ctx, providerID)
+	if errors.Is(err, tenant.ErrNoProvider) {
 		return oidcSetup{}, errOIDC
 	}
 	if err != nil {
-		return oidcSetup{}, fmt.Errorf("auth: provider: %w", err)
+		return oidcSetup{}, err
 	}
 	op, err := s.oidc.get(ctx, prov.Issuer)
 	if err != nil {

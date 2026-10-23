@@ -24,12 +24,13 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
 	"github.com/yelnurq/startify/backend/internal/team/teamdb"
 	"github.com/yelnurq/startify/backend/internal/user"
-	"github.com/yelnurq/startify/backend/internal/user/userdb"
 )
 
 const (
 	statusOpen   = "open"
 	statusClosed = "closed"
+	// A request collects a few dozen replies; the cap only bounds the list.
+	maxResponses = 500
 )
 
 var (
@@ -392,7 +393,7 @@ func (s *Service) Responses(ctx context.Context, id uuid.UUID) ([]apigen.TeamRes
 			return err
 		}
 		owner := r.AuthorID == p.UserID || canModerate(p)
-		rows, err := q.ListTeamResponses(ctx, id)
+		rows, err := q.ListTeamResponses(ctx, teamdb.ListTeamResponsesParams{RequestID: id, RowLimit: maxResponses})
 		if err != nil {
 			return err
 		}
@@ -408,14 +409,16 @@ func (s *Service) Responses(ctx context.Context, id uuid.UUID) ([]apigen.TeamRes
 		if err != nil {
 			return err
 		}
+		// The author contacts the responders: their addresses, in one
+		// lookup of the members of the university (the user module's data).
 		emails := map[uuid.UUID]string{}
 		if r.AuthorID == p.UserID {
-			for _, a := range authors {
-				u, err := userdb.New(s.db.Conn(ctx)).GetUser(ctx, a)
-				if err != nil {
-					return err
-				}
-				emails[a] = u.Email
+			recipients, err := s.users.Recipients(ctx, authors)
+			if err != nil {
+				return err
+			}
+			for _, rc := range recipients {
+				emails[rc.ID] = rc.Email
 			}
 		}
 		for _, resp := range visible {
@@ -518,15 +521,18 @@ func (s *Service) Respond(ctx context.Context, id uuid.UUID, body apigen.TeamRes
 		}
 		out = responseAPI(resp, briefs[p.UserID], nil)
 
-		author, err := userdb.New(s.db.Conn(ctx)).GetUser(ctx, r.AuthorID)
+		// An author who has left the university gets no letter.
+		authors, err := s.users.Recipients(ctx, []uuid.UUID{r.AuthorID})
 		if err != nil {
 			return err
 		}
-		if err := s.mailer.Send(ctx, author.Email, author.FullName, mail.TemplateTeamResponse, author.Locale, map[string]string{
-			"name": author.FullName, "responder": briefs[p.UserID].FullName, "request": r.Title,
-			"message": message, "link": t.Origin + "/team/" + id.String(),
-		}); err != nil {
-			return err
+		for _, author := range authors {
+			if err := s.mailer.Send(ctx, author.Email, author.FullName, mail.TemplateTeamResponse, author.Locale, map[string]string{
+				"name": author.FullName, "responder": briefs[p.UserID].FullName, "request": r.Title,
+				"message": message, "link": t.Origin + "/team/" + id.String(),
+			}); err != nil {
+				return err
+			}
 		}
 		return s.audit.Record(ctx, audit.Event{Action: "team.responded", TargetType: "team_request", TargetID: id.String()})
 	})

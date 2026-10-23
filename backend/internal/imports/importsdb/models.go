@@ -26,16 +26,3 @@ type ImportJob struct {
 	CommittedAt *time.Time
 	UpdatedAt   time.Time
 }
-
-type User struct {
-	ID              uuid.UUID
-	Email           string
-	EmailVerifiedAt *time.Time
-	FullName        string
-	Locale          string
-	AvatarFileID    *uuid.UUID
-	IsSuperAdmin    bool
-	Status          string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-}

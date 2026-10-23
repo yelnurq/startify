@@ -55,69 +55,6 @@ func (q *Queries) CreateImportJob(ctx context.Context, arg CreateImportJobParams
 	return i, err
 }
 
-const createInvitedUser = `-- name: CreateInvitedUser :one
-INSERT INTO users (email, full_name, locale)
-VALUES ($1, $2, $3)
-RETURNING id, email, email_verified_at, full_name, locale, avatar_file_id, is_super_admin, status, created_at, updated_at
-`
-
-type CreateInvitedUserParams struct {
-	Email    string
-	FullName string
-	Locale   string
-}
-
-func (q *Queries) CreateInvitedUser(ctx context.Context, arg CreateInvitedUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createInvitedUser, arg.Email, arg.FullName, arg.Locale)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.EmailVerifiedAt,
-		&i.FullName,
-		&i.Locale,
-		&i.AvatarFileID,
-		&i.IsSuperAdmin,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const findUsersByEmails = `-- name: FindUsersByEmails :many
-SELECT u.id, lower(u.email::text)::text AS email, (m.user_id IS NOT NULL)::boolean AS is_member
-  FROM users u
-  LEFT JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
- WHERE lower(u.email::text) = ANY($1::text[])
-`
-
-type FindUsersByEmailsRow struct {
-	ID       uuid.UUID
-	Email    string
-	IsMember bool
-}
-
-func (q *Queries) FindUsersByEmails(ctx context.Context, emails []string) ([]FindUsersByEmailsRow, error) {
-	rows, err := q.db.Query(ctx, findUsersByEmails, emails)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindUsersByEmailsRow{}
-	for rows.Next() {
-		var i FindUsersByEmailsRow
-		if err := rows.Scan(&i.ID, &i.Email, &i.IsMember); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getImportJob = `-- name: GetImportJob :one
 SELECT id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at, updated_at FROM import_jobs WHERE id = $1
 `

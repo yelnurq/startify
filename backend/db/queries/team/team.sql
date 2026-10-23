@@ -8,7 +8,8 @@ SELECT * FROM team_requests WHERE id = @id;
 
 -- name: ListTeamRequests :many
 SELECT * FROM team_requests r
- WHERE (CASE WHEN @mine::boolean THEN r.author_id = @viewer_id ELSE r.status = 'open' END)
+ WHERE r.tenant_id = app_current_tenant()
+   AND (CASE WHEN @mine::boolean THEN r.author_id = @viewer_id ELSE r.status = 'open' END)
    AND (sqlc.narg('role')::text IS NULL OR sqlc.narg('role')::text = ANY(r.roles_needed))
    AND (sqlc.narg('skill')::text IS NULL
         OR EXISTS (SELECT 1 FROM unnest(r.skills) s WHERE lower(s) = lower(sqlc.narg('skill')::text)))
@@ -51,7 +52,8 @@ VALUES (app_current_tenant(), @request_id, @author_id, @message)
 RETURNING *;
 
 -- name: ListTeamResponses :many
-SELECT * FROM team_responses WHERE request_id = @request_id ORDER BY id DESC;
+-- A request collects a few dozen replies; the cap only guards the page.
+SELECT * FROM team_responses WHERE request_id = @request_id ORDER BY id DESC LIMIT @row_limit;
 
 -- name: LockTeamRequest :one
 SELECT * FROM team_requests WHERE id = @id FOR UPDATE;
