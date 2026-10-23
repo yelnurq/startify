@@ -3,7 +3,10 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
-COMPOSE := docker compose --env-file .env -f deploy/docker-compose.yml
+# The base file publishes only the web client; the development file adds the
+# infrastructure ports on 127.0.0.1 and Mailpit (deploy/docker-compose.dev.yml).
+COMPOSE_BASE := docker compose --env-file .env -f deploy/docker-compose.yml
+COMPOSE := $(COMPOSE_BASE) -f deploy/docker-compose.dev.yml
 SQLC_IMAGE := sqlc/sqlc:1.31.1
 GO_TOOL := go tool -modfile=tools.mod
 # The race detector needs cgo; set GO_TEST_FLAGS= on machines without a C compiler.
@@ -23,8 +26,8 @@ help: ## Show this help
 	@echo "No .env file: run 'cp .env.example .env' first." >&2; exit 1
 
 # ── Stack ──────────────────────────────────────────────────────────────────
-.PHONY: dev down logs ps infra seed
-dev: .env ## Build and start the whole stack in Docker (web on http://localhost:$WEB_PORT)
+.PHONY: dev down logs ps infra seed compose-check
+dev: .env ## Build and start the whole development stack in Docker (web on http://localhost:$WEB_PORT)
 	$(COMPOSE) up -d --build
 	$(COMPOSE) up -d --wait api worker web
 	@echo ""
@@ -44,9 +47,14 @@ ps: ## Show the state of every service
 
 infra: .env ## Start only infrastructure, for running api/worker/web natively
 	$(COMPOSE) up -d --wait postgres valkey minio gotenberg mailpit
+	$(COMPOSE) run --rm minio-init
 
 seed: .env ## Load demo data into the running stack (KazUTB, demo accounts)
 	$(COMPOSE) run --rm --no-deps api /app/seed
+
+compose-check: .env ## Validate the base compose file alone and with the development file
+	$(COMPOSE_BASE) config --quiet
+	$(COMPOSE) config --quiet
 
 # ── Native development (after `make infra`) ────────────────────────────────
 .PHONY: migrate migrate-down migrate-status run-api run-worker run-web

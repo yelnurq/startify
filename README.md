@@ -35,9 +35,21 @@ make seed        # демо-данные КазУТБ: структура, ак�
 | Дизайн-система | http://localhost:3000/design |
 | API (метаданные) | http://localhost:8080/api/v1/meta |
 | Перехват e-mail (Mailpit) | http://localhost:8025 |
-| Консоль MinIO | http://localhost:9901 |
+| Консоль MinIO (вход — `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` из `.env`) | http://localhost:9901 |
 
 Порты настраиваются в `.env`. Остановка — `make down` (данные сохраняются в Docker-томах).
+
+`make dev` складывает два файла. Базовый `deploy/docker-compose.yml` поднимает все службы, но
+наружу публикует только веб-приложение; Valkey закрыт паролем, а API и worker ходят в MinIO
+отдельным пользователем с доступом только к своему бакету (его создаёт `minio-init`).
+`deploy/docker-compose.dev.yml` — только для машины разработчика: открывает порты API, PostgreSQL,
+Valkey, MinIO, Gotenberg и ClamAV на `127.0.0.1` (`DEV_BIND`) и добавляет Mailpit. Это ещё не
+конфигурация для установки в вузе: TLS, резервные копии, мониторинг и хранение секретов — фаза 12.
+Без `make` стек разработки запускается так:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up -d --build
+```
 
 ### Демо-аккаунты
 
@@ -96,7 +108,7 @@ QADAM_AI_DEFAULT=anthropic QADAM_AI_ANTHROPIC_API_KEY=... make ai-eval
 Для разработки с горячей перезагрузкой нужны Go 1.26+ и Node.js 22+:
 
 ```bash
-make infra        # PostgreSQL, Valkey, MinIO, Gotenberg, Mailpit в Docker
+make infra        # PostgreSQL, Valkey, MinIO с пользователем приложения, Gotenberg, Mailpit в Docker
 make migrate      # применить миграции
 cd backend && go run ./cmd/seed && cd ..   # демо-данные
 make run-api      # API на :8080
@@ -112,6 +124,7 @@ make run-web      # Vite на http://localhost:5173 (проксирует /api �
 | `make seed` | Демо-данные в запущенный стек (идемпотентно) |
 | `make ai-eval` | Проверка промпта AI-оценки на золотых проектах |
 | `make e2e` | Playwright против запущенного стека |
+| `make compose-check` | Проверка базового compose-файла отдельно и вместе с файлом разработки |
 | `make help` | Все команды |
 
 Без `make` (например, в Windows без WSL) команды из `Makefile` можно запускать напрямую.
@@ -121,7 +134,8 @@ make run-web      # Vite на http://localhost:5173 (проксирует /api �
 ```
 backend/    Go: cmd/{api,worker,migrate,seed}, api/openapi.yaml, db/{migrations,queries}, internal/<module>
 frontend/   React + TypeScript: src/{app,design-system,features,shared,locales}, e2e/
-deploy/     docker-compose.yml, Dockerfile-ы, Nginx, init-скрипты PostgreSQL
+deploy/     docker-compose.yml (базовый) и docker-compose.dev.yml (разработка), Dockerfile-ы, Nginx,
+            init-скрипты PostgreSQL и MinIO
 docs/       ARCHITECTURE, DECISIONS, BACKLOG, PROGRESS, дизайн экранов
 ```
 

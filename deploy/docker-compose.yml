@@ -1,7 +1,14 @@
-# Full Qadam stack for development and on-prem installation.
+# Qadam stack, base file: every service, but only the web client is published
+# (WEB_PORT). The API, the databases and the helper services are reachable
+# only on the internal network. Development adds docker-compose.dev.yml:
+# infrastructure ports on 127.0.0.1 and the Mailpit mail catcher. `make dev`
+# uses both files:
 #   make dev        # build and start everything
 #   make down       # stop
-# Values come from the repository-level .env (see .env.example).
+#
+# This is not a production configuration yet: TLS, backups, monitoring and
+# secret management come in phase 12 (docs/OPERATIONS.md). Values come from
+# the repository-level .env (see .env.example).
 name: qadam
 
 x-backend-env: &backend-env
@@ -13,22 +20,32 @@ x-backend-env: &backend-env
   QADAM_DATABASE_URL: postgres://qadam_app:${APP_DB_PASSWORD}@postgres:5432/qadam?sslmode=disable
   QADAM_DATABASE_MIGRATE_URL: postgres://qadam:${POSTGRES_PASSWORD}@postgres:5432/qadam?sslmode=disable
   QADAM_VALKEY_ADDR: valkey:6379
+  QADAM_VALKEY_PASSWORD: ${VALKEY_PASSWORD:?set VALKEY_PASSWORD in .env}
   QADAM_LOG_LEVEL: ${LOG_LEVEL:-info}
   QADAM_LOG_FORMAT: json
-  # Requests reach the API through the web container on the compose network.
-  QADAM_HTTP_TRUSTED_PROXIES: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+  # Requests reach the API only through the web container on the compose
+  # network. Nginx sets X-Forwarded-For to the client it sees, and the API
+  # trusts that one hop.
+  QADAM_HTTP_TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
   QADAM_AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?set AUTH_SECRET_KEY in .env}
   # kazutb.localhost serves KazUTB; the bare host serves the default university.
   QADAM_TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:-localhost}
   QADAM_TENANT_DEFAULT: ${TENANT_DEFAULT:-kazutb}
-  QADAM_SMTP_HOST: ${SMTP_HOST:-mailpit}
-  QADAM_SMTP_PORT: ${SMTP_PORT:-1025}
-  QADAM_SMTP_TLS: ${SMTP_TLS:-none}
+  # The university's mail server. Without SMTP_HOST letters are only logged
+  # (production refuses to start); development sends them to Mailpit.
+  QADAM_SMTP_HOST: ${SMTP_HOST:-}
+  QADAM_SMTP_PORT: ${SMTP_PORT:-587}
+  QADAM_SMTP_TLS: ${SMTP_TLS:-starttls}
   QADAM_SMTP_USERNAME: ${SMTP_USERNAME:-}
   QADAM_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  QADAM_SMTP_FROM: ${SMTP_FROM:-}
+  QADAM_SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Qadam}
+  # The application's own MinIO user, limited to its bucket (minio-init).
   QADAM_S3_ENDPOINT: ${S3_ENDPOINT:-minio:9000}
-  QADAM_S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-  QADAM_S3_SECRET_KEY: ${S3_SECRET_KEY}
+  QADAM_S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
+  QADAM_S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+  QADAM_S3_BUCKET: ${S3_BUCKET:-qadam}
+  QADAM_S3_USE_SSL: ${S3_USE_SSL:-false}
   QADAM_FILES_SCAN: ${FILES_SCAN:-optional}
   QADAM_FILES_CLAMAV_ADDR: clamav:3310
   # Language models: the deterministic mock works without any model.
@@ -42,6 +59,10 @@ x-backend-env: &backend-env
   QADAM_AI_OPENAI_LOCAL: ${OPENAI_LOCAL:-true}
   # Renders pitch materials and reports to PDF.
   QADAM_GOTENBERG_URL: http://gotenberg:3000
+  # OpenTelemetry tracing, off without an endpoint.
+  QADAM_OTEL_ENDPOINT: ${OTEL_ENDPOINT:-}
+  QADAM_OTEL_INSECURE: ${OTEL_INSECURE:-false}
+  QADAM_OTEL_SAMPLE_RATIO: ${OTEL_SAMPLE_RATIO:-1}
 
 services:
   postgres:
@@ -55,49 +76,73 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "${POSTGRES_PORT:-54329}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U qadam -d qadam"]
       interval: 5s
       timeout: 5s
       retries: 20
 
+  # Revoked sessions, role versions and rate-limit counters live here: only
+  # clients with the password may read or change them.
   valkey:
     image: valkey/valkey:8-alpine
     restart: unless-stopped
-    command: ["valkey-server", "--appendonly", "yes", "--save", "300", "10"]
+    command:
+      - valkey-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "300"
+      - "10"
+      - --requirepass
+      - ${VALKEY_PASSWORD:?set VALKEY_PASSWORD in .env}
+    environment:
+      # valkey-cli of the health check signs in with it.
+      REDISCLI_AUTH: ${VALKEY_PASSWORD}
     volumes:
       - valkey-data:/data
-    ports:
-      - "${VALKEY_PORT:-63799}:6379"
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      # valkey-cli exits with 0 on a refused command too: check the answer.
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 20
 
   # MinIO built from upstream sources by Chainguard (upstream publishes no images
   # any more, see docs/DECISIONS.md). Pinned by digest; override with MINIO_IMAGE.
+  # Only minio-init uses the root keys.
   minio:
     image: ${MINIO_IMAGE:-cgr.dev/chainguard/minio@sha256:32c504bea4574d8f29d719b37bc0dad920ecf3e22b81dc5cea0bb105af2ce10f}
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
     volumes:
       - minio-data:/data
-    ports:
-      - "${MINIO_PORT:-9900}:9000"
-      - "${MINIO_CONSOLE_PORT:-9901}:9001"
+
+  # Creates the bucket and the application's MinIO user (S3_ACCESS_KEY), which
+  # may only read and write objects of that bucket; runs on every start.
+  minio-init:
+    image: ${MINIO_CLIENT_IMAGE:-cgr.dev/chainguard/minio-client@sha256:72f9978d415ea8294d78051fb3aee2fd258d449237633f77f100b5367bb5225d}
+    entrypoint: ["bash", "/init/init.sh"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env}
+      S3_BUCKET: ${S3_BUCKET:-qadam}
+    volumes:
+      - ./minio/init.sh:/init/init.sh:ro
+    depends_on:
+      minio:
+        condition: service_started
+    restart: "no"
 
   gotenberg:
     image: gotenberg/gotenberg:8
     restart: unless-stopped
     command: ["gotenberg", "--api-timeout=60s", "--chromium-auto-start=true"]
-    ports:
-      - "${GOTENBERG_PORT:-3300}:3000"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 10s
@@ -109,16 +154,6 @@ services:
     restart: unless-stopped
     volumes:
       - clamav-data:/var/lib/clamav
-    ports:
-      - "${CLAMAV_PORT:-33100}:3310"
-
-  # Catches every outgoing e-mail in development: http://localhost:8025
-  mailpit:
-    image: axllent/mailpit:latest
-    restart: unless-stopped
-    ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
 
   migrate:
     build:
@@ -146,10 +181,8 @@ services:
         condition: service_completed_successfully
       valkey:
         condition: service_healthy
-      minio:
-        condition: service_started
-    ports:
-      - "${API_PORT:-8080}:8080"
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "/app/api", "healthcheck"]
       interval: 5s
@@ -164,8 +197,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      minio:
-        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "/app/worker", "healthcheck"]
       interval: 10s
