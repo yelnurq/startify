@@ -73,7 +73,7 @@
     "columns": {
       "title": "File columns",
       "text": "The first row holds the headers. Use the English names below or their Russian and Kazakh equivalents, as in the template.",
-      "studentsHint": "The roles column may list roles separated by commas: student, supervisor, mentor, jury, innovation_manager, partner. The default is student.",
+      "studentsHint": "The roles column may list roles separated by commas: student, supervisor, mentor, jury. The default is student. Other roles are assigned under Members.",
       "structureHint": "Level of study: bachelor, master, doctorate, or the Russian бакалавриат, магистратура, докторантура.",
       "required": "* — required column",
       "template": "Download the template"

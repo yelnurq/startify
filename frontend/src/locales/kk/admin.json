@@ -73,7 +73,7 @@
     "columns": {
       "title": "Файл бағандары",
       "text": "Бірінші жол — тақырыптар. Төмендегі ағылшынша атаулар немесе үлгідегідей орысша және қазақша баламалары жарайды.",
-      "studentsHint": "roles бағанында рөлдерді үтір арқылы көрсетуге болады: student, supervisor, mentor, jury, innovation_manager, partner. Әдепкі бойынша — student.",
+      "studentsHint": "roles бағанында рөлдерді үтір арқылы көрсетуге болады: student, supervisor, mentor, jury. Әдепкі бойынша — student. Басқа рөлдер «Қатысушылар» бөлімінде тағайындалады.",
       "structureHint": "Оқу деңгейі: bachelor, master, doctorate немесе бакалавриат, магистратура, докторантура.",
       "required": "* — міндетті баған",
       "template": "Үлгіні жүктеп алу"
