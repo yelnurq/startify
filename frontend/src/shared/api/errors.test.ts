@@ -32,6 +32,12 @@ describe('errorMessage', () => {
     );
   });
 
+  it('explains an outdated page cursor of a list', () => {
+    expect(errorMessage(problem('request.invalid_cursor', 400))).toBe(
+      'Не удалось показать следующую часть списка: он устарел. Обновите страницу.',
+    );
+  });
+
   it('falls back by status and for network failures', () => {
     expect(errorMessage(problem('ai.something_new', 429))).toBe(
       'Слишком много запросов. Подождите немного и повторите.',

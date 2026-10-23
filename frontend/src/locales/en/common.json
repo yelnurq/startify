@@ -99,7 +99,8 @@
       "malformed": "The server could not read the request.",
       "invalid_parameter": "The request contains an invalid parameter.",
       "too_large": "The amount of data is too large.",
-      "timeout": "The server did not respond in time. Please try again."
+      "timeout": "The server did not respond in time. Please try again.",
+      "invalid_cursor": "The next part of the list could not be shown: the list is out of date. Reload the page."
     },
     "validation": {
       "failed": "Some fields are filled in incorrectly."
