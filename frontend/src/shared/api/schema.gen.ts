@@ -359,7 +359,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return from the identity provider */
+        /**
+         * Return from the identity provider
+         * @description Signs in the account of the identity: a first sign-in links an existing account with the same
+         *     verified address only when it is a member of this university or the address is on one of the
+         *     university's e-mail domains (linking an account whose e-mail was never verified removes its
+         *     password and ends its sessions), otherwise creates one. Failures redirect to
+         *     `/login?error=<code>`: `auth.oidc_failed`, `auth.sso_link_denied`, `auth.not_a_member`,
+         *     `auth.account_suspended`.
+         */
         get: operations["completeOidc"];
         put?: never;
         post?: never;

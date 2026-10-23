@@ -143,6 +143,18 @@ func TestSingleSignOn(t *testing.T) {
 		t.Fatalf("linked account: %s", name)
 	}
 
+	// The provider of one university cannot take over an account of another:
+	// the account is not a member here and its address is not on this
+	// university's domains.
+	register(t, h.browser(t, sandboxHost), "elsewhere@qadam.test", "Басқа Университет")
+	idp.QueueUser(ssoUser{sub: "kazutb-4004", email: "elsewhere@qadam.test", name: "Самозванец", verified: true})
+	if to := signInWithSSO(t, h.browser(t, kazutbHost), provider, nil); to != "/login?error=auth.sso_link_denied" {
+		t.Fatalf("foreign account: %q", to)
+	}
+	if s := login(t, h.browser(t, sandboxHost), "elsewhere@qadam.test", password); s.User.FullName != "Басқа Университет" {
+		t.Fatalf("foreign account changed: %+v", s.User)
+	}
+
 	// A forged state is refused.
 	idp.QueueUser(ssoUser{sub: "kazutb-3003", email: "forged@qadam.test", name: "Forged", verified: true})
 	forged := signInWithSSO(t, h.browser(t, kazutbHost), provider, func(q url.Values) { q.Set("state", "forged") })
@@ -154,4 +166,37 @@ func TestSingleSignOn(t *testing.T) {
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/login?error=auth.oidc_failed" {
 		t.Fatalf("foreign provider: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
+}
+
+func TestSingleSignOnTakesUnverifiedAccountsOfItsDomains(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	idp, provider := startIDP(t, h, ts.kazutb)
+	h.db.Exec(t, "UPDATE tenant_settings SET email_domains = '{kazutb.test}' WHERE tenant_id = '"+ts.kazutb.String()+"'")
+	const email = "student@kazutb.test"
+
+	// A stranger registered the student's university address in another
+	// university and never verified it; an old session of theirs is alive.
+	squatter := h.browser(t, sandboxHost)
+	claim := registration(email, "Бөтен Адам")
+	claim.Password = "Squatter-Password-13"
+	expect(t, squatter.do(http.MethodPost, "/api/v1/auth/register", claim), http.StatusAccepted)
+	h.db.Exec(t, "UPDATE users SET email_verified_at = now() WHERE email = '"+email+"'")
+	login(t, squatter, email, claim.Password)
+	h.db.Exec(t, "UPDATE users SET email_verified_at = NULL WHERE email = '"+email+"'")
+
+	// The university's provider vouches for its own domain: the account is
+	// linked, its password removed and its sessions everywhere ended.
+	student := h.browser(t, kazutbHost)
+	idp.QueueUser(ssoUser{sub: "kazutb-5005", email: email, name: "Нағыз Студент", verified: true})
+	if to := signInWithSSO(t, student, provider, nil); to != "/team" {
+		t.Fatalf("redirected to %q", to)
+	}
+	if s := decode[apigen.Session](t, student.do(http.MethodGet, "/api/v1/auth/session", nil)); !s.User.EmailVerified || s.Tenant.Slug != "kazutb" {
+		t.Fatalf("linked session: %+v", s)
+	}
+	expectProblem(t, squatter.do(http.MethodGet, "/api/v1/me", nil), http.StatusUnauthorized, "auth.unauthenticated")
+	expectProblem(t, squatter.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusUnauthorized, "auth.session_revoked")
+	expectProblem(t, h.browser(t, sandboxHost).do(http.MethodPost, "/api/v1/auth/login",
+		apigen.LoginRequest{Email: openapiEmail(email), Password: claim.Password}), http.StatusUnauthorized, "auth.invalid_credentials")
 }

@@ -129,7 +129,8 @@
       "not_a_member": "This account is not part of the university yet. Sign up with the same email and password, and the account will join it.",
       "account_suspended": "Access to this account has been suspended by the university administrator.",
       "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes.",
-      "email_unverified": "Your e-mail is not confirmed yet. Open the link from the letter or send it again."
+      "email_unverified": "Your e-mail is not confirmed yet. Open the link from the letter or send it again.",
+      "sso_link_denied": "This account belongs to another university, so university SSO cannot be linked to it. Sign in with the password or an e-mailed code."
     },
     "tenant": {
       "not_found": "No university was found at this address.",

@@ -476,10 +476,15 @@ func (s *Service) joinExisting(ctx context.Context, u authdb.User, email, passwo
 	return Registered{Session: &session, Cookies: cookies}, nil
 }
 
+// domainAllowed reports whether registration accepts the address: any
+// address when the university restricts no domains.
 func domainAllowed(email string, domains []string) bool {
-	if len(domains) == 0 {
-		return true
-	}
+	return len(domains) == 0 || domainListed(email, domains)
+}
+
+// domainListed reports whether the address is on one of the domains (or
+// their subdomains).
+func domainListed(email string, domains []string) bool {
 	_, domain, ok := strings.Cut(email, "@")
 	if !ok {
 		return false

@@ -179,6 +179,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deletePasswordIdentity = `-- name: DeletePasswordIdentity :exec
+DELETE FROM user_identities WHERE user_id = $1 AND provider = 'password'
+`
+
+func (q *Queries) DeletePasswordIdentity(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deletePasswordIdentity, userID)
+	return err
+}
+
 const deleteStaleAuthTokens = `-- name: DeleteStaleAuthTokens :execrows
 DELETE FROM auth_tokens WHERE expires_at < now() - interval '1 day'
 `

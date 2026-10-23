@@ -30,6 +30,9 @@ INSERT INTO user_identities (user_id, provider, subject, password_hash)
 VALUES (@user_id, 'password', @subject, @password_hash)
 ON CONFLICT (provider, subject) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
+-- name: DeletePasswordIdentity :exec
+DELETE FROM user_identities WHERE user_id = @user_id AND provider = 'password';
+
 -- name: TouchIdentity :exec
 UPDATE user_identities SET last_used_at = now()
  WHERE user_id = @user_id AND provider = @provider;

@@ -32,7 +32,11 @@ import (
 
 const oidcStateTTL = 10 * time.Minute
 
-var errOIDC = apperr.Unauthorized("auth.oidc_failed", "single sign-on failed")
+var (
+	errOIDC          = apperr.Unauthorized("auth.oidc_failed", "single sign-on failed")
+	errSSOLinkDenied = apperr.Forbidden("auth.sso_link_denied",
+		"the account belongs to another university; sign in with its password or e-mailed code")
+)
 
 // oidcState travels in a sealed cookie between the start and the callback.
 type oidcState struct {
@@ -236,11 +240,12 @@ func (s *Service) CompleteOIDC(ctx context.Context, providerID uuid.UUID, stateC
 		return nil, "", err
 	}
 	var cookies []*http.Cookie
+	var revoked []uuid.UUID
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
 		u, err := q.GetIdentityUser(ctx, authdb.GetIdentityUserParams{Provider: identity, Subject: idt.Subject})
 		if db.IsNoRows(err) {
-			u, err = s.linkOIDC(ctx, setup.provider, email, verified, claims.fullName(), t.Locale)
+			u, revoked, err = s.linkOIDC(ctx, setup.provider, email, verified, claims.fullName(), t.Locale)
 			if err != nil {
 				return err
 			}
@@ -288,25 +293,52 @@ func (s *Service) CompleteOIDC(ctx context.Context, providerID uuid.UUID, stateC
 	if err != nil {
 		return nil, "", err
 	}
+	if err := s.revocations.deny(ctx, revoked...); err != nil {
+		return nil, "", err
+	}
 	return append([]*http.Cookie{s.cookies.oidcCleared()}, cookies...), st.Redirect, nil
 }
 
 // linkOIDC finds the account of a first single sign-on by e-mail, or creates
-// it. An existing account is linked only when the provider vouches for the
-// address; otherwise anyone controlling the provider could take it over.
-func (s *Service) linkOIDC(ctx context.Context, prov tenantdb.TenantOidcProvider, email string, verified bool, name, locale string) (authdb.User, error) {
+// it (inside the transaction of ctx). An existing account is linked only when
+// the provider vouches for the address, and only when the account is already
+// a member of this university or its address is on one of the university's
+// e-mail domains: an identity provider speaks for its own university, not
+// for accounts of others (audit С-5).
+//
+// Linking proves control of the address. An account whose e-mail was never
+// verified may have been registered by a stranger, so its password goes and
+// its sessions end in every university; the revoked sessions are returned
+// for the deny-list.
+func (s *Service) linkOIDC(ctx context.Context, prov tenantdb.TenantOidcProvider, email string, verified bool, name, locale string) (authdb.User, []uuid.UUID, error) {
 	q := s.q(ctx)
 	u, err := q.GetUserByEmail(ctx, email)
 	switch {
 	case err == nil:
 		if !verified {
-			return u, errOIDC
+			return u, nil, errOIDC
 		}
-		return u, nil
+		if err := s.mayLinkSSO(ctx, u.ID, email); err != nil {
+			return u, nil, err
+		}
+		if u.EmailVerifiedAt != nil {
+			return u, nil, nil
+		}
+		if err := q.DeletePasswordIdentity(ctx, u.ID); err != nil {
+			return u, nil, err
+		}
+		sids, err := s.revokeEverywhere(ctx, u.ID, "sso_linked", nil)
+		if err != nil {
+			return u, nil, err
+		}
+		if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
+			return u, nil, err
+		}
+		return u, sids, nil
 	case !db.IsNoRows(err):
-		return u, err
+		return u, nil, err
 	case !prov.AutoProvision:
-		return u, errNotMember
+		return u, nil, errNotMember
 	}
 	var verifiedAt *time.Time
 	if verified {
@@ -316,7 +348,25 @@ func (s *Service) linkOIDC(ctx context.Context, prov tenantdb.TenantOidcProvider
 	if len([]rune(name)) < 2 {
 		name = email
 	}
-	return q.CreateUser(ctx, authdb.CreateUserParams{Email: email, FullName: name, Locale: locale, EmailVerifiedAt: verifiedAt})
+	u, err = q.CreateUser(ctx, authdb.CreateUserParams{Email: email, FullName: name, Locale: locale, EmailVerifiedAt: verifiedAt})
+	return u, nil, err
+}
+
+// mayLinkSSO allows linking an existing account to this university's
+// identity provider: the account is a member here, or its address is on one
+// of the university's e-mail domains.
+func (s *Service) mayLinkSSO(ctx context.Context, userID uuid.UUID, email string) error {
+	if _, member, err := s.users.Membership(ctx, userID); err != nil || member {
+		return err
+	}
+	settings, err := s.tenants.CurrentSettings(ctx)
+	if err != nil {
+		return err
+	}
+	if !domainListed(email, settings.EmailDomains) {
+		return errSSOLinkDenied
+	}
+	return nil
 }
 
 func (s *Service) openState(cookie string) (oidcState, error) {
