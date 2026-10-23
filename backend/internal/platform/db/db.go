@@ -39,10 +39,49 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
-// Connect opens the pool of the application role, verifies connectivity and
-// refuses a role that row-level security does not bind (RequireRestrictedRole).
+// WorkerRole is the database role whose members may enter the system scope
+// (app_is_system(), migration 00014): the worker and the seed connect as it,
+// the API never does.
+const WorkerRole = "qadam_worker"
+
+// Connect opens the pool of the API (QADAM_DATABASE_URL). It refuses a role
+// that row-level security does not bind (RequireRestrictedRole) and one that
+// could enter the system scope: the API reaches other universities only
+// through the narrow functions of migration 00014.
 func Connect(ctx context.Context, cfg config.Database) (*DB, error) {
-	pcfg, err := pgxpool.ParseConfig(cfg.URL)
+	d, err := connect(ctx, cfg, cfg.URL)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.requireSystem(ctx, false); err != nil {
+		d.Close()
+		return nil, err
+	}
+	return d, nil
+}
+
+// ConnectWorker opens the pool of the worker and the seed
+// (QADAM_DATABASE_WORKER_URL, by default QADAM_DATABASE_URL). The role must
+// be bound by row-level security like the API's, and be a member of
+// qadam_worker, or system-scoped jobs would silently see no rows.
+func ConnectWorker(ctx context.Context, cfg config.Database) (*DB, error) {
+	dsn := cfg.WorkerURL
+	if dsn == "" {
+		dsn = cfg.URL
+	}
+	d, err := connect(ctx, cfg, dsn)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.requireSystem(ctx, true); err != nil {
+		d.Close()
+		return nil, err
+	}
+	return d, nil
+}
+
+func connect(ctx context.Context, cfg config.Database, dsn string) (*DB, error) {
+	pcfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("db: parse url: %w", err)
 	}
@@ -58,6 +97,38 @@ func Connect(ctx context.Context, cfg config.Database) (*DB, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// MaySystem reports the pool's role and whether it may enter the system scope.
+func (d *DB) MaySystem(ctx context.Context) (string, bool, error) {
+	var (
+		role string
+		may  bool
+	)
+	err := d.pool.QueryRow(ctx, `
+SELECT current_user::text,
+       EXISTS (SELECT 1 FROM pg_roles r WHERE r.rolname = $1 AND pg_has_role(current_user, r.oid, 'MEMBER'))`,
+		WorkerRole).Scan(&role, &may)
+	if err != nil {
+		return "", false, fmt.Errorf("db: check system role: %w", err)
+	}
+	return role, may, nil
+}
+
+func (d *DB) requireSystem(ctx context.Context, want bool) error {
+	role, may, err := d.MaySystem(ctx)
+	switch {
+	case err != nil:
+		return err
+	case want && !may:
+		return fmt.Errorf("db: the worker connects as %q, which is not a member of %s and cannot enter the system scope; "+
+			"set QADAM_DATABASE_WORKER_URL to the %s role (migration 00014 creates it, deploy/postgres/roles.sh gives it a password)",
+			role, WorkerRole, WorkerRole)
+	case !want && may:
+		return fmt.Errorf("db: QADAM_DATABASE_URL connects as %q, a member of %s, which may enter the system scope and read every university; "+
+			"the API connects as qadam_app and only the worker as %s", role, WorkerRole, WorkerRole)
+	}
+	return nil
 }
 
 // restrictedRoleQuery reports why the current role is not bound by row-level
@@ -135,8 +206,9 @@ func (d *DB) Close() { d.pool.Close() }
 // Scope selects which rows a transaction may see.
 type Scope struct {
 	TenantID uuid.UUID
-	// System grants cross-tenant access for platform operations (super admin,
-	// national showcase, background maintenance). Use sparingly.
+	// System grants cross-tenant access for background maintenance and the
+	// seed. Only a pool of the worker role (ConnectWorker) gets it: for the
+	// API's role the database ignores it and the scope sees no university.
 	System bool
 }
 
@@ -149,7 +221,8 @@ func WithTenant(ctx context.Context, tenantID uuid.UUID) context.Context {
 	return context.WithValue(ctx, scopeKey{}, Scope{TenantID: tenantID})
 }
 
-// WithSystem grants ctx cross-tenant data access.
+// WithSystem grants ctx cross-tenant data access; it takes effect only on a
+// pool of the worker role.
 func WithSystem(ctx context.Context) context.Context {
 	s := ScopeFrom(ctx)
 	s.System = true

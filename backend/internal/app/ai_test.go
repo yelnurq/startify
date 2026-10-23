@@ -159,7 +159,7 @@ func TestKnowledgeBase(t *testing.T) {
 			args = a
 		}
 	}
-	worker := &knowledge.IndexWorker{DB: h.db.App, Gateway: h.services.AI}
+	worker := &knowledge.IndexWorker{DB: h.db.Worker, Gateway: h.services.AI}
 	if err := worker.Work(context.Background(), &river.Job[knowledge.IndexArgs]{Args: args, JobRow: jobRow()}); err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestKnowledgeReindex(t *testing.T) {
 	reindex := func() []uuid.UUID {
 		t.Helper()
 		queue := &captureQueue{}
-		w := &knowledge.ReindexWorker{DB: h.db.App, Gateway: h.services.AI, Queue: queue}
+		w := &knowledge.ReindexWorker{DB: h.db.Worker, Gateway: h.services.AI, Queue: queue}
 		if err := w.Work(context.Background(), &river.Job[knowledge.ReindexArgs]{JobRow: jobRow()}); err != nil {
 			t.Fatal(err)
 		}
@@ -226,7 +226,7 @@ func TestKnowledgeReindex(t *testing.T) {
 	if ids := reindex(); len(ids) != 1 || ids[0] != doc.Id {
 		t.Fatalf("pending: %v", ids)
 	}
-	worker := &knowledge.IndexWorker{DB: h.db.App, Gateway: h.services.AI}
+	worker := &knowledge.IndexWorker{DB: h.db.Worker, Gateway: h.services.AI}
 	job := &river.Job[knowledge.IndexArgs]{Args: knowledge.IndexArgs{TenantID: ts.kazutb, DocumentID: doc.Id}, JobRow: jobRow()}
 	if err := worker.Work(context.Background(), job); err != nil {
 		t.Fatal(err)

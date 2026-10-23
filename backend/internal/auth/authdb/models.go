@@ -37,6 +37,7 @@ type Session struct {
 	ExpiresAt           time.Time
 	RevokedAt           *time.Time
 	RevokedReason       *string
+	UpdatedAt           time.Time
 }
 
 type User struct {

@@ -25,7 +25,7 @@ import (
 
 func seedAdmin(t *testing.T, h *harness, ts tenants) *browser {
 	t.Helper()
-	_, err := seed.Account(context.Background(), h.db.App, ts.kazutb, seed.Member{
+	_, err := seed.Account(context.Background(), h.db.Worker, ts.kazutb, seed.Member{
 		Email: "rector-office@qadam.test", FullName: "Жанар Мұратова", Locale: "ru", Password: password,
 		Roles: []string{"tenant_admin"}, Slug: "zhanar-muratova",
 	})
@@ -98,7 +98,7 @@ func TestAdministratorsCannotDemoteEachOtherAtOnce(t *testing.T) {
 	h := newHarness(t)
 	ts := seedTenants(t, h)
 	first := seedAdmin(t, h, ts)
-	_, err := seed.Account(context.Background(), h.db.App, ts.kazutb, seed.Member{
+	_, err := seed.Account(context.Background(), h.db.Worker, ts.kazutb, seed.Member{
 		Email: "second-admin@qadam.test", FullName: "Екінші Әкімші", Locale: "ru", Password: password,
 		Roles: []string{"tenant_admin"}, Slug: "ekinshi-akimshi",
 	})

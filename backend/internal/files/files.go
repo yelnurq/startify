@@ -29,6 +29,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/httpx"
+	"github.com/yelnurq/startify/backend/internal/platform/jobs"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 )
 
@@ -66,6 +67,7 @@ type Service struct {
 	scanner  Scanner
 	scanMode string
 	log      *slog.Logger
+	queue    jobs.Enqueuer
 }
 
 // NewService returns the file service.
@@ -80,6 +82,13 @@ func NewService(database *db.DB, store Storage, cfg config.Files, log *slog.Logg
 // WithScanner replaces the malware scanner (tests).
 func (s *Service) WithScanner(scanner Scanner) *Service {
 	s.scanner = scanner
+	return s
+}
+
+// UseQueue lets the service hand to the worker what the API may not change
+// (DeleteAvatar).
+func (s *Service) UseQueue(q jobs.Enqueuer) *Service {
+	s.queue = q
 	return s
 }
 
@@ -158,10 +167,30 @@ func (s *Service) scan(ctx context.Context, data []byte) (string, error) {
 	return "clean", nil
 }
 
-// Delete marks a file deleted; its contents are purged a day later.
+// Delete marks a file of the current university deleted; its contents are
+// purged a day later.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	if err := filesdb.New(s.db.Conn(ctx)).SoftDeleteFile(ctx, id); err != nil {
+	if _, err := filesdb.New(s.db.Conn(ctx)).SoftDeleteFile(ctx, id); err != nil {
 		return fmt.Errorf("files: delete: %w", err)
+	}
+	return nil
+}
+
+// DeleteAvatar marks the replaced or removed avatar of ownerID deleted
+// (inside the transaction of ctx). An account is shared by its universities
+// and so is its avatar, but the file belongs to the university where it was
+// uploaded: from another one row-level security lets the API read it, not
+// change it. The worker deletes such a file once the change commits.
+func (s *Service) DeleteAvatar(ctx context.Context, id, ownerID uuid.UUID) error {
+	n, err := filesdb.New(s.db.Conn(ctx)).SoftDeleteFile(ctx, id)
+	if err != nil {
+		return fmt.Errorf("files: delete avatar: %w", err)
+	}
+	if n > 0 || s.queue == nil {
+		return nil
+	}
+	if err := s.queue.Enqueue(ctx, ReleaseArgs{FileID: id, OwnerID: ownerID}, nil); err != nil {
+		return fmt.Errorf("files: release avatar: %w", err)
 	}
 	return nil
 }
@@ -436,6 +465,36 @@ func (w *PurgeWorker) Work(ctx context.Context, _ *river.Job[PurgeArgs]) error {
 		slog.InfoContext(ctx, "deleted files purged", slog.Int("count", len(rows)))
 	}
 	return nil
+}
+
+// ReleaseArgs asks the worker to delete an avatar of another university
+// (DeleteAvatar).
+type ReleaseArgs struct {
+	FileID  uuid.UUID `json:"file_id"`
+	OwnerID uuid.UUID `json:"owner_id"`
+}
+
+// Kind implements river.JobArgs.
+func (ReleaseArgs) Kind() string { return "files.release_avatar" }
+
+// ReleaseWorker deletes avatars replaced in another university of the
+// account. It deletes only an avatar of the account that asked.
+type ReleaseWorker struct {
+	river.WorkerDefaults[ReleaseArgs]
+	DB *db.DB
+}
+
+// Work implements river.Worker.
+func (w *ReleaseWorker) Work(ctx context.Context, job *river.Job[ReleaseArgs]) error {
+	return w.DB.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		_, err := filesdb.New(w.DB.Conn(ctx)).ReleaseAvatar(ctx, filesdb.ReleaseAvatarParams{
+			ID: job.Args.FileID, OwnerID: &job.Args.OwnerID,
+		})
+		if err != nil {
+			return fmt.Errorf("files: release avatar: %w", err)
+		}
+		return nil
+	})
 }
 
 // PeriodicJobs returns the purge schedule.

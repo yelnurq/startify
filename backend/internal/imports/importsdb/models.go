@@ -24,6 +24,7 @@ type ImportJob struct {
 	Result      json.RawMessage
 	CreatedAt   time.Time
 	CommittedAt *time.Time
+	UpdatedAt   time.Time
 }
 
 type User struct {

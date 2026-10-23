@@ -181,8 +181,12 @@ type Database struct {
 	URL string `koanf:"url"`
 	// MigrateURL is the DSN of the schema owner used by migrations; defaults to URL.
 	MigrateURL string `koanf:"migrate_url"`
-	MaxConns   int32  `koanf:"max_conns"`
-	MinConns   int32  `koanf:"min_conns"`
+	// WorkerURL is the DSN of the worker and the seed: the qadam_worker role,
+	// the only one that may enter the system scope. Defaults to URL, which the
+	// worker then refuses.
+	WorkerURL string `koanf:"worker_url"`
+	MaxConns  int32  `koanf:"max_conns"`
+	MinConns  int32  `koanf:"min_conns"`
 }
 
 // Valkey configures the cache and rate-limit store (Redis protocol).
@@ -381,10 +385,17 @@ func (c *Config) Validate() error {
 		c.HTTP.trustedPrefixes = append(c.HTTP.trustedPrefixes, p.Masked())
 	}
 
-	for _, dsn := range []struct{ name, value string }{
-		{"QADAM_DATABASE_URL", c.Database.URL},
-		{"QADAM_DATABASE_MIGRATE_URL", c.Database.MigrateURL},
+	for _, dsn := range []struct {
+		name, value string
+		optional    bool
+	}{
+		{"QADAM_DATABASE_URL", c.Database.URL, false},
+		{"QADAM_DATABASE_MIGRATE_URL", c.Database.MigrateURL, false},
+		{"QADAM_DATABASE_WORKER_URL", c.Database.WorkerURL, true},
 	} {
+		if dsn.value == "" && dsn.optional {
+			continue
+		}
 		if u, err := url.Parse(dsn.value); dsn.value == "" || err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") {
 			fail("%s must be a postgres:// URL", dsn.name)
 		}
@@ -525,6 +536,7 @@ func (c *Config) validateProduction(fail func(format string, args ...any)) {
 	for _, dsn := range []struct{ name, value string }{
 		{"QADAM_DATABASE_URL", c.Database.URL},
 		{"QADAM_DATABASE_MIGRATE_URL", c.Database.MigrateURL},
+		{"QADAM_DATABASE_WORKER_URL", c.Database.WorkerURL},
 	} {
 		u, err := url.Parse(dsn.value)
 		if err != nil {

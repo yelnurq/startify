@@ -81,6 +81,7 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 	}})
 	river.AddWorker(workers, &auth.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &files.PurgeWorker{DB: w.DB, Store: w.Storage})
+	river.AddWorker(workers, &files.ReleaseWorker{DB: w.DB})
 	river.AddWorker(workers, &mail.SendWorker{Sender: w.Sender, Keys: keys})
 	return workers, nil
 }

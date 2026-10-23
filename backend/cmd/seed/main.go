@@ -36,7 +36,7 @@ func run() error {
 	if cfg.IsProduction() {
 		return errors.New("demo data is not for production")
 	}
-	database, err := db.Connect(ctx, cfg.Database)
+	database, err := db.ConnectWorker(ctx, cfg.Database)
 	if err != nil {
 		return err
 	}

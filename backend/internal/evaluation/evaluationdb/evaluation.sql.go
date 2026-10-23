@@ -429,7 +429,7 @@ func (q *Queries) ListOverrides(ctx context.Context, evaluationID uuid.UUID) ([]
 }
 
 const listScores = `-- name: ListScores :many
-SELECT tenant_id, evaluation_id, criterion_key, ai_score, score, justification FROM evaluation_criteria_scores WHERE evaluation_id = ANY($1::uuid[])
+SELECT tenant_id, evaluation_id, criterion_key, ai_score, score, justification, created_at, updated_at FROM evaluation_criteria_scores WHERE evaluation_id = ANY($1::uuid[])
 `
 
 func (q *Queries) ListScores(ctx context.Context, evaluationIds []uuid.UUID) ([]EvaluationCriteriaScore, error) {
@@ -448,6 +448,8 @@ func (q *Queries) ListScores(ctx context.Context, evaluationIds []uuid.UUID) ([]
 			&i.AiScore,
 			&i.Score,
 			&i.Justification,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -557,7 +559,7 @@ func (q *Queries) SetRunning(ctx context.Context, id uuid.UUID) (int64, error) {
 const setScore = `-- name: SetScore :one
 UPDATE evaluation_criteria_scores SET score = $1
  WHERE evaluation_id = $2 AND criterion_key = $3
-RETURNING tenant_id, evaluation_id, criterion_key, ai_score, score, justification
+RETURNING tenant_id, evaluation_id, criterion_key, ai_score, score, justification, created_at, updated_at
 `
 
 type SetScoreParams struct {
@@ -576,6 +578,8 @@ func (q *Queries) SetScore(ctx context.Context, arg SetScoreParams) (EvaluationC
 		&i.AiScore,
 		&i.Score,
 		&i.Justification,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

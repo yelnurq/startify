@@ -19,11 +19,11 @@ func TestResolve(t *testing.T) {
 	ctx := context.Background()
 	spec := seed.KazUTB
 	spec.Domains = []string{"innovation.kazutb.kz"}
-	k, err := seed.Tenant(ctx, database.App, spec)
+	k, err := seed.Tenant(ctx, database.Worker, spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := seed.Tenant(ctx, database.App, seed.Sandbox); err != nil {
+	if _, err := seed.Tenant(ctx, database.Worker, seed.Sandbox); err != nil {
 		t.Fatal(err)
 	}
 	svc, err := tenant.NewService(database.App, config.Tenant{BaseDomain: "qadam.kz", Default: "kazutb"}, "https://qadam.kz")

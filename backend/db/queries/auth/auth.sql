@@ -84,6 +84,12 @@ UPDATE sessions SET revoked_at = now(), revoked_reason = @reason
    AND (sqlc.narg('except_id')::uuid IS NULL OR id <> sqlc.narg('except_id')::uuid)
 RETURNING id;
 
+-- name: RevokeUserSessionsEverywhere :many
+-- In every university of the account (D-068), through the one function of
+-- migration 00014 that reaches past the current university.
+SELECT revoked::uuid AS id
+  FROM app_revoke_user_sessions(@user_id::uuid, @reason::text, sqlc.narg('except_id')::uuid) AS revoked;
+
 -- name: ListActiveSessions :many
 SELECT * FROM sessions
  WHERE user_id = @user_id AND revoked_at IS NULL AND expires_at > now()
@@ -120,6 +126,10 @@ UPDATE auth_tokens SET attempts = attempts + 1 WHERE id = @id RETURNING attempts
 -- name: ConsumeUserTokens :exec
 UPDATE auth_tokens SET consumed_at = now()
  WHERE user_id = @user_id AND purpose = ANY(@purposes::text[]) AND consumed_at IS NULL;
+
+-- name: ConsumeUserTokensEverywhere :exec
+-- In every university of the account, like RevokeUserSessionsEverywhere.
+SELECT app_consume_user_tokens(@user_id::uuid, @purposes::text[]);
 
 -- name: DeleteStaleAuthTokens :execrows
 DELETE FROM auth_tokens WHERE expires_at < now() - interval '1 day';

@@ -439,12 +439,13 @@ func (s *Service) joinAndVerify(ctx context.Context, u authdb.User, consent stri
 }
 
 // consumeTokensEverywhere voids the outstanding one-time tokens of an account
-// in every university. Like revokeEverywhere, it is a deliberate system-scoped
-// statement filtered by user_id, confined to its own small transaction (a
+// in every university. Like revokeEverywhere, it reaches past the current
+// university only through a function of the database that does this one
+// thing for one user_id (migration 00014), in its own small transaction (a
 // savepoint inside the caller's).
 func (s *Service) consumeTokensEverywhere(ctx context.Context, userID uuid.UUID, purposes ...string) error {
-	err := s.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
-		return s.q(ctx).ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: userID, Purposes: purposes})
+	err := s.db.Tx(ctx, func(ctx context.Context) error {
+		return s.q(ctx).ConsumeUserTokensEverywhere(ctx, authdb.ConsumeUserTokensEverywhereParams{UserID: userID, Purposes: purposes})
 	})
 	if err != nil {
 		return fmt.Errorf("auth: consume tokens everywhere: %w", err)
@@ -981,16 +982,20 @@ func (s *Service) RevokeSession(ctx context.Context, id uuid.UUID) (bool, error)
 // universities, so a change of credentials or "sign out everywhere" must reach
 // sessions opened elsewhere too.
 //
-// This is a deliberate cross-tenant operation: the system scope is confined
-// to this small transaction, whose only statement is filtered by user_id. Run
-// inside the transaction that changes the credentials, it becomes a savepoint
-// of it, so the revocation commits (or rolls back) together with the change.
-// The caller puts the returned sessions on the deny-list after the commit.
+// This is a deliberate cross-tenant operation. The API cannot enter the
+// system scope (only the worker's role can, D-068 and migration 00014): the
+// database function app_revoke_user_sessions revokes the sessions of one
+// user_id in every university and does nothing else. Run inside the
+// transaction that changes the credentials, it commits (or rolls back)
+// together with the change. The caller puts the returned sessions on the
+// deny-list after the commit.
 func (s *Service) revokeEverywhere(ctx context.Context, userID uuid.UUID, reason string, except *uuid.UUID) ([]uuid.UUID, error) {
 	var sids []uuid.UUID
-	err := s.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+	err := s.db.Tx(ctx, func(ctx context.Context) error {
 		var err error
-		sids, err = s.q(ctx).RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: userID, ExceptID: except})
+		sids, err = s.q(ctx).RevokeUserSessionsEverywhere(ctx, authdb.RevokeUserSessionsEverywhereParams{
+			UserID: userID, Reason: reason, ExceptID: except,
+		})
 		return err
 	})
 	if err != nil {

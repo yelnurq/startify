@@ -40,6 +40,21 @@ func (q *Queries) ConsumeUserTokens(ctx context.Context, arg ConsumeUserTokensPa
 	return err
 }
 
+const consumeUserTokensEverywhere = `-- name: ConsumeUserTokensEverywhere :exec
+SELECT app_consume_user_tokens($1::uuid, $2::text[])
+`
+
+type ConsumeUserTokensEverywhereParams struct {
+	UserID   uuid.UUID
+	Purposes []string
+}
+
+// In every university of the account, like RevokeUserSessionsEverywhere.
+func (q *Queries) ConsumeUserTokensEverywhere(ctx context.Context, arg ConsumeUserTokensEverywhereParams) error {
+	_, err := q.db.Exec(ctx, consumeUserTokensEverywhere, arg.UserID, arg.Purposes)
+	return err
+}
+
 const countLoginCodeAttempt = `-- name: CountLoginCodeAttempt :one
 UPDATE auth_tokens SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts
 `
@@ -100,7 +115,7 @@ const createSession = `-- name: CreateSession :one
 
 INSERT INTO sessions (id, tenant_id, user_id, refresh_hash, user_agent, ip, expires_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason
+RETURNING id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason, updated_at
 `
 
 type CreateSessionParams struct {
@@ -139,6 +154,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.RevokedReason,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -285,7 +301,7 @@ func (q *Queries) GetPasswordHash(ctx context.Context, userID uuid.UUID) (string
 }
 
 const getSessionByPreviousHash = `-- name: GetSessionByPreviousHash :one
-SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason FROM sessions WHERE previous_refresh_hash = $1
+SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason, updated_at FROM sessions WHERE previous_refresh_hash = $1
 `
 
 func (q *Queries) GetSessionByPreviousHash(ctx context.Context, previousRefreshHash []byte) (Session, error) {
@@ -305,12 +321,13 @@ func (q *Queries) GetSessionByPreviousHash(ctx context.Context, previousRefreshH
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.RevokedReason,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getSessionByRefreshHash = `-- name: GetSessionByRefreshHash :one
-SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason FROM sessions WHERE refresh_hash = $1
+SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason, updated_at FROM sessions WHERE refresh_hash = $1
 `
 
 func (q *Queries) GetSessionByRefreshHash(ctx context.Context, refreshHash []byte) (Session, error) {
@@ -330,6 +347,7 @@ func (q *Queries) GetSessionByRefreshHash(ctx context.Context, refreshHash []byt
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.RevokedReason,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -429,7 +447,7 @@ func (q *Queries) ListActiveLoginCodes(ctx context.Context, userID uuid.UUID) ([
 }
 
 const listActiveSessions = `-- name: ListActiveSessions :many
-SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason FROM sessions
+SELECT id, tenant_id, user_id, refresh_hash, previous_refresh_hash, rotated_at, user_agent, ip, created_at, last_used_at, expires_at, revoked_at, revoked_reason, updated_at FROM sessions
  WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()
  ORDER BY last_used_at DESC
 `
@@ -457,6 +475,7 @@ func (q *Queries) ListActiveSessions(ctx context.Context, userID uuid.UUID) ([]S
 			&i.ExpiresAt,
 			&i.RevokedAt,
 			&i.RevokedReason,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -533,6 +552,39 @@ type RevokeUserSessionsParams struct {
 
 func (q *Queries) RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, revokeUserSessions, arg.Reason, arg.UserID, arg.ExceptID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revokeUserSessionsEverywhere = `-- name: RevokeUserSessionsEverywhere :many
+SELECT revoked::uuid AS id
+  FROM app_revoke_user_sessions($1::uuid, $2::text, $3::uuid) AS revoked
+`
+
+type RevokeUserSessionsEverywhereParams struct {
+	UserID   uuid.UUID
+	Reason   string
+	ExceptID *uuid.UUID
+}
+
+// In every university of the account (D-068), through the one function of
+// migration 00014 that reaches past the current university.
+func (q *Queries) RevokeUserSessionsEverywhere(ctx context.Context, arg RevokeUserSessionsEverywhereParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, revokeUserSessionsEverywhere, arg.UserID, arg.Reason, arg.ExceptID)
 	if err != nil {
 		return nil, err
 	}

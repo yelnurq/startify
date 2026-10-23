@@ -109,7 +109,7 @@ func TestSensitiveDetailsStayInTheTeam(t *testing.T) {
 	expect(t, rec, http.StatusOK)
 
 	// A material written from these answers.
-	worker := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: fakeConverter(t)}
+	worker := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: fakeConverter(t)}
 	h.queue.jobs = nil
 	rec = owner.do(http.MethodPost, base+"/materials", apigen.MaterialCreate{Kind: apigen.MaterialKindOnePager, Format: apigen.MaterialFormatPdf})
 	expect(t, rec, http.StatusAccepted)

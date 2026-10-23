@@ -23,7 +23,7 @@ import (
 // account creates a member of KazUTB with roles and signs them in.
 func account(t *testing.T, h *harness, ts tenants, email, name string, roles ...string) (*browser, uuid.UUID) {
 	t.Helper()
-	id, err := seed.Account(context.Background(), h.db.App, ts.kazutb, seed.Member{
+	id, err := seed.Account(context.Background(), h.db.Worker, ts.kazutb, seed.Member{
 		Email: email, FullName: name, Locale: "ru", Password: password, Roles: roles,
 		Slug: strings.Split(email, "@")[0],
 	})
@@ -394,7 +394,7 @@ func TestPitchMaterials(t *testing.T) {
 	}))
 	defer conv.Close()
 
-	worker := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: gotenberg.New(conv.URL, time.Second)}
+	worker := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: gotenberg.New(conv.URL, time.Second)}
 	request := func(kind apigen.MaterialKind, format apigen.MaterialFormat) apigen.Material {
 		t.Helper()
 		h.queue.jobs = nil

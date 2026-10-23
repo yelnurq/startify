@@ -18,7 +18,7 @@ import (
 // member creates a member of KazUTB without signing them in.
 func member(t *testing.T, h *harness, ts tenants, n int, roles ...string) uuid.UUID {
 	t.Helper()
-	id, err := seed.Account(context.Background(), h.db.App, ts.kazutb, seed.Member{
+	id, err := seed.Account(context.Background(), h.db.Worker, ts.kazutb, seed.Member{
 		Email: fmt.Sprintf("person%d@qadam.test", n), FullName: fmt.Sprintf("Студент Номер%d", n), Locale: "ru",
 		Password: password, Roles: roles, Slug: fmt.Sprintf("person%d", n),
 	})

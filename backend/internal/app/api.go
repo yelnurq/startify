@@ -151,6 +151,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	if a.Scanner != nil {
 		fileSvc.WithScanner(a.Scanner)
 	}
+	fileSvc.UseQueue(a.Queue)
 	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations, limiter)
 	authSvc := auth.NewService(auth.Deps{
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,

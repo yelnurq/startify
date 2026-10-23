@@ -30,7 +30,7 @@ func runEvaluation(t *testing.T, h *harness) {
 	if !found {
 		t.Fatal("no evaluation job")
 	}
-	w := &evaluation.RunWorker{DB: h.db.App, Gateway: h.services.AI}
+	w := &evaluation.RunWorker{DB: h.db.Worker, Gateway: h.services.AI}
 	if err := w.Work(context.Background(), &river.Job[evaluation.RunArgs]{Args: args, JobRow: &rivertype.JobRow{Attempt: 1, MaxAttempts: 3}}); err != nil {
 		t.Fatal(err)
 	}

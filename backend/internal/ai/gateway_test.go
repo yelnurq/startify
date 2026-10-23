@@ -111,11 +111,11 @@ func setup(t *testing.T, routes string, providers ...llm.Provider) env {
 	t.Helper()
 	database := pg.NewDB(t)
 	ctx := context.Background()
-	tenant, err := seed.Tenant(ctx, database.App, seed.Sandbox)
+	tenant, err := seed.Tenant(ctx, database.Worker, seed.Sandbox)
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := seed.Account(ctx, database.App, tenant.ID, seed.Member{
+	user, err := seed.Account(ctx, database.Worker, tenant.ID, seed.Member{
 		Email: "ai-user@qadam.test", FullName: "Ай Пайдаланушы", Locale: "kk", Password: "Steppe-Falcon-Rises-42",
 		Roles: []string{"student"}, Slug: "ai-user",
 	})
@@ -331,7 +331,7 @@ func TestDailyLimit(t *testing.T) {
 func TestStreamCancellationIsRecorded(t *testing.T) {
 	database := pg.NewDB(t)
 	ctx := context.Background()
-	tenant, err := seed.Tenant(ctx, database.App, seed.Sandbox)
+	tenant, err := seed.Tenant(ctx, database.Worker, seed.Sandbox)
 	if err != nil {
 		t.Fatal(err)
 	}

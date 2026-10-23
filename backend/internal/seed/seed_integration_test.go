@@ -26,17 +26,6 @@ var pg *testpg.Server
 
 func TestMain(m *testing.M) { testpg.Main(m, &pg) }
 
-// tenantTables are the tables isolated by row-level security.
-var tenantTables = []string{
-	"tenant_settings", "tenant_oidc_providers", "faculties", "departments", "study_groups", "memberships",
-	"sessions", "auth_tokens", "files", "audit_log", "import_jobs", "team_requests", "team_responses",
-	"tenant_ai_settings", "ai_usage", "knowledge_documents", "knowledge_chunks",
-	"projects", "project_members", "project_step_data", "project_revisions", "project_comments",
-	"ai_conversations", "ai_messages", "project_materials",
-	"evaluation_rubrics", "evaluations", "evaluation_criteria_scores", "evaluation_overrides",
-	"contact_requests",
-}
-
 // counter counts the rows a data scope can see.
 type counter struct {
 	t  *testing.T
@@ -55,13 +44,15 @@ func (c counter) rows(ctx context.Context, table string) int {
 	return n
 }
 
-func TestDemoIsIdempotentAndIsolated(t *testing.T) {
+// TestDemoIsIdempotent checks the demo data after two runs. Isolation of
+// every table is TestEveryTenantTableIsIsolated (isolation_integration_test.go).
+func TestDemoIsIdempotent(t *testing.T) {
 	database := pg.NewDB(t)
 	ctx := context.Background()
-	if err := Demo(ctx, database.App); err != nil {
+	if err := Demo(ctx, database.Worker); err != nil {
 		t.Fatal(err)
 	}
-	if err := Demo(ctx, database.App); err != nil {
+	if err := Demo(ctx, database.Worker); err != nil {
 		t.Fatalf("second run: %v", err)
 	}
 
@@ -136,18 +127,6 @@ func TestDemoIsIdempotentAndIsolated(t *testing.T) {
 		t.Fatalf("the expert correction must change a score: %d %v", changed, err)
 	}
 
-	// Every tenant table shows only the rows of the scope; without a scope, none.
-	for _, table := range tenantTables {
-		all := c.rows(db.WithSystem(ctx), table)
-		mine := c.rows(k, table)
-		theirs := c.rows(s, table)
-		if mine+theirs != all {
-			t.Errorf("%s: kazutb %d + sandbox %d != all %d", table, mine, theirs, all)
-		}
-		if n := c.rows(ctx, table); n != 0 {
-			t.Errorf("%s: %d rows visible without a tenant", table, n)
-		}
-	}
 	// Showcase pages are tenant data too, except published public pages:
 	// the national showcase reads them from every university.
 	public := 0
@@ -180,7 +159,7 @@ func TestDemoIsIdempotentAndIsolated(t *testing.T) {
 func TestDemoKnowledgeAnswersQuestions(t *testing.T) {
 	database := pg.NewDB(t)
 	ctx := context.Background()
-	if err := Demo(ctx, database.App); err != nil {
+	if err := Demo(ctx, database.Worker); err != nil {
 		t.Fatal(err)
 	}
 	kazutb, err := tenantdb.New(database.App.Conn(ctx)).GetTenantBySlug(ctx, "kazutb")

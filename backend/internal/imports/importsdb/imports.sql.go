@@ -15,7 +15,7 @@ import (
 const createImportJob = `-- name: CreateImportJob :one
 INSERT INTO import_jobs (tenant_id, created_by, kind, file_name, columns, rows, summary)
 VALUES (app_current_tenant(), $1, $2, $3, $4, $5, $6)
-RETURNING id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at
+RETURNING id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at, updated_at
 `
 
 type CreateImportJobParams struct {
@@ -50,6 +50,7 @@ func (q *Queries) CreateImportJob(ctx context.Context, arg CreateImportJobParams
 		&i.Result,
 		&i.CreatedAt,
 		&i.CommittedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -118,7 +119,7 @@ func (q *Queries) FindUsersByEmails(ctx context.Context, emails []string) ([]Fin
 }
 
 const getImportJob = `-- name: GetImportJob :one
-SELECT id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at FROM import_jobs WHERE id = $1
+SELECT id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at, updated_at FROM import_jobs WHERE id = $1
 `
 
 func (q *Queries) GetImportJob(ctx context.Context, id uuid.UUID) (ImportJob, error) {
@@ -137,12 +138,13 @@ func (q *Queries) GetImportJob(ctx context.Context, id uuid.UUID) (ImportJob, er
 		&i.Result,
 		&i.CreatedAt,
 		&i.CommittedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const lockImportJob = `-- name: LockImportJob :one
-SELECT id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at FROM import_jobs WHERE id = $1 FOR UPDATE
+SELECT id, tenant_id, created_by, kind, status, file_name, columns, rows, summary, result, created_at, committed_at, updated_at FROM import_jobs WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) LockImportJob(ctx context.Context, id uuid.UUID) (ImportJob, error) {
@@ -161,6 +163,7 @@ func (q *Queries) LockImportJob(ctx context.Context, id uuid.UUID) (ImportJob, e
 		&i.Result,
 		&i.CreatedAt,
 		&i.CommittedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
