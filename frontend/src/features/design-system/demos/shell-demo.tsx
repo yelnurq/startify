@@ -124,8 +124,12 @@ export function DemoUser() {
         >
           <Avatar name={STUDENT} size="sm" online />
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium text-fg">{STUDENT}</span>
-            <span className="truncate text-xs text-fg-subtle">{t('demo.userRole')}</span>
+            <TruncatedText focusable={false} className="text-sm font-medium text-fg">
+              {STUDENT}
+            </TruncatedText>
+            <TruncatedText focusable={false} className="text-xs text-fg-subtle">
+              {t('demo.userRole')}
+            </TruncatedText>
           </span>
           <ChevronsUpDown className="size-4 text-fg-faint" aria-hidden />
         </button>
@@ -146,7 +150,7 @@ export function DemoBrand() {
   return (
     <span className="flex min-w-0 flex-col leading-tight">
       <span className="font-display text-base font-bold text-ink">{t('common:app.name')}</span>
-      <span className="truncate text-xs text-fg-subtle">{t('design:demo.tenant')}</span>
+      <TruncatedText className="text-xs text-fg-subtle">{t('design:demo.tenant')}</TruncatedText>
     </span>
   );
 }

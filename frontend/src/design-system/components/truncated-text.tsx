@@ -9,6 +9,12 @@ interface TruncatedTextProps {
   as?: ElementType;
   /** Number of lines before the ellipsis. */
   lines?: 1 | 2 | 3;
+  /**
+   * Cut text takes focus to show its tooltip from the keyboard. Off inside a
+   * link or a button: the control is focused instead, and screen readers read
+   * the whole text anyway.
+   */
+  focusable?: boolean;
   className?: string;
 }
 
@@ -20,6 +26,7 @@ export function TruncatedText({
   children,
   as: Tag = 'span',
   lines = 1,
+  focusable = true,
   className,
 }: TruncatedTextProps) {
   const ref = useRef<HTMLElement>(null);
@@ -44,7 +51,7 @@ export function TruncatedText({
     <Tooltip content={children} disabled={!clipped}>
       <Tag
         ref={ref}
-        tabIndex={clipped ? 0 : undefined}
+        tabIndex={clipped && focusable ? 0 : undefined}
         className={cn('block min-w-0', clamp, className)}
       >
         {children}
