@@ -115,7 +115,7 @@ func TestAISettingsCheckAndUsage(t *testing.T) {
 		t.Fatalf("done %+v text %q", last, text.String())
 	}
 	rec = admin.do(http.MethodPost, "/api/v1/admin/ai/check", apigen.AiCheckRequest{Feature: apigen.AiFeatureEmbedding})
-	if events := readEvents(t, rec.Body.String()); len(events) != 2 || !strings.Contains(events[0].data, "mock-hash-256") {
+	if events := readEvents(t, rec.Body.String()); len(events) != 2 || !strings.Contains(events[0].data, "mock-hash-1024") {
 		t.Fatalf("embedding check %+v", events)
 	}
 
@@ -176,6 +176,12 @@ func TestKnowledgeBase(t *testing.T) {
 	hits := decode[struct{ Items []apigen.KnowledgeHit }](t, rec).Items
 	if len(hits) == 0 || !strings.Contains(hits[0].Excerpt, "1 декабря") || *hits[0].Heading != "Раздел 1. Сроки" {
 		t.Fatalf("hits %+v", hits)
+	}
+	// Nothing related, nothing found: the mentor gets no unrelated sources (Н-28).
+	rec = admin.do(http.MethodGet, "/api/v1/admin/knowledge/search?q="+url.QueryEscape("Как посчитать TAM SAM SOM для рынка кофе?"), nil)
+	expect(t, rec, http.StatusOK)
+	if hits := decode[struct{ Items []apigen.KnowledgeHit }](t, rec).Items; len(hits) != 0 {
+		t.Fatalf("unrelated hits %+v", hits)
 	}
 
 	// The mentor's search is scoped to the university.
@@ -243,6 +249,17 @@ func TestKnowledgeReindex(t *testing.T) {
 		"UPDATE knowledge_documents SET updated_at = now() - interval '7 hours'")
 	if ids := reindex(); len(ids) != 1 {
 		t.Fatalf("failed long ago: %v", ids)
+	}
+	// A document that keeps failing is not retried forever (С-17).
+	h.db.Exec(t, "SET session_replication_role = replica",
+		"UPDATE knowledge_documents SET index_failures = 3")
+	if ids := reindex(); len(ids) != 0 {
+		t.Fatalf("failed three times: %v", ids)
+	}
+	// A ready document without passages (nothing to embed) is not either.
+	h.db.Exec(t, "DELETE FROM knowledge_chunks", "UPDATE knowledge_documents SET status = 'ready', chunk_count = 0")
+	if ids := reindex(); len(ids) != 0 {
+		t.Fatalf("ready without passages: %v", ids)
 	}
 }
 

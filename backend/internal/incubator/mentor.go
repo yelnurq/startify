@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -322,32 +323,66 @@ type MentorStream struct {
 	call     mentorCall
 }
 
+// heartbeat is how long a stream may stay quiet before it sends a comment:
+// proxies with an idle timeout (often 60–100 s) would otherwise close it
+// while the model is thinking (Н-22).
+var heartbeat = 15 * time.Second
+
+// relayed is what a relay of the model's answer ended with.
+type relayed struct {
+	text    string
+	result  *ai.Result
+	failure error
+	// gone: the client left.
+	gone bool
+}
+
+// relay forwards the model's text as SSE until the events end, with a
+// keep-alive comment after every quiet interval. A failed write means the
+// client left: stop is called to stop the model.
+func relay(sse *httpx.SSE, events <-chan ai.Event, every time.Duration, gone bool, stop func()) relayed {
+	out := relayed{gone: gone}
+	var text strings.Builder
+	quiet := time.NewTicker(every)
+	defer quiet.Stop()
+	for {
+		select {
+		case ev, ok := <-events:
+			if !ok {
+				out.text = text.String()
+				return out
+			}
+			switch {
+			case ev.Err != nil:
+				out.failure = ev.Err
+			case ev.Result != nil:
+				out.result = ev.Result
+			default:
+				text.WriteString(ev.Delta)
+				quiet.Reset(every)
+				if !out.gone && sse.Event("delta", map[string]string{"text": ev.Delta}) != nil {
+					out.gone = true
+					stop()
+				}
+			}
+		case <-quiet.C:
+			if !out.gone && sse.Comment("keep-alive") != nil {
+				out.gone = true
+				stop()
+			}
+		}
+	}
+}
+
 // VisitSendMentorMessageResponse implements apigen.SendMentorMessageResponseObject.
 func (m *MentorStream) VisitSendMentorMessageResponse(w http.ResponseWriter) error {
 	defer m.cancel()
 	sse := httpx.NewSSE(w)
-	gone := sse.Event("message", m.question) != nil
-	var text strings.Builder
-	var result *ai.Result
-	var failure error
-	for ev := range m.events {
-		switch {
-		case ev.Err != nil:
-			failure = ev.Err
-		case ev.Result != nil:
-			result = ev.Result
-		default:
-			text.WriteString(ev.Delta)
-			// A failed write means the client left: stop the model.
-			if !gone && sse.Event("delta", map[string]string{"text": ev.Delta}) != nil {
-				gone = true
-				m.cancel()
-			}
-		}
-	}
+	r := relay(sse, m.events, heartbeat, sse.Event("message", m.question) != nil, m.cancel)
+	result, failure, gone := r.result, r.failure, r.gone
 	// The answer is kept even when the request was cancelled.
 	ctx := context.WithoutCancel(m.ctx)
-	msg := ai.Message{Role: "assistant", Content: text.String()}
+	msg := ai.Message{Role: "assistant", Content: r.text}
 	meta, _ := json.Marshal(messageMeta{Sources: m.call.sources, Mode: m.call.mode})
 	msg.Meta = meta
 	switch {

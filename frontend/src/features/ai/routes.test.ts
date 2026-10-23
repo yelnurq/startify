@@ -121,4 +121,15 @@ describe('draftErrors', () => {
     });
     expect(draftErrors(toDraft(settings), providers)).toEqual({});
   });
+
+  it('rejects an embedding route to a provider without embeddings', () => {
+    const withEmbeddings: AiProvider[] = [
+      { name: 'mock', local: true, models: { mentor: 'mock-mentor', embedding: 'mock-hash-1024' } },
+      { name: 'anthropic', local: false, models: { mentor: 'claude-sonnet-5-5' } },
+    ];
+    const draft = { ...toDraft(settings), routes: { embedding: [{ provider: 'anthropic' }] } };
+    expect(draftErrors(draft, withEmbeddings)).toEqual({ 'routes.embedding': 'not_supported' });
+    const fine = { ...toDraft(settings), routes: { embedding: [{ provider: 'mock' }] } };
+    expect(draftErrors(fine, withEmbeddings)).toEqual({});
+  });
 });

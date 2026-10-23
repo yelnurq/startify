@@ -63,13 +63,22 @@ func (w *Worker) Workers(ctx context.Context) (*river.Workers, error) {
 		return nil, err
 	}
 	workers := river.NewWorkers()
-	river.AddWorker(workers, &knowledge.IndexWorker{DB: w.DB, Gateway: gateway})
-	river.AddWorker(workers, &knowledge.ReindexWorker{DB: w.DB, Gateway: gateway, Queue: queue})
-	river.AddWorker(workers, &evaluation.RunWorker{DB: w.DB, Gateway: gateway})
-	river.AddWorker(workers, &incubator.MaterialWorker{
+	index := &knowledge.IndexWorker{DB: w.DB, Gateway: gateway}
+	evaluate := &evaluation.RunWorker{DB: w.DB, Gateway: gateway}
+	materials := &incubator.MaterialWorker{
 		DB: w.DB, Gateway: gateway, Files: fileSvc, Gotenberg: gotenberg.New(w.Config.Gotenberg.URL, w.Config.Gotenberg.Timeout),
-	})
+	}
+	river.AddWorker(workers, index)
+	river.AddWorker(workers, &knowledge.ReindexWorker{DB: w.DB, Gateway: gateway, Queue: queue})
+	river.AddWorker(workers, evaluate)
+	river.AddWorker(workers, materials)
 	river.AddWorker(workers, &maintenance.CleanupWorker{DB: w.DB})
+	river.AddWorker(workers, &maintenance.StaleWorker{Reapers: []maintenance.Reaper{
+		{Name: "evaluations", Fn: evaluate.FailStale},
+		{Name: "materials", Fn: materials.FailStale},
+		{Name: "knowledge_documents", Fn: index.FailStale},
+		{Name: "ai_reservations", Fn: gateway.PurgeReservations},
+	}})
 	river.AddWorker(workers, &auth.CleanupWorker{DB: w.DB})
 	river.AddWorker(workers, &files.PurgeWorker{DB: w.DB, Store: w.Storage})
 	river.AddWorker(workers, &mail.SendWorker{Sender: w.Sender, Keys: keys})

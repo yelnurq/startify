@@ -56,7 +56,9 @@ x-backend-env: &backend-env
   QADAM_AI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   QADAM_AI_OPENAI_MODEL: ${OPENAI_MODEL:-}
   QADAM_AI_OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-}
-  QADAM_AI_OPENAI_LOCAL: ${OPENAI_LOCAL:-true}
+  # auto: local only for localhost, a private IP or a Docker service name.
+  QADAM_AI_OPENAI_LOCAL: ${OPENAI_LOCAL:-auto}
+  QADAM_AI_EMBEDDING_MIN_SIMILARITY: ${AI_EMBEDDING_MIN_SIMILARITY:-0.3}
   # Renders pitch materials and reports to PDF.
   QADAM_GOTENBERG_URL: http://gotenberg:3000
   # OpenTelemetry tracing, off without an endpoint.

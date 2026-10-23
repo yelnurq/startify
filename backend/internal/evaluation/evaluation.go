@@ -16,6 +16,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/ai"
 	"github.com/yelnurq/startify/backend/internal/ai/llm"
 	"github.com/yelnurq/startify/backend/internal/ai/prompts"
+	"github.com/yelnurq/startify/backend/internal/ai/schema"
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/audit"
 	"github.com/yelnurq/startify/backend/internal/evaluation/evaluationdb"
@@ -621,6 +622,22 @@ func (s *Service) Latest(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.
 	return out, nil
 }
 
+// Timing of an evaluation job.
+const (
+	// runTimeout leaves room for a thorough model.
+	runTimeout = 10 * time.Minute
+	// modelBudget keeps the model call inside the job, so that the result or
+	// the failure is still written before the job's deadline.
+	modelBudget = runTimeout - time.Minute
+	// staleAfter: an attempt never runs longer than runTimeout and River
+	// retries within seconds, so an evaluation untouched for longer than every
+	// attempt together has lost its job (a crashed worker, a discarded job).
+	staleAfter = 3*runTimeout + 15*time.Minute
+)
+
+// errTimedOut is the error of an evaluation given up after its job was lost.
+const errTimedOut = "evaluation.timed_out"
+
 // RunWorker asks the model to evaluate the project.
 type RunWorker struct {
 	river.WorkerDefaults[RunArgs]
@@ -628,8 +645,8 @@ type RunWorker struct {
 	Gateway *ai.Gateway
 }
 
-// Timeout leaves room for a thorough model.
-func (w *RunWorker) Timeout(*river.Job[RunArgs]) time.Duration { return 10 * time.Minute }
+// Timeout implements river.Worker.
+func (w *RunWorker) Timeout(*river.Job[RunArgs]) time.Duration { return runTimeout }
 
 // Work implements river.Worker.
 func (w *RunWorker) Work(ctx context.Context, job *river.Job[RunArgs]) error {
@@ -645,17 +662,45 @@ func (w *RunWorker) Work(ctx context.Context, job *river.Job[RunArgs]) error {
 	code := "evaluation.failed"
 	if e, ok := apperr.As(err); ok {
 		code = e.Code
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		code = errTimedOut
 	}
 	slog.ErrorContext(ctx, "evaluation failed", slog.String("evaluation_id", args.EvaluationID.String()), slog.Any("error", err))
+	// The last attempt often fails because its deadline passed: record the
+	// failure on a context of its own, or the project stays blocked (В-3).
+	ctx, cancel := jobs.Detach(ctx)
+	defer cancel()
 	return w.DB.Tx(ctx, func(ctx context.Context) error {
 		return evaluationdb.New(w.DB.Conn(ctx)).FailEvaluation(ctx, evaluationdb.FailEvaluationParams{ID: args.EvaluationID, Error: &code})
 	})
 }
 
-var errInvalidResult = apperr.New(apperr.KindUnavailable, "ai.invalid_output", "the evaluation does not cover the rubric")
+// FailStale gives up the evaluations of every university whose job is gone,
+// so that their projects can be evaluated again.
+func (w *RunWorker) FailStale(ctx context.Context, now time.Time) (int64, error) {
+	code := errTimedOut
+	var n int64
+	err := w.DB.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		n, err = evaluationdb.New(w.DB.Conn(ctx)).FailStaleEvaluations(ctx, evaluationdb.FailStaleEvaluationsParams{
+			Error: &code, Before: now.Add(-staleAfter),
+		})
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("evaluation: fail stale: %w", err)
+	}
+	return n, nil
+}
+
+var (
+	errInvalidResult = apperr.New(apperr.KindUnavailable, "ai.invalid_output", "the evaluation does not cover the rubric")
+	// errGivenUp: the evaluation was given up while the model was working.
+	errGivenUp = errors.New("evaluation: given up meanwhile")
+)
 
 // Prompt renders the evaluation request of a project.
-func Prompt(r Rubric, projectData, locale string) (system, version string, schema llm.Schema, err error) {
+func Prompt(r Rubric, projectData, locale string) (system, version string, out llm.Schema, err error) {
 	criteria := make([]prompts.Criterion, len(r))
 	for i, c := range r {
 		criteria[i] = prompts.Criterion{Key: c.Key, Title: c.Title.Best("en"), Weight: c.Weight, Guide: c.Guide}
@@ -664,10 +709,52 @@ func Prompt(r Rubric, projectData, locale string) (system, version string, schem
 	return system, version, resultSchema(r), err
 }
 
-// Parse reads the model's answer and checks that it scores every criterion once.
+// Scored is the model's evaluation with the total and level the server
+// derives from it.
+type Scored struct {
+	Result        Result
+	Scores        map[string]int
+	Total         int
+	Level         string
+	Provider      string
+	Model         string
+	PromptVersion string
+}
+
+// Evaluate asks the model of the evaluation route to score project data
+// against a rubric. The prompt, the schema, the gateway (routes, fallbacks,
+// schema check, corrective retry) and the parsing are those of the worker, so
+// the evaluation harness checks exactly what the platform runs.
+func Evaluate(ctx context.Context, g *ai.Gateway, r Rubric, data, locale string, requestedBy uuid.UUID) (Scored, error) {
+	system, version, out, err := Prompt(r, data, locale)
+	if err != nil {
+		return Scored{}, err
+	}
+	res, err := g.Complete(ctx, ai.Call{
+		Feature: llm.FeatureEvaluation, PromptVersion: version, System: system, Schema: &out, Locale: locale,
+		MaxTokens: 8000, UserID: requestedBy,
+		Messages: []llm.Message{{Role: llm.RoleUser, Content: "Evaluate the project."}},
+	})
+	if err != nil {
+		return Scored{}, err
+	}
+	result, scores, err := Parse(r, res.Text)
+	if err != nil {
+		return Scored{}, err
+	}
+	total := r.Total(scores)
+	return Scored{
+		Result: result, Scores: scores, Total: total, Level: Level(total),
+		Provider: res.Provider, Model: res.Model, PromptVersion: version,
+	}, nil
+}
+
+// Parse reads the model's answer and checks that it scores every criterion
+// once. Like the schema check of the gateway, it accepts the JSON value
+// wrapped in a Markdown fence or a sentence (С-16).
 func Parse(r Rubric, text string) (Result, map[string]int, error) {
 	var res Result
-	if err := json.Unmarshal([]byte(text), &res); err != nil {
+	if err := json.Unmarshal([]byte(schema.Extract(text)), &res); err != nil {
 		return res, nil, fmt.Errorf("%w: %w", errInvalidResult, err)
 	}
 	scores := map[string]int{}
@@ -687,16 +774,16 @@ func Parse(r Rubric, text string) (Result, map[string]int, error) {
 
 func (w *RunWorker) run(ctx context.Context, args RunArgs) error {
 	var row evaluationdb.Evaluation
+	started := false
 	err := w.DB.Tx(ctx, func(ctx context.Context) error {
 		q := evaluationdb.New(w.DB.Conn(ctx))
 		var err error
 		if row, err = q.GetEvaluation(ctx, evaluationdb.GetEvaluationParams{ID: args.EvaluationID, ProjectID: args.ProjectID}); err != nil {
 			return err
 		}
-		if row.Status == StatusReady || row.Status == StatusFailed {
-			return nil
-		}
-		return q.SetRunning(ctx, args.EvaluationID)
+		n, err := q.SetRunning(ctx, args.EvaluationID)
+		started = n > 0
+		return err
 	})
 	if db.IsNoRows(err) {
 		return nil // the project is gone
@@ -704,33 +791,24 @@ func (w *RunWorker) run(ctx context.Context, args RunArgs) error {
 	if err != nil {
 		return fmt.Errorf("evaluation: start: %w", err)
 	}
-	if row.Status == StatusReady || row.Status == StatusFailed {
-		return nil
+	if !started {
+		return nil // finished, or given up
 	}
 	r := fromSnapshot(row.Rubric)
-	data, _, err := incubator.ProjectContext(ctx, w.DB, args.ProjectID, args.Card)
+	// The evaluation records the versions of the steps it actually read: a
+	// retry hours later evaluates the project as it is then (Н-25).
+	data, versions, err := incubator.ProjectContext(ctx, w.DB, args.ProjectID, args.Card)
 	if err != nil {
 		return err
 	}
-	system, version, schema, err := Prompt(r, data, row.Locale)
+	callCtx, cancel := context.WithTimeout(ctx, modelBudget)
+	defer cancel()
+	scored, err := Evaluate(callCtx, w.Gateway, r, data, row.Locale, args.RequestedBy)
 	if err != nil {
 		return err
 	}
-	res, err := w.Gateway.Complete(ctx, ai.Call{
-		Feature: llm.FeatureEvaluation, PromptVersion: version, System: system, Schema: &schema, Locale: row.Locale,
-		MaxTokens: 8000, UserID: args.RequestedBy,
-		Messages: []llm.Message{{Role: llm.RoleUser, Content: "Evaluate the project."}},
-	})
-	if err != nil {
-		return err
-	}
-	result, scores, err := Parse(r, res.Text)
-	if err != nil {
-		return err
-	}
-	total := r.Total(scores)
-	level := Level(total)
-	t := int32(total) //nolint:gosec // 0–100
+	result, scores, level, version := scored.Result, scored.Scores, scored.Level, scored.PromptVersion
+	t := int32(scored.Total) //nolint:gosec // 0–100
 	marshal := func(v any) json.RawMessage {
 		raw, err := json.Marshal(v)
 		if err != nil {
@@ -738,7 +816,7 @@ func (w *RunWorker) run(ctx context.Context, args RunArgs) error {
 		}
 		return raw
 	}
-	return w.DB.Tx(ctx, func(ctx context.Context) error {
+	err = w.DB.Tx(ctx, func(ctx context.Context) error {
 		q := evaluationdb.New(w.DB.Conn(ctx))
 		for _, c := range r {
 			justification := ""
@@ -753,14 +831,22 @@ func (w *RunWorker) run(ctx context.Context, args RunArgs) error {
 				return err
 			}
 		}
-		provider, model := res.Provider, res.Model
-		return q.CompleteEvaluation(ctx, evaluationdb.CompleteEvaluationParams{
+		provider, model := scored.Provider, scored.Model
+		n, err := q.CompleteEvaluation(ctx, evaluationdb.CompleteEvaluationParams{
 			ID: args.EvaluationID, Total: &t, Level: &level, Summary: result.Summary,
 			RedFlags: marshal(nonNil(result.RedFlags)), Hypotheses: marshal(nonNil(result.Hypotheses)),
 			Experiments: marshal(nonNil(result.Experiments)), Recommendations: marshal(nonNil(result.Recommendations)),
-			Provider: &provider, Model: &model, PromptVersion: &version,
+			Provider: &provider, Model: &model, PromptVersion: &version, StepVersions: marshal(versions),
 		})
+		if err == nil && n == 0 {
+			return errGivenUp
+		}
+		return err
 	})
+	if errors.Is(err, errGivenUp) {
+		return nil
+	}
+	return err
 }
 
 func nonNil[T any](s []T) []T {

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/yelnurq/startify/backend/internal/ai/aidb"
 	"github.com/yelnurq/startify/backend/internal/ai/llm"
+	"github.com/yelnurq/startify/backend/internal/ai/mock"
 	"github.com/yelnurq/startify/backend/internal/ai/redact"
 	"github.com/yelnurq/startify/backend/internal/ai/schema"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
@@ -60,15 +62,28 @@ type Gateway struct {
 	zone      *time.Location
 	log       *slog.Logger
 	now       func() time.Time
+	// minSimilarity is the relevance floor of knowledge passages.
+	minSimilarity float64
 }
 
-// NewGateway returns the gateway over the configured providers.
+// mockMinSimilarity is the relevance floor of the mock's hashed vectors:
+// they only overlap on shared words, so related texts score about 0.1–0.5
+// and unrelated ones below 0.05.
+const mockMinSimilarity = 0.06
+
+// embeds reports whether a provider can serve embeddings.
+func embeds(p llm.Provider) bool { return p.DefaultModel(llm.FeatureEmbedding) != "" }
+
+// NewGateway returns the gateway over the configured providers. Without a
+// database (the evaluation harness, `make ai-eval`) Complete, Stream and Embed
+// use the default settings, no limits and record nothing; the rest of the
+// gateway needs the database.
 func NewGateway(database *db.DB, providers []llm.Provider, cfg config.AI, log *slog.Logger) (*Gateway, error) {
 	zone, err := time.LoadLocation(cfg.Timezone)
 	if err != nil {
 		return nil, fmt.Errorf("ai: time zone: %w", err)
 	}
-	g := &Gateway{db: database, providers: map[string]llm.Provider{}, zone: zone, log: log, now: time.Now}
+	g := &Gateway{db: database, providers: map[string]llm.Provider{}, zone: zone, log: log, now: time.Now, minSimilarity: cfg.EmbeddingMinSimilarity}
 	for _, p := range providers {
 		g.providers[p.Name()] = p
 		g.order = append(g.order, p.Name())
@@ -82,23 +97,50 @@ func NewGateway(database *db.DB, providers []llm.Provider, cfg config.AI, log *s
 		routes := configured[f]
 		if len(routes) == 0 {
 			routes = []Route{{Provider: cfg.Default}}
-			// Anthropic has no embeddings: use the local server, else the mock.
-			if f == llm.FeatureEmbedding && cfg.Default == "anthropic" {
-				if _, ok := g.providers["openai"]; ok {
-					routes = []Route{{Provider: "openai"}}
-				} else {
-					routes = []Route{{Provider: "mock"}}
+			// Without embeddings at the default provider (Anthropic, a server
+			// without an embedding model) use the local server, else the mock.
+			if f == llm.FeatureEmbedding {
+				for _, name := range []string{cfg.Default, "openai", "mock"} {
+					if p, ok := g.providers[name]; ok && embeds(p) {
+						routes = []Route{{Provider: name}}
+						break
+					}
 				}
 			}
 		}
 		for _, r := range routes {
-			if _, ok := g.providers[r.Provider]; !ok {
+			p, ok := g.providers[r.Provider]
+			if !ok {
 				return nil, fmt.Errorf("ai: feature %s routes to %q, which is not configured", f, r.Provider)
+			}
+			if f == llm.FeatureEmbedding && !embeds(p) {
+				return nil, fmt.Errorf("ai: feature embedding routes to %q, which has no embedding model", r.Provider)
 			}
 		}
 		g.defaults[f] = routes
 	}
+	for _, name := range g.order {
+		p := g.providers[name]
+		if p.Local() {
+			continue
+		}
+		attrs := []any{slog.String("provider", name)}
+		if e, ok := p.(interface{ Endpoint() string }); ok {
+			attrs = append(attrs, slog.String("endpoint", e.Endpoint()),
+				slog.String("hint", "set QADAM_AI_OPENAI_LOCAL=true only for a server inside the university network"))
+		}
+		log.Warn("AI provider outside the university network: personal data is masked before sending and users are warned", attrs...)
+	}
 	return g, nil
+}
+
+// MinSimilarity is the cosine similarity below which a passage embedded by
+// model is not related to a question.
+func (g *Gateway) MinSimilarity(model string) float64 {
+	if model == mock.EmbeddingModel {
+		return mockMinSimilarity
+	}
+	return g.minSimilarity
 }
 
 // SetClock replaces the clock (tests).
@@ -148,6 +190,9 @@ func (g *Gateway) Settings(ctx context.Context) (Settings, error) {
 		return Settings{}, err
 	}
 	s := Settings{Routes: Routes{}, DailyUserTokens: DefaultDailyUserTokens, DailyTenantTokens: DefaultDailyTenantTokens, MentorMode: "coach"}
+	if g.db == nil {
+		return s, nil
+	}
 	err := g.db.ReadTx(ctx, func(ctx context.Context) error {
 		row, err := aidb.New(g.db.Conn(ctx)).GetSettings(ctx)
 		if db.IsNoRows(err) {
@@ -200,6 +245,9 @@ func (g *Gateway) SaveSettings(ctx context.Context, s Settings, ifMatch *string)
 			}
 			if s.LocalOnly && !p.Local() {
 				return s, apperr.Validation(apperr.FieldError{Field: "routes." + string(f), Code: "external_not_allowed"})
+			}
+			if f == llm.FeatureEmbedding && !embeds(p) {
+				return s, apperr.Validation(apperr.FieldError{Field: "routes." + string(f), Code: "not_supported"})
 			}
 		}
 	}
@@ -254,7 +302,7 @@ func (g *Gateway) routesFor(s Settings, f llm.Feature) []Route {
 	out := make([]Route, 0, len(routes))
 	for _, r := range routes {
 		p, ok := g.providers[r.Provider]
-		if !ok || (s.LocalOnly && !p.Local()) {
+		if !ok || (s.LocalOnly && !p.Local()) || (f == llm.FeatureEmbedding && !embeds(p)) {
 			continue
 		}
 		out = append(out, r)
@@ -316,6 +364,9 @@ type prepared struct {
 	userID   uuid.UUID
 	settings Settings
 	routes   []Route
+	// reservation holds the tokens of the call while it runs (uuid.Nil
+	// without limits).
+	reservation uuid.UUID
 }
 
 func (g *Gateway) prepare(ctx context.Context, c *Call) (prepared, error) {
@@ -335,16 +386,17 @@ func (g *Gateway) prepare(ctx context.Context, c *Call) (prepared, error) {
 	if err != nil {
 		return prepared{}, err
 	}
-	if c.Feature != llm.FeatureEmbedding {
-		if err := g.checkLimits(ctx, settings, c.UserID); err != nil {
-			return prepared{}, err
-		}
-	}
 	routes := g.routesFor(settings, c.Feature)
 	if len(routes) == 0 {
 		return prepared{}, errUnavailable
 	}
-	return prepared{tenant: t, userID: c.UserID, settings: settings, routes: routes}, nil
+	pr := prepared{tenant: t, userID: c.UserID, settings: settings, routes: routes}
+	if c.Feature != llm.FeatureEmbedding {
+		if pr.reservation, err = g.reserve(ctx, settings, c.UserID, reservedTokens(*c)); err != nil {
+			return prepared{}, err
+		}
+	}
+	return pr, nil
 }
 
 // request builds the provider request of a route, redacting personal data
@@ -375,11 +427,14 @@ func (g *Gateway) request(c Call, pr prepared, r Route) (llm.Provider, llm.Compl
 }
 
 // Complete returns a model answer, trying the routes of the feature in turn.
+// With a schema, Result.Text is the JSON value alone (without a Markdown
+// fence or a sentence around it) and Result.JSON its decoded form.
 func (g *Gateway) Complete(ctx context.Context, c Call) (*Result, error) {
 	pr, err := g.prepare(ctx, &c)
 	if err != nil {
 		return nil, err
 	}
+	defer g.release(ctx, pr)
 	var validator *schema.Validator
 	if c.Schema != nil {
 		if validator, err = schema.Compile(c.Schema.Name, c.Schema.JSON); err != nil {
@@ -413,6 +468,26 @@ func (g *Gateway) attempt(ctx context.Context, c Call, pr prepared, p llm.Provid
 		return nil, publicError(ctx, err)
 	}
 	usage := resp.Usage
+	if validator != nil && resp.StopReason == llm.StopMaxTokens {
+		// A JSON value cut at the token limit can never be valid: ask again
+		// with room to finish instead of "correcting" it with the same
+		// limit (Н-24).
+		retry := req
+		retry.MaxTokens = min(req.MaxTokens*2, maxStructuredTokens)
+		g.log.WarnContext(ctx, "structured model output hit the token limit, retrying with a larger one",
+			slog.String("feature", string(c.Feature)), slog.String("model", req.Model), slog.Int("max_tokens", retry.MaxTokens))
+		second, err := p.Complete(ctx, retry)
+		if err != nil {
+			g.record(ctx, c, pr, p.Name(), req.Model, usage.Add(usageOf(second)), started, failureStatus(ctx, err), err)
+			return nil, publicError(ctx, err)
+		}
+		usage = usage.Add(second.Usage)
+		if second.StopReason == llm.StopMaxTokens {
+			g.record(ctx, c, pr, p.Name(), req.Model, usage, started, statusInvalidOutput, errTruncated)
+			return nil, errInvalidOutput
+		}
+		req, resp = retry, second
+	}
 	text := restore(red, resp.Text)
 	res := &Result{Text: text, Provider: p.Name(), Model: resp.Model, PromptVersion: c.PromptVersion}
 	if validator != nil {
@@ -438,14 +513,22 @@ func (g *Gateway) attempt(ctx context.Context, c Call, pr prepared, p llm.Provid
 					slog.String("model", req.Model), slog.Any("error", verr))
 				return nil, errInvalidOutput
 			}
-			res.Text = text
 		}
+		// Callers read the value that was validated, not the reply around it:
+		// local models often wrap JSON in a Markdown fence (С-16).
+		res.Text = schema.Extract(text)
 		res.JSON = doc
 	}
 	res.Usage = usage
 	g.record(ctx, c, pr, p.Name(), resp.Model, usage, started, statusOK, nil)
 	return res, nil
 }
+
+// maxStructuredTokens caps the larger limit of a retry after truncation.
+const maxStructuredTokens = 32000
+
+// errTruncated: the answer did not fit the token limit even after a retry.
+var errTruncated = errors.New("ai: output truncated at the token limit")
 
 func usageOf(resp *llm.CompletionResponse) llm.Usage {
 	if resp == nil {
@@ -487,6 +570,9 @@ func publicError(ctx context.Context, err error) error {
 func (g *Gateway) record(ctx context.Context, c Call, pr prepared, provider, model string, u llm.Usage,
 	started time.Time, status string, cause error,
 ) {
+	if g.db == nil {
+		return
+	}
 	params := aidb.InsertUsageParams{
 		Feature: string(c.Feature), Provider: provider, Model: model,
 		InputTokens: int32(u.InputTokens), OutputTokens: int32(u.OutputTokens), //nolint:gosec // token counts fit
@@ -523,6 +609,8 @@ func errorCode(err error) string {
 		return "refused"
 	case errors.Is(err, schema.ErrInvalid):
 		return "invalid_output"
+	case errors.Is(err, errTruncated):
+		return "truncated"
 	case errors.Is(err, llm.ErrBadRequest):
 		return "bad_request"
 	default:
@@ -536,47 +624,122 @@ func (g *Gateway) dayStart() time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, g.zone)
 }
 
-func (g *Gateway) checkLimits(ctx context.Context, s Settings, userID uuid.UUID) error {
-	if s.DailyUserTokens == 0 && s.DailyTenantTokens == 0 {
-		return nil
+// reservationTTL bounds how long a call in progress holds its tokens: the
+// reservation of a process that died stops counting after it. It is longer
+// than any call (an evaluation job ends after 10 minutes).
+const reservationTTL = 15 * time.Minute
+
+// reservedTokens is what a call may use at most: its input (about four
+// characters per token) and the longest answer it allows.
+func reservedTokens(c Call) int32 {
+	in := utf8.RuneCountInString(c.System)
+	for _, m := range c.Messages {
+		in += utf8.RuneCountInString(m.Content)
+	}
+	return int32(min((in+3)/4+max(c.MaxTokens, 1), math.MaxInt32)) //nolint:gosec // clamped
+}
+
+// reserve checks the daily limits and holds the tokens of a call until it
+// ends. Calls in progress count with what they may use, so parallel requests
+// cannot overshoot a limit by more than one call (Н-21). The check and the
+// reservation are serialised per university.
+func (g *Gateway) reserve(ctx context.Context, s Settings, userID uuid.UUID, tokens int32) (uuid.UUID, error) {
+	if g.db == nil || (s.DailyUserTokens == 0 && s.DailyTenantTokens == 0) {
+		return uuid.Nil, nil
 	}
 	since := g.dayStart()
-	var userTokens, tenantTokens int64
-	err := g.db.ReadTx(ctx, func(ctx context.Context) error {
+	var (
+		id    uuid.UUID
+		scope string
+	)
+	var user *uuid.UUID
+	if userID != uuid.Nil {
+		user = &userID
+	}
+	err := g.db.Tx(ctx, func(ctx context.Context) error {
 		q := aidb.New(g.db.Conn(ctx))
-		var err error
+		if err := q.LockLimits(ctx); err != nil {
+			return err
+		}
+		spent := func(user *uuid.UUID) (int64, error) {
+			used, err := q.TokensSince(ctx, aidb.TokensSinceParams{Since: since, UserID: user})
+			if err != nil {
+				return 0, err
+			}
+			held, err := q.ReservedTokens(ctx, user)
+			return used + held, err
+		}
 		if s.DailyTenantTokens > 0 {
-			if tenantTokens, err = q.TokensSince(ctx, aidb.TokensSinceParams{Since: since}); err != nil {
+			n, err := spent(nil)
+			if err != nil {
 				return err
 			}
+			if n >= s.DailyTenantTokens {
+				scope = "university"
+				return nil
+			}
 		}
-		if s.DailyUserTokens > 0 && userID != uuid.Nil {
-			userTokens, err = q.TokensSince(ctx, aidb.TokensSinceParams{Since: since, UserID: &userID})
+		if s.DailyUserTokens > 0 && user != nil {
+			n, err := spent(user)
+			if err != nil {
+				return err
+			}
+			if n >= int64(s.DailyUserTokens) {
+				scope = "user"
+				return nil
+			}
 		}
+		var err error
+		id, err = q.CreateReservation(ctx, aidb.CreateReservationParams{UserID: user, Tokens: tokens, TtlSeconds: reservationTTL.Seconds()})
 		return err
 	})
 	if err != nil {
-		return fmt.Errorf("ai: limits: %w", err)
+		return uuid.Nil, fmt.Errorf("ai: limits: %w", err)
 	}
-	var scope string
-	switch {
-	case s.DailyTenantTokens > 0 && tenantTokens >= s.DailyTenantTokens:
-		scope = "university"
-	case s.DailyUserTokens > 0 && userID != uuid.Nil && userTokens >= int64(s.DailyUserTokens):
-		scope = "user"
-	default:
-		return nil
+	if scope == "" {
+		return id, nil
 	}
 	reset := since.Add(24 * time.Hour)
 	wait := reset.Sub(g.now())
-	return apperr.RateLimited("ai.limit_reached", "the daily AI limit is reached", wait).WithParams(map[string]any{
+	return uuid.Nil, apperr.RateLimited("ai.limit_reached", "the daily AI limit is reached", wait).WithParams(map[string]any{
 		"scope": scope, "resets_at": reset.Format("15:04"), "retry_after_seconds": int(wait.Seconds()) + 1,
 	})
 }
 
+// release frees the tokens of a finished call; its usage is recorded by then.
+func (g *Gateway) release(ctx context.Context, pr prepared) {
+	if pr.reservation == uuid.Nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	err := g.db.Tx(ctx, func(ctx context.Context) error {
+		return aidb.New(g.db.Conn(ctx)).DeleteReservation(ctx, pr.reservation)
+	})
+	if err != nil {
+		g.log.WarnContext(ctx, "AI reservation not released; it expires on its own", slog.Any("error", err))
+	}
+}
+
+// PurgeReservations removes the expired reservations of every university
+// (left by processes that died during a call).
+func (g *Gateway) PurgeReservations(ctx context.Context, _ time.Time) (int64, error) {
+	var n int64
+	err := g.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		n, err = aidb.New(g.db.Conn(ctx)).DeleteExpiredReservations(ctx)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("ai: purge reservations: %w", err)
+	}
+	return n, nil
+}
+
 // Status is what a member needs to know about AI before using it.
 type Status struct {
-	// External: the mentor sends data to a provider outside the university.
+	// External: some AI feature, embeddings included, sends data to a
+	// provider outside the university.
 	External   bool
 	Limit      int
 	Used       int64
@@ -603,8 +766,10 @@ func (g *Gateway) Status(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, fmt.Errorf("ai: status: %w", err)
 	}
+	// Every feature counts: the mentor's question is embedded to search the
+	// knowledge base, so an external embedding provider sees it too (Н-27).
 	external := false
-	for _, f := range []llm.Feature{llm.FeatureMentor, llm.FeatureEvaluation, llm.FeatureGeneration, llm.FeatureSummary} {
+	for _, f := range llm.Features {
 		external = external || g.External(s, f)
 	}
 	return Status{External: external, Limit: s.DailyUserTokens, Used: used, ResetsAt: since.Add(24 * time.Hour), MentorMode: s.MentorMode}, nil
@@ -636,15 +801,19 @@ func (g *Gateway) Stream(ctx context.Context, c Call) (<-chan Event, error) {
 		if err != nil {
 			g.record(ctx, c, pr, p.Name(), req.Model, llm.Usage{}, started, failureStatus(ctx, err), err)
 			if ctx.Err() != nil {
+				g.release(ctx, pr)
 				return nil, ctx.Err()
 			}
 			lastErr = publicError(ctx, err)
+			g.log.WarnContext(ctx, "model route failed to stream, trying the next", slog.String("feature", string(c.Feature)),
+				slog.String("provider", r.Provider), slog.String("model", req.Model), slog.Any("error", err))
 			continue
 		}
 		out := make(chan Event, 16)
 		go g.relay(ctx, c, pr, p, req, red, started, events, out)
 		return out, nil
 	}
+	g.release(ctx, pr)
 	return nil, lastErr
 }
 
@@ -652,6 +821,8 @@ func (g *Gateway) relay(ctx context.Context, c Call, pr prepared, p llm.Provider
 	red *redact.Redactor, started time.Time, events <-chan llm.StreamEvent, out chan<- Event,
 ) {
 	defer close(out)
+	// Runs before close(out): the tokens are free once the caller sees the end.
+	defer g.release(ctx, pr)
 	var restorer *redact.Stream
 	if red != nil {
 		restorer = red.Stream()
@@ -737,6 +908,12 @@ func (g *Gateway) Embed(ctx context.Context, texts []string) ([][]float32, strin
 		}
 		started := g.now()
 		vectors, model, err := p.Embed(ctx, input)
+		if err == nil {
+			err = checkVectors(vectors, len(texts))
+		}
+		if model == "" {
+			model = p.DefaultModel(llm.FeatureEmbedding)
+		}
 		chars := 0
 		for _, t := range texts {
 			chars += utf8.RuneCountInString(t)
@@ -754,4 +931,19 @@ func (g *Gateway) Embed(ctx context.Context, texts []string) ([][]float32, strin
 		return vectors, model, nil
 	}
 	return nil, "", lastErr
+}
+
+// checkVectors makes sure a provider returned one non-empty vector per text,
+// all of one size: callers index the result and store it next to vectors of
+// the same model (Н-26).
+func checkVectors(vectors [][]float32, n int) error {
+	if len(vectors) != n {
+		return fmt.Errorf("%w: %d vectors for %d texts", llm.ErrUnavailable, len(vectors), n)
+	}
+	for i, v := range vectors {
+		if len(v) == 0 || len(v) != len(vectors[0]) {
+			return fmt.Errorf("%w: vector %d has %d dimensions", llm.ErrUnavailable, i, len(v))
+		}
+	}
+	return nil
 }

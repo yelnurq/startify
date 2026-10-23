@@ -67,6 +67,11 @@ export function isLocal(providers: AiProvider[], name: string): boolean {
   return providers.find((provider) => provider.name === name)?.local ?? false;
 }
 
+/** A provider serves embeddings when it has an embedding model (Anthropic has none). */
+export function embeds(providers: AiProvider[], name: string): boolean {
+  return Boolean(providers.find((provider) => provider.name === name)?.models.embedding);
+}
+
 /** Routes that will actually be tried: unknown and, when local-only, external providers drop out. */
 export function usableRoutes(
   routes: AiRoute[],
@@ -123,6 +128,8 @@ export function draftErrors(
       errors[`routes.${feature}`] = 'not_found';
     } else if (draft.local_only && own.some((route) => !isLocal(providers, route.provider))) {
       errors[`routes.${feature}`] = 'external_not_allowed';
+    } else if (feature === 'embedding' && own.some((route) => !embeds(providers, route.provider))) {
+      errors[`routes.${feature}`] = 'not_supported';
     } else if (own.some((route) => (route.model?.trim().length ?? 0) > AI_LIMITS.model)) {
       errors[`routes.${feature}`] = 'too_long';
     }

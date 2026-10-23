@@ -1748,10 +1748,11 @@ export interface components {
          */
         MentorMode: "coach" | "coauthor";
         AiStatus: {
-            /** @description AI features send data to a provider outside the university. */
+            /** @description AI features send data to a provider outside the university, including the embeddings of questions searched in the knowledge base. */
             external: boolean;
             /** @description Tokens a member may use per day; 0 means no limit. */
             daily_limit: number;
+            /** @description Tokens counted against the daily limit today; embeddings are accounted but not counted. */
             used_today: number;
             /** Format: date-time */
             resets_at: string;

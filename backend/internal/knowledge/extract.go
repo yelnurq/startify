@@ -22,24 +22,56 @@ var errUnsupported = apperr.New(apperr.KindValidation, "knowledge.unsupported_fi
 var errNoText = apperr.New(apperr.KindValidation, "knowledge.no_text",
 	"no text could be extracted (a scanned PDF needs text recognition first)")
 
-// Extract returns the text of an uploaded document.
+// errTooLong: a small compressed file can unpack into far more text than a
+// knowledge document may hold (Н-28).
+var errTooLong = apperr.New(apperr.KindValidation, "knowledge.text_too_long",
+	"the document has too much text; split it into several documents")
+
+type format int
+
+const (
+	formatUnknown format = iota
+	formatPDF
+	formatDOCX
+	formatText
+)
+
+func formatOf(name string, data []byte) format {
+	switch ext := strings.ToLower(filepath.Ext(name)); {
+	case ext == ".pdf" || bytes.HasPrefix(data, []byte("%PDF")):
+		return formatPDF
+	case ext == ".docx":
+		return formatDOCX
+	case ext == ".txt" || ext == ".md" || ext == ".markdown":
+		return formatText
+	}
+	return formatUnknown
+}
+
+// supported reports whether Extract reads files of this kind.
+func supported(name string, data []byte) bool { return formatOf(name, data) != formatUnknown }
+
+// Extract returns the text of an uploaded document, at most maxTextBytes.
 func Extract(name string, data []byte) (string, error) {
 	var (
 		text string
 		err  error
 	)
-	switch ext := strings.ToLower(filepath.Ext(name)); {
-	case ext == ".pdf" || bytes.HasPrefix(data, []byte("%PDF")):
+	switch formatOf(name, data) {
+	case formatPDF:
 		text, err = extractPDF(data)
-	case ext == ".docx":
+	case formatDOCX:
 		text, err = extractDOCX(data)
-	case ext == ".txt" || ext == ".md" || ext == ".markdown":
+	case formatText:
 		text = decodeText(data)
 	default:
 		return "", errUnsupported
 	}
 	if err != nil {
 		return "", err
+	}
+	if len(text) > maxTextBytes {
+		return "", errTooLong
 	}
 	text = normalize(text)
 	if utf8.RuneCountInString(strings.TrimSpace(text)) < 20 {
@@ -91,6 +123,9 @@ func extractPDF(data []byte) (text string, err error) {
 		}
 		b.WriteString(t)
 		b.WriteString("\n\n")
+		if b.Len() > maxTextBytes {
+			return "", errTooLong
+		}
 	}
 	return b.String(), nil
 }
@@ -146,6 +181,9 @@ func extractDOCX(data []byte) (string, error) {
 		case xml.CharData:
 			if inText {
 				b.Write(t)
+				if b.Len() > maxTextBytes {
+					return "", errTooLong
+				}
 			}
 		}
 	}

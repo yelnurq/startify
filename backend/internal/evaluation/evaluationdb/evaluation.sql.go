@@ -13,13 +13,13 @@ import (
 	"github.com/google/uuid"
 )
 
-const completeEvaluation = `-- name: CompleteEvaluation :exec
+const completeEvaluation = `-- name: CompleteEvaluation :execrows
 UPDATE evaluations
    SET status = 'ready', ai_total = $1, total = $1, level = $2, summary = $3,
        red_flags = $4, hypotheses = $5, experiments = $6,
        recommendations = $7, provider = $8, model = $9,
-       prompt_version = $10, error = NULL, completed_at = now()
- WHERE id = $11
+       prompt_version = $10, step_versions = $11, error = NULL, completed_at = now()
+ WHERE id = $12 AND status = 'running'
 `
 
 type CompleteEvaluationParams struct {
@@ -33,11 +33,12 @@ type CompleteEvaluationParams struct {
 	Provider        *string
 	Model           *string
 	PromptVersion   *string
+	StepVersions    json.RawMessage
 	ID              uuid.UUID
 }
 
-func (q *Queries) CompleteEvaluation(ctx context.Context, arg CompleteEvaluationParams) error {
-	_, err := q.db.Exec(ctx, completeEvaluation,
+func (q *Queries) CompleteEvaluation(ctx context.Context, arg CompleteEvaluationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeEvaluation,
 		arg.Total,
 		arg.Level,
 		arg.Summary,
@@ -48,9 +49,13 @@ func (q *Queries) CompleteEvaluation(ctx context.Context, arg CompleteEvaluation
 		arg.Provider,
 		arg.Model,
 		arg.PromptVersion,
+		arg.StepVersions,
 		arg.ID,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const countOverrides = `-- name: CountOverrides :many
@@ -163,7 +168,8 @@ func (q *Queries) CreateEvaluation(ctx context.Context, arg CreateEvaluationPara
 }
 
 const failEvaluation = `-- name: FailEvaluation :exec
-UPDATE evaluations SET status = 'failed', error = $1, completed_at = now() WHERE id = $2
+UPDATE evaluations SET status = 'failed', error = $1, completed_at = now()
+ WHERE id = $2 AND status IN ('pending', 'running')
 `
 
 type FailEvaluationParams struct {
@@ -174,6 +180,26 @@ type FailEvaluationParams struct {
 func (q *Queries) FailEvaluation(ctx context.Context, arg FailEvaluationParams) error {
 	_, err := q.db.Exec(ctx, failEvaluation, arg.Error, arg.ID)
 	return err
+}
+
+const failStaleEvaluations = `-- name: FailStaleEvaluations :execrows
+UPDATE evaluations SET status = 'failed', error = $1, completed_at = now()
+ WHERE status IN ('pending', 'running') AND updated_at < $2
+`
+
+type FailStaleEvaluationsParams struct {
+	Error  *string
+	Before time.Time
+}
+
+// Evaluations whose job died (worker crash, deploy, discarded job) would
+// block the next evaluation of the project forever.
+func (q *Queries) FailStaleEvaluations(ctx context.Context, arg FailStaleEvaluationsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, failStaleEvaluations, arg.Error, arg.Before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getEvaluation = `-- name: GetEvaluation :one
@@ -516,13 +542,16 @@ func (q *Queries) PreviousReady(ctx context.Context, arg PreviousReadyParams) (E
 	return i, err
 }
 
-const setRunning = `-- name: SetRunning :exec
-UPDATE evaluations SET status = 'running' WHERE id = $1
+const setRunning = `-- name: SetRunning :execrows
+UPDATE evaluations SET status = 'running' WHERE id = $1 AND status IN ('pending', 'running')
 `
 
-func (q *Queries) SetRunning(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, setRunning, id)
-	return err
+func (q *Queries) SetRunning(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, setRunning, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setScore = `-- name: SetScore :one

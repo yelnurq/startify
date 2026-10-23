@@ -144,9 +144,10 @@ func (s *Service) Create(ctx context.Context, form *multipart.Reader) (apigen.Kn
 	body := normalize(u.text)
 	var fileID *uuid.UUID
 	if len(u.data) > 0 {
-		if body, err = Extract(u.fileName, u.data); err != nil {
-			return apigen.KnowledgeDocument{}, err
+		if !supported(u.fileName, u.data) {
+			return apigen.KnowledgeDocument{}, errUnsupported
 		}
+		// The file is checked for malware before any parser reads it (Н-28).
 		f, err := s.files.Store(ctx, files.Upload{
 			OwnerID: &p.UserID, Purpose: files.PurposeKnowledge, Visibility: files.VisibilityTenant,
 			FileName: u.fileName, ContentType: contentType(u.fileName), Data: u.data,
@@ -155,6 +156,12 @@ func (s *Service) Create(ctx context.Context, form *multipart.Reader) (apigen.Kn
 			return apigen.KnowledgeDocument{}, err
 		}
 		fileID = &f.ID
+		if body, err = Extract(u.fileName, u.data); err != nil {
+			if derr := s.db.Tx(ctx, func(ctx context.Context) error { return s.files.Delete(ctx, f.ID) }); derr != nil {
+				return apigen.KnowledgeDocument{}, fmt.Errorf("knowledge: remove rejected file: %w", derr)
+			}
+			return apigen.KnowledgeDocument{}, err
+		}
 	}
 	var doc knowledgedb.KnowledgeDocument
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
@@ -288,7 +295,9 @@ type Hit struct {
 }
 
 // Search finds the passages closest to a question in meaning; when
-// embeddings are unavailable it falls back to word matching.
+// embeddings are unavailable it falls back to word matching. Passages below
+// the relevance floor of the embedding model are left out: the mentor gets no
+// sources rather than unrelated ones (Н-28).
 func (s *Service) Search(ctx context.Context, query string, k int) ([]Hit, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
 		return nil, err
@@ -308,11 +317,16 @@ func (s *Service) Search(ctx context.Context, query string, k int) ([]Hit, error
 			if err != nil {
 				return err
 			}
+			floor := s.gateway.MinSimilarity(model)
 			for i := range rows {
 				r := &rows[i]
+				similarity := 1 - r.Distance
+				if similarity < floor {
+					continue
+				}
 				hits = append(hits, Hit{
 					DocumentID: r.DocumentID, Title: r.Title, Heading: deref(r.Heading), Text: r.Content,
-					Score: math.Max(0, math.Min(1, 1-r.Distance)),
+					Score: math.Max(0, math.Min(1, similarity)),
 				})
 			}
 			if len(hits) > 0 {
@@ -379,12 +393,43 @@ func (IndexArgs) InsertOpts() river.InsertOpts {
 	}}
 }
 
+// Timing of indexing: the time a document needs grows with its passages.
+const (
+	indexBase     = time.Minute
+	indexPerBatch = 30 * time.Second
+	// indexMax stays below River's rescue of stuck jobs (one hour), which
+	// would otherwise start a second copy of a long job.
+	indexMax = 45 * time.Minute
+	// indexStaleAfter: longer than every attempt of IndexArgs together.
+	indexStaleAfter = 5 * time.Hour
+	// maxIndexFailures: after that many failed rounds a document is no longer
+	// retried by the hourly reindexing (an administrator uploads it again).
+	maxIndexFailures = 3
+)
+
+// errIndexFailed is the error of a document that could not be indexed.
+const errIndexFailed = "knowledge.index_failed"
+
+// errMixedModels: the embedding route switched providers in the middle of a
+// document; its passages must not mix vectors of different models.
+var errMixedModels = errors.New("knowledge: embeddings of different models in one document")
+
+// indexTimeout is the time indexing a document of n passages may take.
+func indexTimeout(passages int) time.Duration {
+	batches := (passages + embedBatch - 1) / embedBatch
+	return min(indexBase+time.Duration(batches)*indexPerBatch, indexMax)
+}
+
 // IndexWorker splits a document into passages and stores their embeddings.
 type IndexWorker struct {
 	river.WorkerDefaults[IndexArgs]
 	DB      *db.DB
 	Gateway *ai.Gateway
 }
+
+// Timeout implements river.Worker: the job sets its own deadline from the
+// size of the document (indexTimeout); this one only backs it up.
+func (w *IndexWorker) Timeout(*river.Job[IndexArgs]) time.Duration { return indexMax + 5*time.Minute }
 
 // Work implements river.Worker.
 func (w *IndexWorker) Work(ctx context.Context, job *river.Job[IndexArgs]) error {
@@ -397,16 +442,35 @@ func (w *IndexWorker) Work(ctx context.Context, job *river.Job[IndexArgs]) error
 	if job.Attempt < job.MaxAttempts {
 		return err
 	}
-	msg := "indexing failed"
+	msg := errIndexFailed
 	if e, ok := apperr.As(err); ok {
 		msg = e.Code
 	}
 	slog.ErrorContext(ctx, "knowledge document not indexed", slog.String("document_id", job.Args.DocumentID.String()), slog.Any("error", err))
+	// The job's context may be over (its deadline): record the failure on a
+	// context of its own, or the document stays "indexing" (С-17).
+	ctx, cancel := jobs.Detach(ctx)
+	defer cancel()
 	return w.DB.Tx(ctx, func(ctx context.Context) error {
-		return knowledgedb.New(w.DB.Conn(ctx)).SetDocumentStatus(ctx, knowledgedb.SetDocumentStatusParams{
-			Status: "failed", ID: job.Args.DocumentID, Error: &msg,
-		})
+		return knowledgedb.New(w.DB.Conn(ctx)).SetDocumentFailed(ctx, knowledgedb.SetDocumentFailedParams{ID: job.Args.DocumentID, Error: &msg})
 	})
+}
+
+// FailStale gives up new documents of every university whose indexing job is gone.
+func (w *IndexWorker) FailStale(ctx context.Context, now time.Time) (int64, error) {
+	code := errIndexFailed
+	var n int64
+	err := w.DB.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		n, err = knowledgedb.New(w.DB.Conn(ctx)).FailStaleDocuments(ctx, knowledgedb.FailStaleDocumentsParams{
+			Error: &code, Before: now.Add(-indexStaleAfter),
+		})
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("knowledge: fail stale: %w", err)
+	}
+	return n, nil
 }
 
 func (w *IndexWorker) index(ctx context.Context, id uuid.UUID) error {
@@ -423,6 +487,8 @@ func (w *IndexWorker) index(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("knowledge: load %s: %w", id, err)
 	}
 	chunks := Split(doc.Body)
+	embedCtx, cancel := context.WithTimeout(ctx, indexTimeout(len(chunks)))
+	defer cancel()
 	vectors := make([][]float32, 0, len(chunks))
 	model := ""
 	for start := 0; start < len(chunks); start += embedBatch {
@@ -431,9 +497,13 @@ func (w *IndexWorker) index(ctx context.Context, id uuid.UUID) error {
 		for i, c := range batch {
 			texts[i] = strings.TrimSpace(c.Heading + "\n" + c.Text)
 		}
-		v, m, err := w.Gateway.Embed(ctx, texts)
+		v, m, err := w.Gateway.Embed(embedCtx, texts)
 		if err != nil {
 			return fmt.Errorf("knowledge: embed %s: %w", id, err)
+		}
+		// Every passage of a document carries vectors of one model and size (Н-26).
+		if model != "" && (m != model || len(v[0]) != len(vectors[0])) {
+			return errMixedModels
 		}
 		vectors, model = append(vectors, v...), m
 	}
@@ -454,8 +524,8 @@ func (w *IndexWorker) index(ctx context.Context, id uuid.UUID) error {
 				return err
 			}
 		}
-		return q.SetDocumentStatus(ctx, knowledgedb.SetDocumentStatusParams{
-			Status: "ready", ChunkCount: int32(len(chunks)), ID: id, //nolint:gosec // bounded by document size
+		return q.SetDocumentReady(ctx, knowledgedb.SetDocumentReadyParams{
+			ChunkCount: int32(len(chunks)), ID: id, //nolint:gosec // bounded by document size
 		})
 	})
 }
@@ -508,7 +578,7 @@ func (w *ReindexWorker) reindex(ctx context.Context, tenantID uuid.UUID) error {
 	}
 	return w.DB.Tx(ctx, func(ctx context.Context) error {
 		ids, err := knowledgedb.New(w.DB.Conn(ctx)).ListDocumentsForReindex(ctx, knowledgedb.ListDocumentsForReindexParams{
-			EmbeddingModel: model, FailedBefore: time.Now().Add(-failedRetryPause),
+			EmbeddingModel: model, FailedBefore: time.Now().Add(-failedRetryPause), MaxFailures: maxIndexFailures,
 		})
 		if err != nil {
 			return fmt.Errorf("knowledge: reindex list: %w", err)

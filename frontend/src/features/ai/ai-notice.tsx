@@ -6,20 +6,30 @@ import { useFormatters } from '@/shared/i18n/format';
 
 import { aiStatusQuery, type AiStatus } from './api';
 
+interface NoticeProps {
+  className?: string;
+  /** Only the warning that data leaves the university, without the daily limit. */
+  externalOnly?: boolean;
+}
+
 /**
  * Tells a member before they use AI that data leaves the university (with
  * personal data masked) and how much of today's limit is left.
  */
-export function AiNotice({ className }: { className?: string }) {
+export function AiNotice({ className, externalOnly = false }: NoticeProps) {
   const status = useQuery(aiStatusQuery);
   if (!status.data) return null;
-  return <AiNoticeView status={status.data} className={className} />;
+  return <AiNoticeView status={status.data} className={className} externalOnly={externalOnly} />;
 }
 
-export function AiNoticeView({ status, className }: { status: AiStatus; className?: string }) {
+export function AiNoticeView({
+  status,
+  className,
+  externalOnly = false,
+}: NoticeProps & { status: AiStatus }) {
   const { t } = useTranslation('ai');
   const format = useFormatters();
-  const limited = status.daily_limit > 0;
+  const limited = !externalOnly && status.daily_limit > 0;
   if (!status.external && !limited) return null;
   const share = limited ? Math.min(1, status.used_today / status.daily_limit) : 0;
   const resets = format.dateTime(status.resets_at, { timeStyle: 'short' });

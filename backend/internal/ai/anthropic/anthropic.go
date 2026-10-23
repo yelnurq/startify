@@ -67,8 +67,12 @@ func (p *Provider) Name() string { return "anthropic" }
 // Local implements llm.Provider.
 func (p *Provider) Local() bool { return false }
 
-// DefaultModel implements llm.Provider.
+// DefaultModel implements llm.Provider: none for embeddings, which Anthropic
+// does not offer.
 func (p *Provider) DefaultModel(f llm.Feature) string {
+	if f == llm.FeatureEmbedding {
+		return ""
+	}
 	if m, ok := defaultModels[f]; ok {
 		return m
 	}
@@ -151,9 +155,15 @@ func (p *Provider) Complete(ctx context.Context, req llm.CompletionRequest) (*ll
 	return convert(msg)
 }
 
-// Stream implements llm.Provider.
+// Stream implements llm.Provider. A request that failed before the answer
+// started (401, 429, 529, network) is returned as an error, so that the
+// gateway can try the next provider of the route (С-15).
 func (p *Provider) Stream(ctx context.Context, req llm.CompletionRequest) (<-chan llm.StreamEvent, error) {
 	stream := p.client.Beta.Messages.NewStreaming(ctx, p.params(req))
+	if err := stream.Err(); err != nil {
+		_ = stream.Close()
+		return nil, mapError(err)
+	}
 	ch := make(chan llm.StreamEvent, 16)
 	go func() {
 		defer close(ch)

@@ -92,3 +92,28 @@ func TestVectorLiteral(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// Indexing time grows with the document but stays below River's rescue of
+// stuck jobs (С-17).
+func TestIndexTimeoutGrowsWithTheDocument(t *testing.T) {
+	small := indexTimeout(len(Split(regulation)))
+	large := indexTimeout(len(Split(strings.Repeat("Каждое предложение этого абзаца описывает требования к заявке. ", 4000))))
+	huge := indexTimeout(10_000)
+	if small != indexBase+indexPerBatch || large <= small || huge != indexMax {
+		t.Fatalf("small %s, large %s, huge %s", small, large, huge)
+	}
+}
+
+// Extracted text has the same limit as pasted text (Н-28).
+func TestExtractedTextIsLimited(t *testing.T) {
+	big := strings.Repeat("Пункт положения о конкурсе. ", maxTextBytes/20)
+	if _, err := Extract("big.docx", docx(t, big)); !apperr.Is(err, "knowledge.text_too_long") {
+		t.Fatalf("docx: %v", err)
+	}
+	if _, err := Extract("big.md", []byte(big)); !apperr.Is(err, "knowledge.text_too_long") {
+		t.Fatalf("md: %v", err)
+	}
+	if !supported("rules.MD", nil) || !supported("x.bin", []byte("%PDF-1.7")) || supported("photo.png", nil) {
+		t.Fatal("supported formats")
+	}
+}

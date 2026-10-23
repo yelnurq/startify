@@ -30,6 +30,7 @@ import {
   SkeletonText,
   toast,
 } from '@/design-system';
+import { AiNotice } from '@/features/ai/ai-notice';
 import { EvaluationTeaser } from '@/features/evaluation/evaluation-page';
 import { canApprove, canEdit, type Project } from '@/features/projects/api';
 import { ApiError } from '@/shared/api/client';
@@ -397,6 +398,7 @@ function StepEditorView({
       )}
       {stepKey === 'pitch' && <EvaluationTeaser project={project} manages={innovationManager} />}
 
+      {editable && <AiNotice externalOnly />}
       {saved.check && <CheckCard check={saved.check} stale={checkStale} />}
 
       <div className="sticky bottom-0 z-10 -mx-4 -mb-6 flex flex-col gap-3 border-t border-border surface-glass px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-10 lg:-mb-8 lg:px-10">

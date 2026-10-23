@@ -195,7 +195,9 @@
     "knowledge": {
       "unsupported_file": "This file is not supported: use PDF, DOCX, TXT or MD.",
       "no_text": "No text was found in the file. If it is a scan, upload a version with a text layer or paste the text.",
-      "not_found": "Document not found."
+      "not_found": "Document not found.",
+      "index_failed": "The document could not be indexed. Upload it again.",
+      "text_too_long": "The document has too much text. Split it into several documents."
     },
     "project": {
       "not_found": "Project not found",
@@ -222,7 +224,8 @@
       "step_empty": "Fill in at least one field of the step first — there is nothing to check yet",
       "too_many_materials": "Too many materials in a short time. Please wait a little",
       "documents_unavailable": "The document service is unavailable. Try again later",
-      "material_failed": "The material could not be built. Please try again"
+      "material_failed": "The material could not be built. Please try again",
+      "material_timed_out": "The material was not ready in time. Please try again"
     },
     "evaluation": {
       "not_found": "The evaluation was not found",
@@ -230,7 +233,8 @@
       "in_progress": "The project is already being evaluated — opening it",
       "project_empty": "Answer at least the first step of the incubator to get an evaluation",
       "too_many_requests": "Enough evaluations for today. Try again in {{retry_after_seconds}} s",
-      "failed": "The evaluation could not be produced. Please try again"
+      "failed": "The evaluation could not be produced. Please try again",
+      "timed_out": "The evaluation did not finish in time. Please run it again"
     },
     "documents": {
       "unavailable": "The document service is unavailable right now — the PDF cannot be downloaded"
@@ -287,7 +291,8 @@
     "choose": "Choose a value",
     "duplicate": "This value is repeated",
     "external_not_allowed": "External providers are switched off: “Local models only” is on",
-    "sum": "The total must be {{expected}}; now {{actual}}"
+    "sum": "The total must be {{expected}}; now {{actual}}",
+    "not_supported": "The provider does not support this feature"
   },
   "tags": {
     "add": "Add",

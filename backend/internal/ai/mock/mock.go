@@ -20,10 +20,25 @@ import (
 	"github.com/yelnurq/startify/backend/internal/ai/llm"
 )
 
-// EmbeddingModel names the vectors of the mock.
-const EmbeddingModel = "mock-hash-256"
+// EmbeddingModel names the vectors of the mock. A new name re-indexes the
+// documents (D-030): 1024 buckets without function words keep unrelated
+// texts near zero, so that a relevance floor can tell them apart.
+const EmbeddingModel = "mock-hash-1024"
 
-const dims = 256
+const dims = 1024
+
+// stopWords carry no topic ("как", "для", "және", "the") and would make
+// unrelated texts look alike.
+var stopWords = func() map[string]bool {
+	out := map[string]bool{}
+	for _, w := range strings.Fields(`как какой какая какое какие каких что это эта этот эти для или при над под без про через его
+		её их она они оно нам вас нас наш ваш так там тут где когда чем кто чей быть был была были есть нет все всё весь вся уже ещё
+		еще также только можно нужно надо если чтобы the and for are was were what how who whom which with from that this these those
+		our your their have has had not but you can will would should қалай және мен бұл осы сол біз сіз олар қандай қанша үшін бар жоқ`) {
+		out[w] = true
+	}
+	return out
+}()
 
 // Generator writes the answer to a request.
 type Generator func(req llm.CompletionRequest) string
@@ -234,7 +249,7 @@ func Vector(text string) []float32 {
 	prev := ""
 	for _, w := range words {
 		// Short words ("до", "на", "и") carry no topic and only add noise.
-		if utf8.RuneCountInString(w) < 3 {
+		if utf8.RuneCountInString(w) < 3 || stopWords[w] {
 			continue
 		}
 		s := stem(w)

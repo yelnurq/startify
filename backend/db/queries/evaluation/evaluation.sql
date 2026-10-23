@@ -35,19 +35,26 @@ SELECT DISTINCT ON (project_id) project_id, id, total, level, completed_at FROM 
 -- name: CountSince :one
 SELECT count(*)::int FROM evaluations WHERE project_id = @project_id AND created_at > @since;
 
--- name: SetRunning :exec
-UPDATE evaluations SET status = 'running' WHERE id = @id;
+-- name: SetRunning :execrows
+UPDATE evaluations SET status = 'running' WHERE id = @id AND status IN ('pending', 'running');
 
--- name: CompleteEvaluation :exec
+-- name: CompleteEvaluation :execrows
 UPDATE evaluations
    SET status = 'ready', ai_total = @total, total = @total, level = @level, summary = @summary,
        red_flags = @red_flags, hypotheses = @hypotheses, experiments = @experiments,
        recommendations = @recommendations, provider = @provider, model = @model,
-       prompt_version = @prompt_version, error = NULL, completed_at = now()
- WHERE id = @id;
+       prompt_version = @prompt_version, step_versions = @step_versions, error = NULL, completed_at = now()
+ WHERE id = @id AND status = 'running';
 
 -- name: FailEvaluation :exec
-UPDATE evaluations SET status = 'failed', error = @error, completed_at = now() WHERE id = @id;
+UPDATE evaluations SET status = 'failed', error = @error, completed_at = now()
+ WHERE id = @id AND status IN ('pending', 'running');
+
+-- name: FailStaleEvaluations :execrows
+-- Evaluations whose job died (worker crash, deploy, discarded job) would
+-- block the next evaluation of the project forever.
+UPDATE evaluations SET status = 'failed', error = @error, completed_at = now()
+ WHERE status IN ('pending', 'running') AND updated_at < @before;
 
 -- name: SetTotal :exec
 UPDATE evaluations SET total = @total, level = @level WHERE id = @id;

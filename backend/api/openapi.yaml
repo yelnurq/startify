@@ -2575,12 +2575,15 @@ components:
       properties:
         external:
           type: boolean
-          description: AI features send data to a provider outside the university.
+          description: >-
+            AI features send data to a provider outside the university, including the embeddings
+            of questions searched in the knowledge base.
         daily_limit:
           type: integer
           description: Tokens a member may use per day; 0 means no limit.
         used_today:
           type: integer
+          description: Tokens counted against the daily limit today; embeddings are accounted but not counted.
         resets_at:
           type: string
           format: date-time

@@ -28,6 +28,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/gotenberg"
+	"github.com/yelnurq/startify/backend/internal/platform/jobs"
 	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
@@ -231,8 +232,26 @@ type MaterialWorker struct {
 	Now func() time.Time
 }
 
-// Timeout leaves room for a slow model and the converter.
-func (w *MaterialWorker) Timeout(*river.Job[MaterialArgs]) time.Duration { return 5 * time.Minute }
+// Timing of a material job.
+const (
+	// materialTimeout leaves room for a slow model and the converter.
+	materialTimeout = 5 * time.Minute
+	// materialModelBudget keeps the model call inside the job: rendering and
+	// storing the file still need time.
+	materialModelBudget = 3 * time.Minute
+	// materialStaleAfter: longer than every attempt together (see staleAfter
+	// of evaluations).
+	materialStaleAfter = 3*materialTimeout + 15*time.Minute
+	// keepMaterials is how many finished materials a project keeps; older
+	// ones are removed with their files.
+	keepMaterials = 20
+)
+
+// errMaterialTimedOut is the error of a material given up after its job was lost.
+const errMaterialTimedOut = "incubator.material_timed_out"
+
+// Timeout implements river.Worker.
+func (w *MaterialWorker) Timeout(*river.Job[MaterialArgs]) time.Duration { return materialTimeout }
 
 // Work implements river.Worker.
 func (w *MaterialWorker) Work(ctx context.Context, job *river.Job[MaterialArgs]) error {
@@ -251,11 +270,34 @@ func (w *MaterialWorker) Work(ctx context.Context, job *river.Job[MaterialArgs])
 		code = e.Code
 	} else if errors.Is(err, gotenberg.ErrNotConfigured) {
 		code = "incubator.documents_unavailable"
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		code = errMaterialTimedOut
 	}
 	slog.ErrorContext(ctx, "material not generated", slog.String("material_id", args.MaterialID.String()), slog.Any("error", err))
+	// The job's own context may be over (its deadline): record the failure
+	// on a context of its own, or the material stays "in progress" (Н-17).
+	ctx, cancel := jobs.Detach(ctx)
+	defer cancel()
 	return w.DB.Tx(ctx, func(ctx context.Context) error {
 		return incubatordb.New(w.DB.Conn(ctx)).SetMaterialFailed(ctx, incubatordb.SetMaterialFailedParams{ID: args.MaterialID, Error: &code})
 	})
+}
+
+// FailStale gives up the materials of every university whose job is gone.
+func (w *MaterialWorker) FailStale(ctx context.Context, now time.Time) (int64, error) {
+	code := errMaterialTimedOut
+	var n int64
+	err := w.DB.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		n, err = incubatordb.New(w.DB.Conn(ctx)).FailStaleMaterials(ctx, incubatordb.FailStaleMaterialsParams{
+			Error: &code, Before: now.Add(-materialStaleAfter),
+		})
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("incubator: fail stale materials: %w", err)
+	}
+	return n, nil
 }
 
 var slugUnsafe = regexp.MustCompile(`[^\p{L}\p{N}]+`)
@@ -297,7 +339,9 @@ func (w *MaterialWorker) generate(ctx context.Context, args MaterialArgs) error 
 	if err != nil {
 		return err
 	}
-	res, err := w.Gateway.Complete(ctx, ai.Call{
+	callCtx, cancel := context.WithTimeout(ctx, materialModelBudget)
+	defer cancel()
+	res, err := w.Gateway.Complete(callCtx, ai.Call{
 		Feature: llm.FeatureGeneration, PromptVersion: version, System: system, Locale: m.Locale, Schema: &pitchSchema,
 		MaxTokens: 6000, UserID: args.RequestedBy,
 		Messages: []llm.Message{{Role: llm.RoleUser, Content: "Prepare the materials."}},
@@ -339,17 +383,55 @@ func (w *MaterialWorker) generate(ctx context.Context, args MaterialArgs) error 
 	if err != nil {
 		return err
 	}
-	return w.DB.Tx(ctx, func(ctx context.Context) error {
-		f, err := w.Files.Store(ctx, files.Upload{
-			OwnerID: &args.RequestedBy, Purpose: files.PurposeGenerated, Visibility: files.VisibilityPrivate,
-			FileName: name, ContentType: contentType, Data: out,
-		})
+	// The virus scan and the upload run outside any transaction: a slow
+	// scanner or S3 must not hold a database connection and its locks.
+	f, err := w.Files.Store(ctx, files.Upload{
+		OwnerID: &args.RequestedBy, Purpose: files.PurposeGenerated, Visibility: files.VisibilityPrivate,
+		FileName: name, ContentType: contentType, Data: out,
+	})
+	if err != nil {
+		return err
+	}
+	err = w.DB.Tx(ctx, func(ctx context.Context) error {
+		q := incubatordb.New(w.DB.Conn(ctx))
+		n, err := q.SetMaterialReady(ctx, incubatordb.SetMaterialReadyParams{ID: args.MaterialID, FileID: &f.ID})
 		if err != nil {
 			return err
 		}
-		return incubatordb.New(w.DB.Conn(ctx)).SetMaterialReady(ctx, incubatordb.SetMaterialReadyParams{ID: args.MaterialID, FileID: &f.ID})
+		if n == 0 {
+			return errMaterialGivenUp
+		}
+		old, err := q.PruneMaterials(ctx, incubatordb.PruneMaterialsParams{ProjectID: args.ProjectID, Keep: keepMaterials})
+		if err != nil {
+			return err
+		}
+		for _, id := range old {
+			if id == nil {
+				continue
+			}
+			if err := w.Files.Delete(ctx, *id); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
+	if err != nil {
+		// The file belongs to no material: remove it.
+		dctx, cancel := jobs.Detach(ctx)
+		defer cancel()
+		if derr := w.DB.Tx(dctx, func(ctx context.Context) error { return w.Files.Delete(ctx, f.ID) }); derr != nil {
+			slog.WarnContext(ctx, "unused material file not removed", slog.String("file_id", f.ID.String()), slog.Any("error", derr))
+		}
+		if errors.Is(err, errMaterialGivenUp) {
+			return nil
+		}
+		return fmt.Errorf("incubator: material ready: %w", err)
+	}
+	return nil
 }
+
+// errMaterialGivenUp: the material was given up while it was being made.
+var errMaterialGivenUp = errors.New("incubator: material given up meanwhile")
 
 func (w *MaterialWorker) pdf(ctx context.Context, name string, d docData) ([]byte, error) {
 	html, err := render(name, d)
