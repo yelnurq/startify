@@ -3,8 +3,19 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
+
+// A multipart Content-Type does not raise the body limit of a JSON operation;
+// a body cut by the limit is 413, not a malformed request.
+func TestBodyLimitByRoute(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	b := h.browser(t, kazutbHost)
+	big := form{contentType: "multipart/form-data; boundary=x", body: []byte(`{"email":"` + strings.Repeat("a", 2<<20) + `"}`)}
+	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/login", big), http.StatusRequestEntityTooLarge, "request.too_large")
+}
 
 func TestSpecRoutes(t *testing.T) {
 	streams, uploads, err := specRoutes()

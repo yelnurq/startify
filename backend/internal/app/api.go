@@ -270,6 +270,12 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 	}
 	strict := apigen.NewStrictHandlerWithOptions(srv, nil, apigen.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			// A body cut by the size limit is 413 request.too_large, not a malformed request.
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				httpx.WriteError(w, r, err)
+				return
+			}
 			httpx.WriteError(w, r, apperr.BadRequest("request.malformed", err.Error()))
 		},
 		ResponseErrorHandlerFunc: httpx.WriteError,
