@@ -9,7 +9,8 @@ test('a student finds a teammate on the «Ищу в команду» board', asy
   const respondentUser = isMobile ? 'madina' : 'dana';
   const authorContext = await browser.newContext({ storageState: storageState(authorUser) });
   const page = await authorContext.newPage();
-  const title = `Ищу дизайнера в агротех-стартап ${String(Date.now())}`;
+  // «E2E …» titles are removed after the run (global-teardown.ts).
+  const title = `E2E Ищу дизайнера в агротех-стартап ${String(Date.now())}`;
 
   // The author publishes a request.
   await page.goto('/app/team');

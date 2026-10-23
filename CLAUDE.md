@@ -58,10 +58,14 @@ make compose-check  # docker compose config для базового файла �
 - Первичные ключи — UUIDv7 (`uuid.NewV7()` в Go, `uuid_generate_v7()` в SQL).
 - Каждая бизнес-таблица: `tenant_id`, `created_at`, `updated_at` (триггер `set_updated_at`), при необходимости `deleted_at`.
 - Каждая таблица с `tenant_id` получает RLS-политику
-  `USING (tenant_id = app_current_tenant() OR app_is_system())` и тот же `WITH CHECK`.
+  `USING (tenant_id = app_current_tenant() OR app_is_system())` и тот же `WITH CHECK`
+  (`app_enable_tenant_rls`); расширенное чтение — только политиками по командам (`SELECT` шире,
+  запись строгая, D-083). Тест каталога в `internal/platform/migrate` проверяет каждую таблицу.
 - Доступ к данным только внутри `db.Tx(ctx, …)` / `db.ReadTx`; запросы через `db.Conn(ctx)`.
-  Контекст несёт область: `db.WithTenant` (обычный запрос) или `db.WithSystem` (кросс-тенантные операции — редко и осознанно).
-- API и worker подключаются ролью `qadam_app` (без владения таблицами и BYPASSRLS); миграции — владельцем.
+  Контекст несёт область: `db.WithTenant` (обычный запрос) или `db.WithSystem` (кросс-тенантные операции — редко и осознанно,
+  только в worker и seed).
+- API подключается ролью `qadam_app` (без владения таблицами и BYPASSRLS); worker и seed — ролью `qadam_worker`
+  (член `qadam_app`): только она входит в системную область (D-082). Миграции — владельцем.
 - Модуль читает только свои таблицы (свои sqlc-запросы в `db/queries/<module>`); к чужим данным — через сервис другого модуля.
 
 ## Доступ, безопасность, побочные эффекты

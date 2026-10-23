@@ -5,6 +5,7 @@ package org
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/uuid"
@@ -17,6 +18,15 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/pagination"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
+)
+
+// The structure page lists everything at once. A university has dozens of
+// faculties and hundreds of departments; the caps only bound the response.
+const (
+	maxFaculties   = 500
+	maxDepartments = 5000
+	// lookupLimit reads the whole structure for an import.
+	lookupLimit = 1_000_000
 )
 
 // Service reads and writes the structure of the current tenant.
@@ -40,13 +50,17 @@ func (s *Service) Faculties(ctx context.Context) ([]apigen.Faculty, error) {
 	}
 	var out []apigen.Faculty
 	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
-		faculties, err := s.q(ctx).ListFaculties(ctx)
+		faculties, err := s.q(ctx).ListFaculties(ctx, maxFaculties)
 		if err != nil {
 			return err
 		}
-		departments, err := s.q(ctx).ListDepartments(ctx)
+		departments, err := s.q(ctx).ListDepartments(ctx, maxDepartments)
 		if err != nil {
 			return err
+		}
+		if len(faculties) == maxFaculties || len(departments) == maxDepartments {
+			slog.WarnContext(ctx, "structure list cut at its cap",
+				slog.Int("faculties", len(faculties)), slog.Int("departments", len(departments)))
 		}
 		byFaculty := map[uuid.UUID][]apigen.Department{}
 		for i := range departments {
@@ -312,21 +326,21 @@ type Lookup struct {
 func (s *Service) LoadLookup(ctx context.Context) (Lookup, error) {
 	q := s.q(ctx)
 	l := Lookup{Faculties: map[string]orgdb.Faculty{}, Departments: map[string]orgdb.Department{}, Groups: map[string]orgdb.StudyGroup{}}
-	faculties, err := q.ListFaculties(ctx)
+	faculties, err := q.ListFaculties(ctx, lookupLimit)
 	if err != nil {
 		return l, fmt.Errorf("org: lookup faculties: %w", err)
 	}
 	for i := range faculties {
 		l.Faculties[strings.ToLower(faculties[i].Code)] = faculties[i]
 	}
-	departments, err := q.ListDepartments(ctx)
+	departments, err := q.ListDepartments(ctx, lookupLimit)
 	if err != nil {
 		return l, fmt.Errorf("org: lookup departments: %w", err)
 	}
 	for i := range departments {
 		l.Departments[strings.ToLower(departments[i].Code)] = departments[i]
 	}
-	groups, err := q.ListStudyGroups(ctx, orgdb.ListStudyGroupsParams{RowLimit: 1_000_000})
+	groups, err := q.ListStudyGroups(ctx, orgdb.ListStudyGroupsParams{RowLimit: lookupLimit})
 	if err != nil {
 		return l, fmt.Errorf("org: lookup groups: %w", err)
 	}

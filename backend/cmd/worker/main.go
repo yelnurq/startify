@@ -62,7 +62,7 @@ func run() error {
 	}
 	defer func() { _ = shutdownTelemetry(context.WithoutCancel(ctx)) }()
 
-	database, err := db.Connect(ctx, cfg.Database)
+	database, err := db.ConnectWorker(ctx, cfg.Database)
 	if err != nil {
 		return err
 	}

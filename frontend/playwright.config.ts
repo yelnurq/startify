@@ -7,6 +7,8 @@ const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 export default defineConfig({
   testDir: './e2e',
   outputDir: './test-results',
+  // Removes the accounts, projects and other marked data the run created.
+  globalTeardown: './e2e/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,

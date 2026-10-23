@@ -37,14 +37,14 @@ type tenants struct {
 func seedTenants(t *testing.T, h *harness) tenants {
 	t.Helper()
 	ctx := context.Background()
-	k, err := seed.Tenant(ctx, h.db.App, seed.KazUTB)
+	k, err := seed.Tenant(ctx, h.db.Worker, seed.KazUTB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := seed.Structure(ctx, h.db.App, k.ID, seed.KazUTBStructure); err != nil {
+	if err := seed.Structure(ctx, h.db.Worker, k.ID, seed.KazUTBStructure); err != nil {
 		t.Fatal(err)
 	}
-	s, err := seed.Tenant(ctx, h.db.App, seed.Sandbox)
+	s, err := seed.Tenant(ctx, h.db.Worker, seed.Sandbox)
 	if err != nil {
 		t.Fatal(err)
 	}

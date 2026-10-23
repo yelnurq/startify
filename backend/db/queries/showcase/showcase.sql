@@ -102,16 +102,33 @@ SELECT e.project_id, e.tenant_id, e.slug, e.title, e.tagline, e.industry, e.stag
  ORDER BY e.published_at DESC, e.project_id DESC
  LIMIT @row_limit;
 
--- name: ListFacetRows :many
-SELECT e.industry, e.stage, e.needs, e.tags, e.year, e.faculty_id, e.faculty
-  FROM showcase_entries e
- WHERE CASE @scope::text
-         WHEN 'national' THEN e.status = 'published' AND e.visibility = 'public'
-         WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
-         ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
-       END
-   AND NOT (e.tenant_id = ANY(coalesce(@suspended::uuid[], '{}')))
- LIMIT 10000;
+-- name: CountFacets :many
+-- The values of the catalog's filters with the number of live pages of each,
+-- counted by the database: one row per value, plus the total.
+WITH live AS (
+  SELECT e.industry, e.stage, e.needs, e.tags, e.year, e.faculty_id, e.faculty
+    FROM showcase_entries e
+   WHERE CASE @scope::text
+           WHEN 'national' THEN e.status = 'published' AND e.visibility = 'public'
+           WHEN 'member' THEN e.tenant_id = app_current_tenant() AND e.published_at IS NOT NULL
+           ELSE e.tenant_id = app_current_tenant() AND e.status = 'published' AND e.visibility = 'public'
+         END
+     AND NOT (e.tenant_id = ANY(coalesce(@suspended::uuid[], '{}')))
+)
+SELECT 'total'::text AS facet, ''::text AS value, NULL::jsonb AS label, count(*)::int AS pages FROM live
+UNION ALL
+SELECT 'industry', industry, NULL, count(*)::int FROM live GROUP BY industry
+UNION ALL
+SELECT 'stage', stage, NULL, count(*)::int FROM live GROUP BY stage
+UNION ALL
+SELECT 'year', year::text, NULL, count(*)::int FROM live GROUP BY year
+UNION ALL
+SELECT 'need', need, NULL, count(*)::int FROM live, unnest(needs) AS need GROUP BY need
+UNION ALL
+SELECT 'tag', tag, NULL, count(*)::int FROM live, unnest(tags) AS tag GROUP BY tag
+UNION ALL
+SELECT 'faculty', faculty_id::text, (array_agg(faculty))[1], count(*)::int
+  FROM live WHERE faculty_id IS NOT NULL AND faculty IS NOT NULL GROUP BY faculty_id;
 
 -- name: ListFeatured :many
 SELECT e.project_id, e.tenant_id, e.slug, e.title, e.tagline, e.industry, e.stage, e.faculty, e.year,

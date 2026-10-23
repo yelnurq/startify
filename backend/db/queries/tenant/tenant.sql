@@ -23,7 +23,8 @@ SELECT id, name
  ORDER BY created_at;
 
 -- name: GetOidcProvider :one
-SELECT * FROM tenant_oidc_providers WHERE id = @id AND enabled;
+SELECT * FROM tenant_oidc_providers
+ WHERE tenant_id = app_current_tenant() AND id = @id AND enabled;
 
 -- name: UpsertTenant :one
 INSERT INTO tenants (slug, name, short_name, default_locale, primary_color)

@@ -75,7 +75,7 @@ func TestJobFailuresSurviveTheirDeadline(t *testing.T) {
 	last := func(n int) *rivertype.JobRow { return &rivertype.JobRow{Attempt: n, MaxAttempts: n} }
 
 	first := decode[apigen.Evaluation](t, owner.do(http.MethodPost, base+"/evaluations", nil))
-	w := &evaluation.RunWorker{DB: h.db.App, Gateway: h.services.AI}
+	w := &evaluation.RunWorker{DB: h.db.Worker, Gateway: h.services.AI}
 	if err := w.Work(expired, &river.Job[evaluation.RunArgs]{Args: lastJob[evaluation.RunArgs](t, h), JobRow: last(3)}); err != nil {
 		t.Fatalf("the failure must be recorded: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestJobFailuresSurviveTheirDeadline(t *testing.T) {
 
 	h.queue.jobs = nil
 	expect(t, owner.do(http.MethodPost, base+"/materials", apigen.MaterialCreate{Kind: apigen.MaterialKindOnePager, Format: apigen.MaterialFormatPdf}), http.StatusAccepted)
-	mw := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: gotenberg.New("http://gotenberg.invalid", time.Second)}
+	mw := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: gotenberg.New("http://gotenberg.invalid", time.Second)}
 	if err := mw.Work(expired, &river.Job[incubator.MaterialArgs]{Args: lastJob[incubator.MaterialArgs](t, h), JobRow: last(3)}); err != nil {
 		t.Fatalf("the failure must be recorded: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestJobFailuresSurviveTheirDeadline(t *testing.T) {
 		multipartForm(t, map[string]string{"title": "Правила грантов"}, "file", "granty.txt", []byte("Раздел 1. Гранты\n\nГрант выдаётся на 12 месяцев.")))
 	expect(t, rec, http.StatusCreated)
 	doc := decode[apigen.KnowledgeDocument](t, rec)
-	iw := &knowledge.IndexWorker{DB: h.db.App, Gateway: h.services.AI}
+	iw := &knowledge.IndexWorker{DB: h.db.Worker, Gateway: h.services.AI}
 	if err := iw.Work(expired, &river.Job[knowledge.IndexArgs]{Args: lastJob[knowledge.IndexArgs](t, h), JobRow: last(5)}); err != nil {
 		t.Fatalf("the failure must be recorded: %v", err)
 	}
@@ -133,12 +133,19 @@ func TestStaleBackgroundWorkIsGivenUp(t *testing.T) {
 	// The worker died during the evaluation.
 	h.db.Exec(t, "UPDATE evaluations SET status = 'running'")
 
-	materials := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files}
+	// The reapers run in the worker, whose role alone enters the system scope.
+	gateway, err := ai.NewGateway(h.db.Worker, []llm.Provider{&mock.Provider{}},
+		config.AI{Default: "mock", Timezone: "Asia/Almaty"}, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.db.Exec(t, "INSERT INTO ai_reservations (tenant_id, tokens, expires_at) VALUES ('"+ts.kazutb.String()+"', 10, now() - interval '1 minute')")
+	materials := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: gateway, Files: h.services.Files}
 	stale := &maintenance.StaleWorker{Reapers: []maintenance.Reaper{
-		{Name: "evaluations", Fn: (&evaluation.RunWorker{DB: h.db.App, Gateway: h.services.AI}).FailStale},
+		{Name: "evaluations", Fn: (&evaluation.RunWorker{DB: h.db.Worker, Gateway: gateway}).FailStale},
 		{Name: "materials", Fn: materials.FailStale},
-		{Name: "knowledge_documents", Fn: (&knowledge.IndexWorker{DB: h.db.App, Gateway: h.services.AI}).FailStale},
-		{Name: "ai_reservations", Fn: h.services.AI.PurgeReservations},
+		{Name: "knowledge_documents", Fn: (&knowledge.IndexWorker{DB: h.db.Worker, Gateway: gateway}).FailStale},
+		{Name: "ai_reservations", Fn: gateway.PurgeReservations},
 	}}
 	run := func(at time.Time) {
 		t.Helper()
@@ -162,6 +169,9 @@ func TestStaleBackgroundWorkIsGivenUp(t *testing.T) {
 	}
 	if n := scalar[int64](t, h, "SELECT count(*) FROM knowledge_documents WHERE status = 'failed' AND error = 'knowledge.index_failed'"); n != 1 {
 		t.Fatalf("documents given up: %d", n)
+	}
+	if n := scalar[int64](t, h, "SELECT count(*) FROM ai_reservations"); n != 0 {
+		t.Fatalf("expired reservations left: %d", n)
 	}
 	// The project is no longer blocked.
 	expect(t, owner.do(http.MethodPost, base+"/evaluations", nil), http.StatusAccepted)
@@ -205,7 +215,7 @@ func TestOldMaterialsAreRemoved(t *testing.T) {
 			"SELECT f.tenant_id, '"+p.Id.String()+"', 'one_pager', 'pdf', 'ru', 'ready', f.id FROM files f WHERE f.object_key LIKE 'old/%' ORDER BY f.object_key")
 	h.queue.jobs = nil
 	expect(t, owner.do(http.MethodPost, base+"/materials", apigen.MaterialCreate{Kind: apigen.MaterialKindPitchDeck, Format: apigen.MaterialFormatPptx}), http.StatusAccepted)
-	w := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files}
+	w := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: h.services.AI, Files: h.services.Files}
 	if err := w.Work(context.Background(), &river.Job[incubator.MaterialArgs]{Args: lastJob[incubator.MaterialArgs](t, h), JobRow: jobRow()}); err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +274,7 @@ func TestDocumentPassagesShareOneEmbeddingModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := &knowledge.IndexWorker{DB: h.db.App, Gateway: g}
+	w := &knowledge.IndexWorker{DB: h.db.Worker, Gateway: g}
 	err = w.Work(context.Background(), &river.Job[knowledge.IndexArgs]{Args: lastJob[knowledge.IndexArgs](t, h), JobRow: jobRow()})
 	if err == nil || !strings.Contains(err.Error(), "different models") {
 		t.Fatalf("mixed models must fail the attempt: %v", err)

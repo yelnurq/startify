@@ -67,8 +67,24 @@ func TestRowLevelSecurityIsolatesTenants(t *testing.T) {
 	if n := countNotes(ctx, t, d.App); n != 0 {
 		t.Errorf("unscoped transaction sees %d notes, want 0 (fail closed)", n)
 	}
-	if n := countNotes(db.WithSystem(ctx), t, d.App); n != 3 {
-		t.Errorf("system scope sees %d notes, want 3", n)
+	if n := countNotes(db.WithSystem(ctx), t, d.Worker); n != 3 {
+		t.Errorf("system scope of the worker sees %d notes, want 3", n)
+	}
+	// The API's role cannot enter the system scope, however it sets
+	// app.system: through the context, or a statement of its own (an
+	// injected one) in a university's transaction.
+	if n := countNotes(db.WithSystem(ctx), t, d.App); n != 0 {
+		t.Errorf("system scope of the API sees %d notes, want 0", n)
+	}
+	var injected int
+	err := d.App.ReadTx(db.WithTenant(ctx, tenantB), func(ctx context.Context) error {
+		if _, err := d.App.Conn(ctx).Exec(ctx, "SELECT set_config('app.system', 'on', true)"); err != nil {
+			return err
+		}
+		return d.App.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&injected)
+	})
+	if err != nil || injected != 1 {
+		t.Errorf("the API with app.system=on sees %d notes (err %v), want its own 1", injected, err)
 	}
 
 	// Outside any transaction the pool has no scope at all.
@@ -120,22 +136,24 @@ func TestNestedTxUsesSavepointsAndRestoresScope(t *testing.T) {
 			t.Errorf("inner error = %v", innerErr)
 		}
 
-		// A nested system-scope block must not leak its scope into the outer transaction.
-		var all int
-		if err := d.App.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
-			return d.App.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&all)
+		// A nested block of another scope must not leak it into the outer
+		// transaction. (The system scope needs the worker's pool; for the
+		// API's role a nested scope of no university shows the same.)
+		var none int
+		if err := d.App.Tx(db.WithTenant(context.Background(), uuid.Nil), func(ctx context.Context) error {
+			return d.App.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&none)
 		}); err != nil {
 			return err
 		}
-		if all != 4 {
-			t.Errorf("system block sees %d notes, want 4", all)
+		if none != 0 {
+			t.Errorf("a block without a university sees %d notes, want 0", none)
 		}
 		var mine int
 		if err := d.App.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&mine); err != nil {
 			return err
 		}
 		if mine != 3 {
-			t.Errorf("after the system block tenant A sees %d notes, want 3", mine)
+			t.Errorf("after the nested block tenant A sees %d notes, want 3", mine)
 		}
 		return nil
 	})
@@ -210,6 +228,59 @@ func connectAs(t *testing.T, d *testpg.Database, role string) *db.DB {
 	}
 	t.Cleanup(conn.Close)
 	return conn
+}
+
+// The worker's pool restores the outer scope after a nested system block too.
+func TestNestedSystemBlockOfTheWorker(t *testing.T) {
+	d, tenantA, _ := rlsFixture(t)
+	ctx := db.WithTenant(context.Background(), tenantA)
+	err := d.Worker.Tx(ctx, func(ctx context.Context) error {
+		var all, mine int
+		if err := d.Worker.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+			return d.Worker.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&all)
+		}); err != nil {
+			return err
+		}
+		if err := d.Worker.Conn(ctx).QueryRow(ctx, "SELECT count(*) FROM notes").Scan(&mine); err != nil {
+			return err
+		}
+		if all != 3 || mine != 2 {
+			t.Errorf("system block sees %d notes, then tenant A %d; want 3 and 2", all, mine)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The API refuses the worker's role and the worker refuses the API's: only
+// the worker may enter the system scope (audit Н-38).
+func TestConnectChecksTheSystemRole(t *testing.T) {
+	d := pg.NewDB(t)
+	ctx := context.Background()
+	for _, c := range []struct {
+		name    string
+		connect func(context.Context, config.Database) (*db.DB, error)
+		cfg     config.Database
+		want    string
+	}{
+		{"api as qadam_app", db.Connect, config.Database{URL: d.AppURL, MaxConns: 2}, ""},
+		{"api as qadam_worker", db.Connect, config.Database{URL: d.WorkerURL, MaxConns: 2}, "may enter the system scope"},
+		{"worker as qadam_worker", db.ConnectWorker, config.Database{URL: d.AppURL, WorkerURL: d.WorkerURL, MaxConns: 2}, ""},
+		{"worker as qadam_app", db.ConnectWorker, config.Database{URL: d.AppURL, MaxConns: 2}, "QADAM_DATABASE_WORKER_URL"},
+	} {
+		conn, err := c.connect(ctx, c.cfg)
+		switch {
+		case c.want == "" && err != nil:
+			t.Errorf("%s: %v", c.name, err)
+		case c.want != "" && (err == nil || !strings.Contains(err.Error(), c.want)):
+			t.Errorf("%s: %v, want %q", c.name, err, c.want)
+		}
+		if conn != nil {
+			conn.Close()
+		}
+	}
 }
 
 func TestRequireRestrictedRole(t *testing.T) {

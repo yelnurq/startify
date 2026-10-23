@@ -350,8 +350,8 @@ func TestShowcaseContacts(t *testing.T) {
 	}
 
 	// Without moderation requests go straight to the team.
-	err := h.db.App.Tx(db.WithSystem(context.Background()), func(ctx context.Context) error {
-		_, err := h.db.App.Conn(ctx).Exec(ctx, "UPDATE tenant_settings SET contact_moderation = false WHERE tenant_id = $1", ts.kazutb)
+	err := h.db.Worker.Tx(db.WithSystem(context.Background()), func(ctx context.Context) error {
+		_, err := h.db.Worker.Conn(ctx).Exec(ctx, "UPDATE tenant_settings SET contact_moderation = false WHERE tenant_id = $1", ts.kazutb)
 		return err
 	})
 	if err != nil {

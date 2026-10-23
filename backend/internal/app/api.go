@@ -155,6 +155,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	if a.Scanner != nil {
 		fileSvc.WithScanner(a.Scanner)
 	}
+	fileSvc.UseQueue(a.Queue)
 	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations, limiter)
 	authSvc := auth.NewService(auth.Deps{
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
@@ -293,6 +294,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 
 	r.Route(apiBase, func(api chi.Router) {
 		api.Use(
+			httpx.NoStoreByDefault,
 			httpx.Timeout(a.Config.HTTP.RequestTimeout, streams),
 			httpx.MaxBody(a.Config.HTTP.MaxBodyBytes, a.Config.Files.MaxBytes+1<<20, uploads),
 			httpx.KeepRequest,

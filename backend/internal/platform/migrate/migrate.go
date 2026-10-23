@@ -1,18 +1,21 @@
 // Package migrate applies the schema migrations (goose) and the job queue
-// migrations (River). Migrations run as the schema owner, not the app role.
+// migrations (River). Migrations run as the schema owner, not the app role,
+// and in the system scope: tables force row-level security even on their
+// owner, so a migration that changes data (or rolls a change back) would
+// otherwise see no rows of any university.
 package migrate
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
@@ -74,10 +77,14 @@ func Status(ctx context.Context, dsn string, w io.Writer) error {
 }
 
 func withProvider(dsn string, fn func(*goose.Provider) error) (err error) {
-	sqlDB, err := sql.Open("pgx", dsn)
+	cfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
-		return fmt.Errorf("migrate: open: %w", err)
+		return fmt.Errorf("migrate: parse url: %w", err)
 	}
+	// app_is_system() also requires membership in qadam_worker, which the
+	// owner has (migration 00014); a superuser bypasses row security anyway.
+	cfg.RuntimeParams["app.system"] = "on"
+	sqlDB := stdlib.OpenDB(*cfg)
 	defer func() { err = errors.Join(err, sqlDB.Close()) }()
 
 	fsys, err := fs.Sub(db.Migrations, "migrations")

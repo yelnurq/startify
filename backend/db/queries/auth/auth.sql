@@ -6,6 +6,9 @@ SELECT * FROM users WHERE email = @email;
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = @id;
 
+-- name: FindUsersByEmails :many
+SELECT id, email FROM users WHERE email = ANY(@emails::citext[]);
+
 -- name: CreateUser :one
 INSERT INTO users (email, full_name, locale, email_verified_at)
 VALUES (@email, @full_name, @locale, @email_verified_at)
@@ -84,10 +87,19 @@ UPDATE sessions SET revoked_at = now(), revoked_reason = @reason
    AND (sqlc.narg('except_id')::uuid IS NULL OR id <> sqlc.narg('except_id')::uuid)
 RETURNING id;
 
+-- name: RevokeUserSessionsEverywhere :many
+-- In every university of the account (D-068), through the one function of
+-- migration 00014 that reaches past the current university.
+SELECT revoked::uuid AS id
+  FROM app_revoke_user_sessions(@user_id::uuid, @reason::text, sqlc.narg('except_id')::uuid) AS revoked;
+
 -- name: ListActiveSessions :many
+-- The newest sessions of the account in this university; older ones beyond
+-- the page are still revoked by "sign out everywhere".
 SELECT * FROM sessions
- WHERE user_id = @user_id AND revoked_at IS NULL AND expires_at > now()
- ORDER BY last_used_at DESC;
+ WHERE tenant_id = app_current_tenant() AND user_id = @user_id AND revoked_at IS NULL AND expires_at > now()
+ ORDER BY last_used_at DESC
+ LIMIT @row_limit;
 
 -- name: DeleteStaleSessions :execrows
 DELETE FROM sessions
@@ -120,6 +132,10 @@ UPDATE auth_tokens SET attempts = attempts + 1 WHERE id = @id RETURNING attempts
 -- name: ConsumeUserTokens :exec
 UPDATE auth_tokens SET consumed_at = now()
  WHERE user_id = @user_id AND purpose = ANY(@purposes::text[]) AND consumed_at IS NULL;
+
+-- name: ConsumeUserTokensEverywhere :exec
+-- In every university of the account, like RevokeUserSessionsEverywhere.
+SELECT app_consume_user_tokens(@user_id::uuid, @purposes::text[]);
 
 -- name: DeleteStaleAuthTokens :execrows
 DELETE FROM auth_tokens WHERE expires_at < now() - interval '1 day';

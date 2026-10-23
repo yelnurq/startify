@@ -44,6 +44,8 @@ type EvaluationCriteriaScore struct {
 	AiScore       int32
 	Score         int32
 	Justification string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type EvaluationOverride struct {

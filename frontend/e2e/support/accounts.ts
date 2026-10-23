@@ -25,7 +25,10 @@ export function storageState(user: SeededUser): string {
   return path.join(import.meta.dirname, '..', '..', 'test-results', '.auth', `${user}.json`);
 }
 
-/** A fresh address, unique per test, project and run. */
+/**
+ * A fresh address, unique per test, project and run. The e2e.*@qadam.test
+ * accounts and their projects are removed after the run (global-teardown.ts).
+ */
 export function uniqueEmail(prefix: string): string {
   const salt = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
   return `e2e.${prefix}.${salt}@qadam.test`;

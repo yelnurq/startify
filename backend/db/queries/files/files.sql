@@ -8,8 +8,14 @@ RETURNING *;
 -- name: GetFile :one
 SELECT * FROM files WHERE id = @id AND deleted_at IS NULL;
 
--- name: SoftDeleteFile :exec
+-- name: SoftDeleteFile :execrows
 UPDATE files SET deleted_at = now() WHERE id = @id AND deleted_at IS NULL;
+
+-- name: ReleaseAvatar :execrows
+-- An avatar its owner replaced or removed in another university of the
+-- account (worker, system scope).
+UPDATE files SET deleted_at = now()
+ WHERE id = @id AND owner_id = @owner_id AND purpose = 'avatar' AND deleted_at IS NULL;
 
 -- name: ListPurgeableFiles :many
 SELECT id, object_key FROM files

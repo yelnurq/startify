@@ -133,7 +133,8 @@ func (q *Queries) GetTeamRequest(ctx context.Context, id uuid.UUID) (TeamRequest
 
 const listTeamRequests = `-- name: ListTeamRequests :many
 SELECT id, tenant_id, author_id, title, description, roles_needed, skills, status, created_at, updated_at, closed_at FROM team_requests r
- WHERE (CASE WHEN $1::boolean THEN r.author_id = $2 ELSE r.status = 'open' END)
+ WHERE r.tenant_id = app_current_tenant()
+   AND (CASE WHEN $1::boolean THEN r.author_id = $2 ELSE r.status = 'open' END)
    AND ($3::text IS NULL OR $3::text = ANY(r.roles_needed))
    AND ($4::text IS NULL
         OR EXISTS (SELECT 1 FROM unnest(r.skills) s WHERE lower(s) = lower($4::text)))
@@ -197,11 +198,17 @@ func (q *Queries) ListTeamRequests(ctx context.Context, arg ListTeamRequestsPara
 }
 
 const listTeamResponses = `-- name: ListTeamResponses :many
-SELECT id, tenant_id, request_id, author_id, message, created_at FROM team_responses WHERE request_id = $1 ORDER BY id DESC
+SELECT id, tenant_id, request_id, author_id, message, created_at FROM team_responses WHERE request_id = $1 ORDER BY id DESC LIMIT $2
 `
 
-func (q *Queries) ListTeamResponses(ctx context.Context, requestID uuid.UUID) ([]TeamResponse, error) {
-	rows, err := q.db.Query(ctx, listTeamResponses, requestID)
+type ListTeamResponsesParams struct {
+	RequestID uuid.UUID
+	RowLimit  int32
+}
+
+// A request collects a few dozen replies; the cap only guards the page.
+func (q *Queries) ListTeamResponses(ctx context.Context, arg ListTeamResponsesParams) ([]TeamResponse, error) {
+	rows, err := q.db.Query(ctx, listTeamResponses, arg.RequestID, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}

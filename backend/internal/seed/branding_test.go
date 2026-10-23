@@ -14,13 +14,13 @@ import (
 func TestBrandingStoresTheSealAndThePhotoOnce(t *testing.T) {
 	database := pg.NewDB(t)
 	ctx := context.Background()
-	if err := Demo(ctx, database.App); err != nil {
+	if err := Demo(ctx, database.Worker); err != nil {
 		t.Fatal(err)
 	}
 	storage := files.NewMemoryStorage()
 	store := files.NewService(database.App, storage, config.Files{Scan: files.ScanOff, MaxBytes: 1 << 20}, slog.Default())
 	for range 2 {
-		if err := Branding(ctx, database.App, store); err != nil {
+		if err := Branding(ctx, database.Worker, store); err != nil {
 			t.Fatal(err)
 		}
 	}

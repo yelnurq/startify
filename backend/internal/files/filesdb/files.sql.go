@@ -16,7 +16,7 @@ INSERT INTO files (id, tenant_id, owner_id, purpose, visibility, object_key, fil
                    content_type, size_bytes, sha256, scan_status)
 VALUES ($1, app_current_tenant(), $2, $3, $4, $5, $6,
         $7, $8, $9, $10)
-RETURNING id, tenant_id, owner_id, purpose, visibility, object_key, file_name, content_type, size_bytes, sha256, scan_status, created_at, deleted_at
+RETURNING id, tenant_id, owner_id, purpose, visibility, object_key, file_name, content_type, size_bytes, sha256, scan_status, created_at, deleted_at, updated_at
 `
 
 type CreateFileParams struct {
@@ -60,12 +60,13 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, e
 		&i.ScanStatus,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getFile = `-- name: GetFile :one
-SELECT id, tenant_id, owner_id, purpose, visibility, object_key, file_name, content_type, size_bytes, sha256, scan_status, created_at, deleted_at FROM files WHERE id = $1 AND deleted_at IS NULL
+SELECT id, tenant_id, owner_id, purpose, visibility, object_key, file_name, content_type, size_bytes, sha256, scan_status, created_at, deleted_at, updated_at FROM files WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetFile(ctx context.Context, id uuid.UUID) (File, error) {
@@ -85,6 +86,7 @@ func (q *Queries) GetFile(ctx context.Context, id uuid.UUID) (File, error) {
 		&i.ScanStatus,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -130,11 +132,34 @@ func (q *Queries) PurgeFile(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const softDeleteFile = `-- name: SoftDeleteFile :exec
+const releaseAvatar = `-- name: ReleaseAvatar :execrows
+UPDATE files SET deleted_at = now()
+ WHERE id = $1 AND owner_id = $2 AND purpose = 'avatar' AND deleted_at IS NULL
+`
+
+type ReleaseAvatarParams struct {
+	ID      uuid.UUID
+	OwnerID *uuid.UUID
+}
+
+// An avatar its owner replaced or removed in another university of the
+// account (worker, system scope).
+func (q *Queries) ReleaseAvatar(ctx context.Context, arg ReleaseAvatarParams) (int64, error) {
+	result, err := q.db.Exec(ctx, releaseAvatar, arg.ID, arg.OwnerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const softDeleteFile = `-- name: SoftDeleteFile :execrows
 UPDATE files SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) SoftDeleteFile(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, softDeleteFile, id)
-	return err
+func (q *Queries) SoftDeleteFile(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteFile, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

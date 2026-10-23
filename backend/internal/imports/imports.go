@@ -260,15 +260,26 @@ func (s *Service) planStudents(ctx context.Context, rows []apigen.ImportRow, loo
 		rows[i].Values["email"] = strings.ToLower(rows[i].Values["email"])
 		emails = append(emails, rows[i].Values["email"])
 	}
-	existing, err := s.q(ctx).FindUsersByEmails(ctx, emails)
+	// Accounts belong to the auth module, memberships to the user module:
+	// one lookup in each for the whole file.
+	accounts, err := s.auth.Accounts(ctx, emails)
 	if err != nil {
 		return fmt.Errorf("imports: users: %w", err)
 	}
+	ids := make([]uuid.UUID, 0, len(accounts))
+	for _, id := range accounts {
+		ids = append(ids, id)
+	}
+	briefs, err := s.users.Briefs(ctx, ids)
+	if err != nil {
+		return fmt.Errorf("imports: members: %w", err)
+	}
 	members := map[string]bool{}
 	known := map[string]bool{}
-	for _, u := range existing {
-		known[u.Email] = true
-		members[u.Email] = u.IsMember
+	for email, id := range accounts {
+		_, member := briefs[id]
+		known[email] = true
+		members[email] = member
 	}
 	seen := map[string]bool{}
 	for i := range rows {
@@ -557,13 +568,9 @@ func (s *Service) applyStudents(ctx context.Context, rows []apigen.ImportRow) (a
 	for _, r := range rows {
 		emails = append(emails, r.Values["email"])
 	}
-	existing, err := s.q(ctx).FindUsersByEmails(ctx, emails)
+	accounts, err := s.auth.Accounts(ctx, emails)
 	if err != nil {
 		return res, err
-	}
-	byEmail := map[string]importsdb.FindUsersByEmailsRow{}
-	for _, u := range existing {
-		byEmail[u.Email] = u
 	}
 
 	for _, r := range rows {
@@ -573,16 +580,11 @@ func (s *Service) applyStudents(ctx context.Context, rows []apigen.ImportRow) (a
 		}
 		v := r.Values
 		roles, _ := parseRoles(v["roles"])
-		u, known := byEmail[v["email"]]
-		userID := u.ID
+		userID, known := accounts[v["email"]]
 		if !known {
-			created, err := s.q(ctx).CreateInvitedUser(ctx, importsdb.CreateInvitedUserParams{
-				Email: v["email"], FullName: v["full_name"], Locale: t.Locale,
-			})
-			if err != nil {
+			if userID, err = s.auth.CreateInvitedAccount(ctx, v["email"], v["full_name"], t.Locale); err != nil {
 				return res, err
 			}
-			userID = created.ID
 		}
 		if err := s.users.EnsureProfile(ctx, userID, v["full_name"]); err != nil {
 			return res, err

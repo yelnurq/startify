@@ -45,7 +45,7 @@ func TestFilesFollowWhatTheyBelongTo(t *testing.T) {
 	rec := mate.do(http.MethodPost, base+"/materials", apigen.MaterialCreate{Kind: apigen.MaterialKindOnePager, Format: apigen.MaterialFormatPdf})
 	expect(t, rec, http.StatusAccepted)
 	m := decode[apigen.Material](t, rec)
-	worker := &incubator.MaterialWorker{DB: h.db.App, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: fakeConverter(t)}
+	worker := &incubator.MaterialWorker{DB: h.db.Worker, Gateway: h.services.AI, Files: h.services.Files, Gotenberg: fakeConverter(t)}
 	args := h.queue.jobs[len(h.queue.jobs)-1].(incubator.MaterialArgs)
 	if err := worker.Work(context.Background(), &river.Job[incubator.MaterialArgs]{Args: args, JobRow: &rivertype.JobRow{Attempt: 1, MaxAttempts: 3}}); err != nil {
 		t.Fatal(err)

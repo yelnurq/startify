@@ -488,7 +488,7 @@ func (s *Service) SetAvatar(ctx context.Context, form *multipart.Reader) (apigen
 			return err
 		}
 		if u.AvatarFileID != nil {
-			return s.files.Delete(ctx, *u.AvatarFileID)
+			return s.files.DeleteAvatar(ctx, *u.AvatarFileID, p.UserID)
 		}
 		return nil
 	})
@@ -517,7 +517,7 @@ func (s *Service) DeleteAvatar(ctx context.Context) error {
 		if err := q.SetUserAvatar(ctx, userdb.SetUserAvatarParams{ID: p.UserID}); err != nil {
 			return err
 		}
-		return s.files.Delete(ctx, *u.AvatarFileID)
+		return s.files.DeleteAvatar(ctx, *u.AvatarFileID, p.UserID)
 	})
 	if err != nil {
 		return fmt.Errorf("user: delete avatar: %w", err)

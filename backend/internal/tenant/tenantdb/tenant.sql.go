@@ -44,7 +44,8 @@ func (q *Queries) CreateOidcProvider(ctx context.Context, arg CreateOidcProvider
 }
 
 const getOidcProvider = `-- name: GetOidcProvider :one
-SELECT id, tenant_id, name, issuer, client_id, client_secret_enc, scopes, enabled, auto_provision, created_at, updated_at FROM tenant_oidc_providers WHERE id = $1 AND enabled
+SELECT id, tenant_id, name, issuer, client_id, client_secret_enc, scopes, enabled, auto_provision, created_at, updated_at FROM tenant_oidc_providers
+ WHERE tenant_id = app_current_tenant() AND id = $1 AND enabled
 `
 
 func (q *Queries) GetOidcProvider(ctx context.Context, id uuid.UUID) (TenantOidcProvider, error) {

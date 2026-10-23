@@ -239,35 +239,42 @@ func (s *Service) Facets(ctx context.Context, national bool) (apigen.ShowcaseFac
 	if err != nil {
 		return apigen.ShowcaseFacets{}, err
 	}
-	var rows []showcasedb.ListFacetRowsRow
+	// The database counts the pages of every value: the response no longer
+	// depends on reading every live page into the API.
+	var rows []showcasedb.CountFacetsRow
 	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		var err error
-		rows, err = s.q(ctx).ListFacetRows(ctx, showcasedb.ListFacetRowsParams{Scope: scope, Suspended: hidden})
+		rows, err = s.q(ctx).CountFacets(ctx, showcasedb.CountFacetsParams{Scope: scope, Suspended: hidden})
 		return err
 	})
 	if err != nil {
 		return apigen.ShowcaseFacets{}, fmt.Errorf("showcase: facets: %w", err)
 	}
+	total := 0
 	industries, stages, wanted, years, tags := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	faculties := map[uuid.UUID]*apigen.FacultyFacet{}
 	for i := range rows {
 		r := &rows[i]
-		industries[r.Industry]++
-		stages[r.Stage]++
-		years[strconv.Itoa(int(r.Year))]++
-		for _, n := range r.Needs {
-			wanted[n]++
-		}
-		for _, t := range r.Tags {
-			tags[t]++
-		}
-		if r.FacultyID != nil && len(r.Faculty) > 0 {
-			f, ok := faculties[*r.FacultyID]
-			if !ok {
-				f = &apigen.FacultyFacet{Id: *r.FacultyID, Name: apiconv.ParseText(r.Faculty).API()}
-				faculties[*r.FacultyID] = f
+		n := int(r.Pages)
+		switch r.Facet {
+		case "total":
+			total = n
+		case "industry":
+			industries[r.Value] = n
+		case "stage":
+			stages[r.Value] = n
+		case "year":
+			years[r.Value] = n
+		case "need":
+			wanted[r.Value] = n
+		case "tag":
+			tags[r.Value] = n
+		case "faculty":
+			id, err := uuid.Parse(r.Value)
+			if err != nil || len(r.Label) == 0 {
+				continue
 			}
-			f.Count++
+			faculties[id] = &apigen.FacultyFacet{Id: id, Name: apiconv.ParseText(r.Label).API(), Count: n}
 		}
 	}
 	yearKeys := make([]string, 0, len(years))
@@ -277,7 +284,7 @@ func (s *Service) Facets(ctx context.Context, national bool) (apigen.ShowcaseFac
 	slices.Sort(yearKeys)
 	slices.Reverse(yearKeys)
 	out := apigen.ShowcaseFacets{
-		Total: len(rows), Industries: counted(industries, nil), Stages: counted(stages, stageOrder),
+		Total: total, Industries: counted(industries, nil), Stages: counted(stages, stageOrder),
 		Needs: counted(wanted, needs), Years: counted(years, yearKeys), Tags: counted(tags, nil),
 		Faculties: []apigen.FacultyFacet{},
 	}

@@ -144,9 +144,9 @@ Markdown, как отвечают многие локальные модели (
 Для разработки с горячей перезагрузкой нужны Go 1.26+ и Node.js 22+:
 
 ```bash
-make infra        # PostgreSQL, Valkey, MinIO с пользователем приложения, Gotenberg, Mailpit в Docker
+make infra        # PostgreSQL с ролями qadam_app и qadam_worker, Valkey, MinIO с пользователем приложения, Gotenberg, Mailpit в Docker
 make migrate      # применить миграции
-cd backend && go run ./cmd/seed && cd ..   # демо-данные
+cd backend && go run ./cmd/seed && cd ..   # демо-данные (роль worker: QADAM_DATABASE_WORKER_URL)
 make run-api      # API на :8080
 make run-worker   # фоновые задачи
 make run-web      # Vite на http://localhost:5173 (проксирует /api на :8080)
@@ -159,7 +159,8 @@ make run-web      # Vite на http://localhost:5173 (проксирует /api �
 | `make test` | Юнит- и интеграционные тесты (Postgres в testcontainers, нужен Docker) |
 | `make seed` | Демо-данные в запущенный стек (идемпотентно) |
 | `make ai-eval` | Проверка промпта AI-оценки на золотых проектах |
-| `make e2e` | Playwright против запущенного стека |
+| `make e2e` | Playwright против запущенного стека; после прогона удаляет созданные им данные |
+| `make e2e-clean` | Удаляет из базы разработки то, что оставили e2e-прогоны (аккаунты `e2e.*@qadam.test` с проектами и др.) |
 | `make compose-check` | Проверка базового compose-файла отдельно и вместе с файлом разработки |
 | `make help` | Все команды |
 
@@ -171,7 +172,7 @@ make run-web      # Vite на http://localhost:5173 (проксирует /api �
 backend/    Go: cmd/{api,worker,migrate,seed}, api/openapi.yaml, db/{migrations,queries}, internal/<module>
 frontend/   React + TypeScript: src/{app,design-system,features,shared,locales}, e2e/
 deploy/     docker-compose.yml (базовый) и docker-compose.dev.yml (разработка), Dockerfile-ы, Nginx,
-            init-скрипты PostgreSQL и MinIO
+            скрипты ролей PostgreSQL и пользователя MinIO
 docs/       ARCHITECTURE, DECISIONS, BACKLOG, PROGRESS, дизайн экранов
 ```
 

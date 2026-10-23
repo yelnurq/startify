@@ -24,17 +24,5 @@ type ImportJob struct {
 	Result      json.RawMessage
 	CreatedAt   time.Time
 	CommittedAt *time.Time
-}
-
-type User struct {
-	ID              uuid.UUID
-	Email           string
-	EmailVerifiedAt *time.Time
-	FullName        string
-	Locale          string
-	AvatarFileID    *uuid.UUID
-	IsSuperAdmin    bool
-	Status          string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	UpdatedAt   time.Time
 }
