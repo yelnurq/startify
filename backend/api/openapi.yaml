@@ -115,9 +115,14 @@ paths:
       tags: [auth]
       summary: Register with e-mail and password
       description: |
-        Creates the account and a student membership, signs in and e-mails a verification link.
+        Creates the account and a student membership and e-mails a verification link; no session
+        starts until the link is opened (`POST /auth/email/verify`). Registering again with the
+        address of an account whose e-mail is not verified yet replaces its password, ends its
+        sessions and sends a new link: whoever controls the mailbox gets the account. An account with
+        a verified e-mail joins this university with its right password (and is signed in); the
+        attempts count towards the same per-address limit as `POST /auth/login`.
         Errors: `auth.email_taken` (409), `auth.signup_disabled` and `auth.email_domain_not_allowed` (403),
-        `auth.consent_required`, `auth.password_weak` (422).
+        `auth.consent_required`, `auth.password_weak` (422), `auth.too_many_attempts` (429).
       security: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -129,7 +134,7 @@ paths:
               $ref: "#/components/schemas/RegisterRequest"
       responses:
         "201":
-          description: Registered and signed in; session cookies are set.
+          description: An existing account with a verified e-mail joined this university and is signed in; session cookies are set.
           headers:
             Set-Cookie:
               $ref: "#/components/headers/SessionCookies"
@@ -137,6 +142,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
+        "202":
+          description: Registered; the verification link is on its way and no session is started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationSent"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -145,7 +156,10 @@ paths:
       operationId: login
       tags: [auth]
       summary: Sign in with e-mail and password
-      description: "Errors: `auth.invalid_credentials` (401), `auth.too_many_attempts` (429)."
+      description: |
+        Errors: `auth.invalid_credentials` (401), `auth.email_unverified` (403, the password is right but
+        the e-mail is not verified yet: no session starts, `POST /auth/email/resend` sends the link again),
+        `auth.not_a_member`, `auth.account_suspended` (403), `auth.too_many_attempts` (429).
       security: []
       requestBody:
         required: true
@@ -266,10 +280,10 @@ paths:
       operationId: revokeAllSessions
       tags: [auth]
       summary: Sign out everywhere
-      description: Revokes every session of the user, including this one.
+      description: Revokes every other session of the user, in every university of the account; this one stays.
       responses:
         "204":
-          description: All sessions revoked; cookies are cleared.
+          description: The other sessions are revoked.
         default:
           $ref: "#/components/responses/Problem"
 
@@ -296,7 +310,11 @@ paths:
       operationId: verifyEmail
       tags: [auth]
       summary: Confirm the e-mail address with the token from the letter
-      description: "Errors: `auth.token_invalid` (400)."
+      description: |
+        Confirms the address and, since opening the link proves control of the mailbox, signs in
+        (the link of a new registration leads straight to onboarding). Errors: `auth.token_invalid` (400);
+        `auth.account_suspended`, `auth.not_a_member` (403) when the address is confirmed but the
+        account may not enter this university; `auth.too_many_attempts` (429).
       security: []
       requestBody:
         required: true
@@ -305,8 +323,15 @@ paths:
             schema:
               $ref: "#/components/schemas/TokenRequest"
       responses:
-        "204":
-          description: Address confirmed.
+        "200":
+          description: Address confirmed and signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -315,9 +340,21 @@ paths:
       operationId: resendVerificationEmail
       tags: [auth]
       summary: Send the verification letter again
+      description: |
+        Signed-in members get a new letter for their own address (the body is ignored). Visitors send
+        the address: a letter goes to it only if it belongs to a member of this university whose e-mail
+        is not verified yet, and the answer is always 202, so it does not reveal whether the address is
+        registered. Errors: `validation.failed` (422, a visitor without an address), `auth.too_many_attempts` (429).
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
       responses:
         "202":
-          description: A new letter is on its way.
+          description: If a letter is due, it is on its way.
         default:
           $ref: "#/components/responses/Problem"
 
@@ -364,7 +401,12 @@ paths:
       operationId: changePassword
       tags: [auth]
       summary: Change the password
-      description: Other sessions are revoked. Errors `auth.password_incorrect`, `auth.password_weak`.
+      description: |
+        Other sessions are revoked, in every university of the account. An account without a password
+        (created by single sign-on) sets its first one with an empty `current_password` and a sign-in
+        `code` e-mailed by `POST /auth/otp/request`: a session alone must not become a lasting password.
+        Errors: `auth.password_incorrect`, `auth.code_invalid`, `auth.password_weak` (422),
+        `auth.reauth_required` (403, the code is missing), `auth.too_many_attempts` (429).
       requestBody:
         required: true
         content:
@@ -412,6 +454,13 @@ paths:
       operationId: completeOidc
       tags: [auth]
       summary: Return from the identity provider
+      description: |
+        Signs in the account of the identity: a first sign-in links an existing account with the same
+        verified address only when it is a member of this university or the address is on one of the
+        university's e-mail domains (linking an account whose e-mail was never verified removes its
+        password and ends its sessions), otherwise creates one. Failures redirect to
+        `/login?error=<code>`: `auth.oidc_failed`, `auth.sso_link_denied`, `auth.not_a_member`,
+        `auth.account_suspended`.
       security: []
       parameters:
         - name: providerId
@@ -613,7 +662,7 @@ paths:
       operationId: listFaculties
       tags: [structure]
       summary: Faculties with their departments
-      security: []
+      description: For members of the university (onboarding and administration); visitors get 401.
       responses:
         "200":
           description: Faculties sorted by name.
@@ -636,6 +685,7 @@ paths:
       operationId: listStudyGroups
       tags: [structure]
       summary: Study groups
+      description: For members of the university (onboarding and administration); visitors get 401.
       parameters:
         - name: faculty_id
           in: query
@@ -941,7 +991,10 @@ paths:
       summary: Apply a previewed import
       description: |
         Valid rows are written; invalid rows are skipped. New students receive an invitation
-        letter. Errors: `import.already_committed` (409).
+        letter. Codes of faculties, departments and groups match without regard to case. A file
+        grants only the roles `student`, `supervisor`, `mentor` and `jury`. Errors:
+        `import.already_committed` (409), `import.too_many_invitations` (429: the university's daily
+        allowance of invitation letters would be exceeded; nothing is applied).
       parameters:
         - $ref: "#/components/parameters/ImportId"
       responses:
@@ -1191,7 +1244,8 @@ paths:
       summary: Find members of the university
       description: |
         Members by name for adding to a team or mentioning in a comment. Returns
-        active members only, at most `limit`.
+        active members only, at most `limit`. The directory is for the university's own people:
+        a member who is only a `partner` gets 403 `rbac.forbidden`.
       parameters:
         - name: q
           in: query
@@ -3104,6 +3158,15 @@ components:
         current:
           type: boolean
 
+    VerificationSent:
+      type: object
+      additionalProperties: false
+      required: [verification_sent]
+      properties:
+        verification_sent:
+          type: boolean
+          const: true
+          description: The verification link was e-mailed; the session starts when it is opened.
     RegisterRequest:
       type: object
       additionalProperties: false
@@ -3192,6 +3255,10 @@ components:
           type: string
           minLength: 10
           maxLength: 128
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+          description: A sign-in code from the e-mail; required instead of the current password to set a first password.
 
     ProfileLinks:
       type: object

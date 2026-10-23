@@ -179,6 +179,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deletePasswordIdentity = `-- name: DeletePasswordIdentity :exec
+DELETE FROM user_identities WHERE user_id = $1 AND provider = 'password'
+`
+
+func (q *Queries) DeletePasswordIdentity(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deletePasswordIdentity, userID)
+	return err
+}
+
 const deleteStaleAuthTokens = `-- name: DeleteStaleAuthTokens :execrows
 DELETE FROM auth_tokens WHERE expires_at < now() - interval '1 day'
 `
@@ -371,6 +380,17 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return i, err
 }
 
+const hasSingleSignOn = `-- name: HasSingleSignOn :one
+SELECT EXISTS (SELECT 1 FROM user_identities WHERE user_id = $1 AND provider <> 'password')
+`
+
+func (q *Queries) HasSingleSignOn(ctx context.Context, userID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasSingleSignOn, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listActiveLoginCodes = `-- name: ListActiveLoginCodes :many
 SELECT id, tenant_id, user_id, purpose, token_hash, attempts, expires_at, consumed_at, created_at FROM auth_tokens
  WHERE user_id = $1 AND purpose = 'login_code'
@@ -446,6 +466,28 @@ func (q *Queries) ListActiveSessions(ctx context.Context, userID uuid.UUID) ([]S
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockUser = `-- name: LockUser :one
+SELECT id, email, email_verified_at, full_name, locale, avatar_file_id, is_super_admin, status, created_at, updated_at FROM users WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, lockUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.EmailVerifiedAt,
+		&i.FullName,
+		&i.Locale,
+		&i.AvatarFileID,
+		&i.IsSuperAdmin,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const markEmailVerified = `-- name: MarkEmailVerified :exec
@@ -540,6 +582,22 @@ func (q *Queries) RotateSession(ctx context.Context, arg RotateSessionParams) (i
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setRegistrant = `-- name: SetRegistrant :exec
+UPDATE users SET full_name = $1, locale = $2 WHERE id = $3 AND email_verified_at IS NULL
+`
+
+type SetRegistrantParams struct {
+	FullName string
+	Locale   string
+	ID       uuid.UUID
+}
+
+// A new registration of an address that was never verified names the account anew.
+func (q *Queries) SetRegistrant(ctx context.Context, arg SetRegistrantParams) error {
+	_, err := q.db.Exec(ctx, setRegistrant, arg.FullName, arg.Locale, arg.ID)
+	return err
 }
 
 const touchIdentity = `-- name: TouchIdentity :exec

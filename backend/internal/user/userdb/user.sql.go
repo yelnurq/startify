@@ -23,18 +23,6 @@ func (q *Queries) ActivateMembership(ctx context.Context, userID uuid.UUID) erro
 	return err
 }
 
-const countAdmins = `-- name: CountAdmins :one
-SELECT count(*) FROM memberships
- WHERE tenant_id = app_current_tenant() AND 'tenant_admin' = ANY(roles) AND status = 'active'
-`
-
-func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countAdmins)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const countStudents = `-- name: CountStudents :one
 SELECT count(*) FROM memberships
  WHERE tenant_id = app_current_tenant() AND 'student' = ANY(roles) AND status = 'active'
@@ -257,7 +245,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 const getUsersByIDs = `-- name: GetUsersByIDs :many
 SELECT u.id, u.full_name, u.avatar_file_id, m.faculty_id
   FROM users u
-  LEFT JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
+  JOIN memberships m ON m.user_id = u.id AND m.tenant_id = app_current_tenant()
  WHERE u.id = ANY($1::uuid[])
 `
 
@@ -268,6 +256,7 @@ type GetUsersByIDsRow struct {
 	FacultyID    *uuid.UUID
 }
 
+// Users are global: only members of the current university are described.
 func (q *Queries) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]GetUsersByIDsRow, error) {
 	rows, err := q.db.Query(ctx, getUsersByIDs, ids)
 	if err != nil {
@@ -404,6 +393,35 @@ func (q *Queries) ListRecipients(ctx context.Context, ids []uuid.UUID) ([]ListRe
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockAdmins = `-- name: LockAdmins :many
+SELECT user_id FROM memberships
+ WHERE tenant_id = app_current_tenant() AND 'tenant_admin' = ANY(roles) AND status = 'active'
+ ORDER BY user_id
+   FOR UPDATE
+`
+
+// Locks the active administrators of the university in a fixed order, so
+// changes that could remove the last one are serialised.
+func (q *Queries) LockAdmins(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, lockAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

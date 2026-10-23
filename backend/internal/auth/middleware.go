@@ -24,6 +24,7 @@ var signInPaths = map[string]bool{
 	"/api/v1/auth/password/forgot": true,
 	"/api/v1/auth/password/reset":  true,
 	"/api/v1/auth/email/verify":    true,
+	"/api/v1/auth/email/resend":    true,
 }
 
 // Authenticate attaches the principal of a valid access token to the request.

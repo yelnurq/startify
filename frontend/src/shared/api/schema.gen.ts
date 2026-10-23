@@ -75,9 +75,14 @@ export interface paths {
         put?: never;
         /**
          * Register with e-mail and password
-         * @description Creates the account and a student membership, signs in and e-mails a verification link.
+         * @description Creates the account and a student membership and e-mails a verification link; no session
+         *     starts until the link is opened (`POST /auth/email/verify`). Registering again with the
+         *     address of an account whose e-mail is not verified yet replaces its password, ends its
+         *     sessions and sends a new link: whoever controls the mailbox gets the account. An account with
+         *     a verified e-mail joins this university with its right password (and is signed in); the
+         *     attempts count towards the same per-address limit as `POST /auth/login`.
          *     Errors: `auth.email_taken` (409), `auth.signup_disabled` and `auth.email_domain_not_allowed` (403),
-         *     `auth.consent_required`, `auth.password_weak` (422).
+         *     `auth.consent_required`, `auth.password_weak` (422), `auth.too_many_attempts` (429).
          */
         post: operations["register"];
         delete?: never;
@@ -97,7 +102,9 @@ export interface paths {
         put?: never;
         /**
          * Sign in with e-mail and password
-         * @description Errors: `auth.invalid_credentials` (401), `auth.too_many_attempts` (429).
+         * @description Errors: `auth.invalid_credentials` (401), `auth.email_unverified` (403, the password is right but
+         *     the e-mail is not verified yet: no session starts, `POST /auth/email/resend` sends the link again),
+         *     `auth.not_a_member`, `auth.account_suspended` (403), `auth.too_many_attempts` (429).
          */
         post: operations["login"];
         delete?: never;
@@ -197,7 +204,7 @@ export interface paths {
         post?: never;
         /**
          * Sign out everywhere
-         * @description Revokes every session of the user, including this one.
+         * @description Revokes every other session of the user, in every university of the account; this one stays.
          */
         delete: operations["revokeAllSessions"];
         options?: never;
@@ -233,7 +240,10 @@ export interface paths {
         put?: never;
         /**
          * Confirm the e-mail address with the token from the letter
-         * @description Errors: `auth.token_invalid` (400).
+         * @description Confirms the address and, since opening the link proves control of the mailbox, signs in
+         *     (the link of a new registration leads straight to onboarding). Errors: `auth.token_invalid` (400);
+         *     `auth.account_suspended`, `auth.not_a_member` (403) when the address is confirmed but the
+         *     account may not enter this university; `auth.too_many_attempts` (429).
          */
         post: operations["verifyEmail"];
         delete?: never;
@@ -251,7 +261,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send the verification letter again */
+        /**
+         * Send the verification letter again
+         * @description Signed-in members get a new letter for their own address (the body is ignored). Visitors send
+         *     the address: a letter goes to it only if it belongs to a member of this university whose e-mail
+         *     is not verified yet, and the answer is always 202, so it does not reveal whether the address is
+         *     registered. Errors: `validation.failed` (422, a visitor without an address), `auth.too_many_attempts` (429).
+         */
         post: operations["resendVerificationEmail"];
         delete?: never;
         options?: never;
@@ -309,7 +325,11 @@ export interface paths {
         get?: never;
         /**
          * Change the password
-         * @description Other sessions are revoked. Errors `auth.password_incorrect`, `auth.password_weak`.
+         * @description Other sessions are revoked, in every university of the account. An account without a password
+         *     (created by single sign-on) sets its first one with an empty `current_password` and a sign-in
+         *     `code` e-mailed by `POST /auth/otp/request`: a session alone must not become a lasting password.
+         *     Errors: `auth.password_incorrect`, `auth.code_invalid`, `auth.password_weak` (422),
+         *     `auth.reauth_required` (403, the code is missing), `auth.too_many_attempts` (429).
          */
         put: operations["changePassword"];
         post?: never;
@@ -343,7 +363,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return from the identity provider */
+        /**
+         * Return from the identity provider
+         * @description Signs in the account of the identity: a first sign-in links an existing account with the same
+         *     verified address only when it is a member of this university or the address is on one of the
+         *     university's e-mail domains (linking an account whose e-mail was never verified removes its
+         *     password and ends its sessions), otherwise creates one. Failures redirect to
+         *     `/login?error=<code>`: `auth.oidc_failed`, `auth.sso_link_denied`, `auth.not_a_member`,
+         *     `auth.account_suspended`.
+         */
         get: operations["completeOidc"];
         put?: never;
         post?: never;
@@ -481,7 +509,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Faculties with their departments */
+        /**
+         * Faculties with their departments
+         * @description For members of the university (onboarding and administration); visitors get 401.
+         */
         get: operations["listFaculties"];
         put?: never;
         post?: never;
@@ -498,7 +529,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Study groups */
+        /**
+         * Study groups
+         * @description For members of the university (onboarding and administration); visitors get 401.
+         */
         get: operations["listStudyGroups"];
         put?: never;
         post?: never;
@@ -666,7 +700,10 @@ export interface paths {
         /**
          * Apply a previewed import
          * @description Valid rows are written; invalid rows are skipped. New students receive an invitation
-         *     letter. Errors: `import.already_committed` (409).
+         *     letter. Codes of faculties, departments and groups match without regard to case. A file
+         *     grants only the roles `student`, `supervisor`, `mentor` and `jury`. Errors:
+         *     `import.already_committed` (409), `import.too_many_invitations` (429: the university's daily
+         *     allowance of invitation letters would be exceeded; nothing is applied).
          */
         post: operations["commitImport"];
         delete?: never;
@@ -839,7 +876,8 @@ export interface paths {
         /**
          * Find members of the university
          * @description Members by name for adding to a team or mentioning in a comment. Returns
-         *     active members only, at most `limit`.
+         *     active members only, at most `limit`. The directory is for the university's own people:
+         *     a member who is only a `partner` gets 403 `rbac.forbidden`.
          */
         get: operations["searchPeople"];
         put?: never;
@@ -2012,6 +2050,13 @@ export interface components {
             last_used_at: string;
             current: boolean;
         };
+        VerificationSent: {
+            /**
+             * @description The verification link was e-mailed; the session starts when it is opened.
+             * @constant
+             */
+            verification_sent: true;
+        };
         RegisterRequest: {
             /** Format: email */
             email: string;
@@ -2045,6 +2090,8 @@ export interface components {
         PasswordChangeRequest: {
             current_password: string;
             new_password: string;
+            /** @description A sign-in code from the e-mail; required instead of the current password to set a first password. */
+            code?: string;
         };
         ProfileLinks: {
             website?: string | null;
@@ -3111,7 +3158,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Registered and signed in; session cookies are set. */
+            /** @description An existing account with a verified e-mail joined this university and is signed in; session cookies are set. */
             201: {
                 headers: {
                     "Set-Cookie": components["headers"]["SessionCookies"];
@@ -3119,6 +3166,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description Registered; the verification link is on its way and no session is started. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationSent"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -3270,7 +3326,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All sessions revoked; cookies are cleared. */
+            /** @description The other sessions are revoked. */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -3314,12 +3370,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Address confirmed. */
-            204: {
+            /** @description Address confirmed and signed in; session cookies are set. */
+            200: {
                 headers: {
+                    "Set-Cookie": components["headers"]["SessionCookies"];
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
             };
             default: components["responses"]["Problem"];
         };
@@ -3331,9 +3390,13 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
         responses: {
-            /** @description A new letter is on its way. */
+            /** @description If a letter is due, it is on its way. */
             202: {
                 headers: {
                     [name: string]: unknown;

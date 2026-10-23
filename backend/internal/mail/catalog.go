@@ -40,7 +40,7 @@ var catalog = map[Template]letterCopy{
 			Heading:    "Қош келдіңіз, {name}!",
 			Paragraphs: []string{"Сіз {tenant} Qadam платформасында тіркелдіңіз. Тіркелуді аяқтау үшін электрондық поштаңызды растаңыз."},
 			Button:     "Поштаны растау",
-			After:      "Сілтеме 24 сағат жарамды. Егер сіз тіркелмеген болсаңыз, бұл хатты елемеңіз.",
+			After:      "Сілтеме 24 сағат жарамды және бірден Qadam-ға кіргізеді. Егер сіз тіркелмеген болсаңыз, оны ашпаңыз — бұл хатты елемеңіз.",
 		},
 		"ru": {
 			Subject:    "Qadam: подтвердите электронную почту",
@@ -48,7 +48,7 @@ var catalog = map[Template]letterCopy{
 			Heading:    "Добро пожаловать, {name}!",
 			Paragraphs: []string{"Вы зарегистрировались на платформе Qadam — {tenant}. Подтвердите адрес электронной почты, чтобы завершить регистрацию."},
 			Button:     "Подтвердить почту",
-			After:      "Ссылка действует 24 часа. Если вы не регистрировались, просто проигнорируйте это письмо.",
+			After:      "Ссылка действует 24 часа и сразу выполняет вход в Qadam. Если вы не регистрировались, не открывайте её — просто проигнорируйте это письмо.",
 		},
 		"en": {
 			Subject:    "Qadam: confirm your e-mail",
@@ -56,7 +56,7 @@ var catalog = map[Template]letterCopy{
 			Heading:    "Welcome, {name}!",
 			Paragraphs: []string{"You have signed up for Qadam at {tenant}. Confirm your e-mail address to finish registration."},
 			Button:     "Confirm e-mail",
-			After:      "The link is valid for 24 hours. If you did not sign up, ignore this letter.",
+			After:      "The link is valid for 24 hours and signs you in to Qadam. If you did not sign up, do not open it — just ignore this letter.",
 		},
 	},
 	TemplateLoginCode: {

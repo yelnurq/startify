@@ -283,7 +283,7 @@ func TestShowcaseContacts(t *testing.T) {
 	// The passport's QR code opens the public page.
 	expect(t, owner.do(http.MethodPost, base+"/materials", apigen.MaterialCreate{Kind: apigen.MaterialKindPassport, Format: apigen.MaterialFormatPdf}),
 		http.StatusAccepted)
-	if job, ok := h.queue.jobs[len(h.queue.jobs)-1].(incubator.MaterialArgs); !ok || job.PageURL != "http://kazutb.localhost/showcase/agroscan" {
+	if job, ok := h.queue.jobs[len(h.queue.jobs)-1].(incubator.MaterialArgs); !ok || job.PageURL != "http://kazutb.localhost:3000/showcase/agroscan" {
 		t.Fatalf("passport job %+v", h.queue.jobs[len(h.queue.jobs)-1])
 	}
 	partner := h.browser(t, kazutbHost)
@@ -335,7 +335,7 @@ func TestShowcaseContacts(t *testing.T) {
 		http.StatusNotFound, "contact.not_found")
 	letter := h.lastMail(t, "owner@qadam.test", mail.TemplateContactRequest)
 	if letter.Data["project"] != "AgroScan" || letter.Data["sender"] != "Ержан Байжанов (AgroInvest)" || letter.Data["email"] != "erzhan@agroinvest.kz" ||
-		letter.Data["kind"] != "инвестиции" || letter.Data["link"] != "http://kazutb.localhost/app/projects/"+p.Id.String()+"/showcase" {
+		letter.Data["kind"] != "инвестиции" || letter.Data["link"] != "http://kazutb.localhost:3000/app/projects/"+p.Id.String()+"/showcase" {
 		t.Fatalf("letter %+v", letter)
 	}
 	rec = owner.do(http.MethodGet, base+"/contacts", nil)

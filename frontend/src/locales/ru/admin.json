@@ -73,7 +73,7 @@
     "columns": {
       "title": "Столбцы файла",
       "text": "Первая строка — заголовки. Подходят английские названия ниже или русские и казахские аналоги, как в шаблоне.",
-      "studentsHint": "В столбце roles через запятую можно указать роли: student, supervisor, mentor, jury, innovation_manager, partner. По умолчанию — student.",
+      "studentsHint": "В столбце roles через запятую можно указать роли: student, supervisor, mentor, jury. По умолчанию — student. Остальные роли назначаются в разделе «Участники».",
       "structureHint": "Уровень обучения: bachelor, master, doctorate или бакалавриат, магистратура, докторантура.",
       "required": "* — обязательный столбец",
       "template": "Скачать шаблон"

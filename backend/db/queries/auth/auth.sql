@@ -11,6 +11,13 @@ INSERT INTO users (email, full_name, locale, email_verified_at)
 VALUES (@email, @full_name, @locale, @email_verified_at)
 RETURNING *;
 
+-- name: LockUser :one
+SELECT * FROM users WHERE id = @id FOR UPDATE;
+
+-- name: SetRegistrant :exec
+-- A new registration of an address that was never verified names the account anew.
+UPDATE users SET full_name = @full_name, locale = @locale WHERE id = @id AND email_verified_at IS NULL;
+
 -- name: MarkEmailVerified :exec
 UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = @id;
 
@@ -22,6 +29,12 @@ SELECT password_hash::text FROM user_identities
 INSERT INTO user_identities (user_id, provider, subject, password_hash)
 VALUES (@user_id, 'password', @subject, @password_hash)
 ON CONFLICT (provider, subject) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+
+-- name: HasSingleSignOn :one
+SELECT EXISTS (SELECT 1 FROM user_identities WHERE user_id = @user_id AND provider <> 'password');
+
+-- name: DeletePasswordIdentity :exec
+DELETE FROM user_identities WHERE user_id = @user_id AND provider = 'password';
 
 -- name: TouchIdentity :exec
 UPDATE user_identities SET last_used_at = now()

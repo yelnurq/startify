@@ -37,11 +37,14 @@ func request(ctx context.Context) *http.Request {
 
 // Register implements apigen.StrictServerInterface.
 func (h *Handler) Register(ctx context.Context, req apigen.RegisterRequestObject) (apigen.RegisterResponseObject, error) {
-	session, cookies, err := h.svc.Register(ctx, *req.Body)
+	res, err := h.svc.Register(ctx, *req.Body)
 	if err != nil {
 		return nil, err
 	}
-	return cookieResponse{status: http.StatusCreated, cookies: cookies, body: session}, nil
+	if res.Session == nil {
+		return apigen.Register202JSONResponse{VerificationSent: apigen.VerificationSentVerificationSentTrue}, nil
+	}
+	return cookieResponse{status: http.StatusCreated, cookies: res.Cookies, body: *res.Session}, nil
 }
 
 // Login implements apigen.StrictServerInterface.
@@ -131,15 +134,16 @@ func (h *Handler) RevokeAllSessions(ctx context.Context, _ apigen.RevokeAllSessi
 
 // VerifyEmail implements apigen.StrictServerInterface.
 func (h *Handler) VerifyEmail(ctx context.Context, req apigen.VerifyEmailRequestObject) (apigen.VerifyEmailResponseObject, error) {
-	if err := h.svc.VerifyEmail(ctx, req.Body.Token); err != nil {
+	session, cookies, err := h.svc.VerifyEmail(ctx, req.Body.Token)
+	if err != nil {
 		return nil, err
 	}
-	return apigen.VerifyEmail204Response{}, nil
+	return cookieResponse{status: http.StatusOK, cookies: cookies, body: session}, nil
 }
 
 // ResendVerificationEmail implements apigen.StrictServerInterface.
-func (h *Handler) ResendVerificationEmail(ctx context.Context, _ apigen.ResendVerificationEmailRequestObject) (apigen.ResendVerificationEmailResponseObject, error) {
-	if err := h.svc.ResendVerification(ctx); err != nil {
+func (h *Handler) ResendVerificationEmail(ctx context.Context, req apigen.ResendVerificationEmailRequestObject) (apigen.ResendVerificationEmailResponseObject, error) {
+	if err := h.svc.ResendVerification(ctx, req.Body); err != nil {
 		return nil, err
 	}
 	return apigen.ResendVerificationEmail202Response{}, nil

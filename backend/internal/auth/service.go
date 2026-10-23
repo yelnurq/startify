@@ -63,6 +63,8 @@ var (
 	errNotMember          = apperr.Forbidden("auth.not_a_member", "the account is not a member of this university")
 	errSuspended          = apperr.Forbidden("auth.account_suspended", "access to the account is suspended")
 	errEmailTaken         = apperr.Conflict("auth.email_taken", "the e-mail is already registered")
+	errEmailUnverified    = apperr.Forbidden("auth.email_unverified", "confirm the e-mail address with the link from the letter first")
+	errReauthRequired     = apperr.Forbidden("auth.reauth_required", "confirm with a sign-in code from the e-mail to set a first password")
 	errSessionNotFound    = apperr.NotFound("session.not_found", "the session does not exist")
 	errTooManyAttempts    = "auth.too_many_attempts"
 )
@@ -72,16 +74,23 @@ var (
 // lecture hall signing in at once; guessing is stopped by the limits per
 // account and per code (D-029).
 var (
-	limitLoginIP      = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
-	limitLoginEmail   = ratelimit.Limit{Rate: 10, Burst: 10, Period: 15 * time.Minute}
-	limitRegisterIP   = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
-	limitCodeIP       = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
-	limitCodeEmail    = ratelimit.PerHour(5)
-	limitVerifyIP     = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
-	limitRecoveryIP   = ratelimit.Limit{Rate: 120, Burst: 40, Period: time.Hour}
-	limitRecoveryMail = ratelimit.PerHour(5)
-	limitResendUser   = ratelimit.PerHour(5)
-	limitPasswordUser = ratelimit.PerHour(10)
+	limitLoginIP    = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
+	limitLoginEmail = ratelimit.Limit{Rate: 10, Burst: 10, Period: 15 * time.Minute}
+	limitRegisterIP = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
+	limitCodeIP     = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
+	limitCodeEmail  = ratelimit.PerHour(5)
+	// limitCodeGuessEmail bounds sign-in code attempts per account across all
+	// its codes: ten at once, then ten a day (≈300 guesses of a 6-digit code
+	// a month instead of ≈18 000).
+	limitCodeGuessEmail = ratelimit.Limit{Rate: 10, Burst: 10, Period: 24 * time.Hour}
+	limitVerifyIP       = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
+	limitRecoveryIP     = ratelimit.Limit{Rate: 120, Burst: 40, Period: time.Hour}
+	limitRecoveryMail   = ratelimit.PerHour(5)
+	limitResendUser     = ratelimit.PerHour(5)
+	limitPasswordUser   = ratelimit.PerHour(10)
+	// limitVerifyMail caps verification letters to one address (registrations
+	// and resends), so the platform cannot be used to flood a mailbox.
+	limitVerifyMail = ratelimit.PerHour(5)
 )
 
 // Service implements sign-in and session management.
@@ -99,7 +108,14 @@ type Service struct {
 	cookies     cookieJar
 	oidc        *oidcProviders
 	now         func() time.Time
+	// answerFloor is the least time of answers that must not reveal whether
+	// an address has an account (see holdAnswer).
+	answerFloor time.Duration
 }
+
+// defaultAnswerFloor is well above the few milliseconds that looking
+// an account up, storing a token and queueing a letter take.
+const defaultAnswerFloor = 300 * time.Millisecond
 
 // Deps are the collaborators of the service.
 type Deps struct {
@@ -133,8 +149,26 @@ func NewService(d Deps) *Service {
 			accessTTL:  d.Config.AccessTTL,
 			refreshTTL: d.Config.RefreshTTL,
 		},
-		oidc: newOIDCProviders(),
-		now:  time.Now,
+		oidc:        newOIDCProviders(),
+		now:         time.Now,
+		answerFloor: defaultAnswerFloor,
+	}
+}
+
+// holdAnswer delays an answer about an address until answerFloor has passed
+// since start. Requests for codes, reset links and verification letters
+// return at once for unknown addresses but only after a transaction and a
+// queued letter for known ones; the floor removes the difference (audit Н-2).
+func (s *Service) holdAnswer(ctx context.Context, start time.Time) {
+	wait := s.answerFloor - time.Since(start)
+	if wait <= 0 {
+		return
+	}
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+	case <-t.C:
 	}
 }
 
@@ -248,20 +282,30 @@ func link(ctx context.Context, path, token string) string {
 	return t.Origin + path + "?token=" + token
 }
 
-// Register creates an account with e-mail and password and signs it in.
-func (s *Service) Register(ctx context.Context, body apigen.RegisterRequest) (apigen.Session, []*http.Cookie, error) {
+// Registered is the outcome of a registration: a new or unverified account
+// waits for its e-mail to be verified (Session is nil); an account with a
+// verified e-mail that joined this university is signed in.
+type Registered struct {
+	Session *apigen.Session
+	Cookies []*http.Cookie
+}
+
+// Register creates an account with e-mail and password and e-mails a link to
+// verify the address; the session starts only when the link is opened, so
+// nobody can act under an address they do not control (audit В-1).
+func (s *Service) Register(ctx context.Context, body apigen.RegisterRequest) (Registered, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
 	if err := s.limiter.Allow(ctx, "register:ip:"+clientKey(ctx), limitRegisterIP, errTooManyAttempts); err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
 	settings, err := s.tenants.CurrentSettings(ctx)
 	if err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
 	if !settings.SelfSignup {
-		return apigen.Session{}, nil, apperr.Forbidden("auth.signup_disabled", "self sign-up is closed")
+		return Registered{}, apperr.Forbidden("auth.signup_disabled", "self sign-up is closed")
 	}
 	email := normalizeEmail(string(body.Email))
 	var v validate.Errors
@@ -270,84 +314,169 @@ func (s *Service) Register(ctx context.Context, body apigen.RegisterRequest) (ap
 		v.Add("locale", validate.CodeInvalid, nil)
 	}
 	if err := v.Err(); err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
 	if !domainAllowed(email, settings.EmailDomains) {
-		return apigen.Session{}, nil, apperr.New(apperr.KindValidation, "auth.email_domain_not_allowed",
+		return Registered{}, apperr.New(apperr.KindValidation, "auth.email_domain_not_allowed",
 			"use an e-mail address of the university").WithParams(map[string]any{"domains": strings.Join(settings.EmailDomains, ", ")})
 	}
 	if body.ConsentVersion != settings.ConsentVersion {
-		return apigen.Session{}, nil, apperr.New(apperr.KindValidation, "auth.consent_required", "accept the current consent")
+		return Registered{}, apperr.New(apperr.KindValidation, "auth.consent_required", "accept the current consent")
 	}
 	if err := CheckPassword(body.Password, email, name); err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
 
 	existing, err := s.q(ctx).GetUserByEmail(ctx, email)
 	switch {
-	case err == nil:
-		return s.joinExisting(ctx, existing, body.Password, settings.ConsentVersion)
-	case !db.IsNoRows(err):
-		return apigen.Session{}, nil, fmt.Errorf("auth: find user: %w", err)
+	case err == nil && existing.EmailVerifiedAt != nil:
+		return s.joinExisting(ctx, existing, email, body.Password, settings.ConsentVersion)
+	case err != nil && !db.IsNoRows(err):
+		return Registered{}, fmt.Errorf("auth: find user: %w", err)
 	}
 
+	if err := s.limiter.Allow(ctx, "verify-mail:email:"+email, limitVerifyMail, errTooManyAttempts); err != nil {
+		return Registered{}, err
+	}
 	hash, err := HashPassword(body.Password)
 	if err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
-	consent := settings.ConsentVersion
-	var cookies []*http.Cookie
-	var userID uuid.UUID
-	err = s.db.Tx(ctx, func(ctx context.Context) error {
+	in := registrant{email: email, name: name, locale: string(body.Locale), hash: hash, consent: settings.ConsentVersion}
+	if existing.ID != uuid.Nil {
+		return Registered{}, s.claimUnverified(ctx, existing.ID, in)
+	}
+	return Registered{}, s.createAccount(ctx, in)
+}
+
+// registrant is a validated registration.
+type registrant struct {
+	email, name, locale, hash, consent string
+}
+
+// createAccount stores a new account with its password and a student
+// membership, and sends the verification letter.
+func (s *Service) createAccount(ctx context.Context, in registrant) error {
+	return s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
-		u, err := q.CreateUser(ctx, authdb.CreateUserParams{Email: email, FullName: name, Locale: string(body.Locale)})
+		u, err := q.CreateUser(ctx, authdb.CreateUserParams{Email: in.email, FullName: in.name, Locale: in.locale})
 		if db.IsUniqueViolation(err, "") {
 			return errEmailTaken
 		}
 		if err != nil {
 			return err
 		}
-		userID = u.ID
 		if err := q.UpsertPasswordIdentity(ctx, authdb.UpsertPasswordIdentityParams{
-			UserID: u.ID, Subject: u.ID.String(), PasswordHash: &hash,
+			UserID: u.ID, Subject: u.ID.String(), PasswordHash: &in.hash,
 		}); err != nil {
 			return err
 		}
-		if err := s.users.EnsureProfile(ctx, u.ID, u.FullName); err != nil {
-			return err
-		}
-		if _, err := s.users.Join(ctx, u.ID, []string{string(authz.RoleStudent)}, user.StatusActive, &consent); err != nil {
-			return err
-		}
-		if err := s.sendVerification(ctx, u.ID, u.Email, u.FullName, u.Locale); err != nil {
-			return err
-		}
-		if err := s.audit.Record(ctx, audit.Event{Action: "auth.register", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String()}); err != nil {
-			return err
-		}
-		cookies, err = s.startSession(ctx, u.ID, u.IsSuperAdmin)
-		return err
+		return s.joinAndVerify(ctx, u, in.consent, false)
 	})
-	if err != nil {
-		return apigen.Session{}, nil, err
-	}
-	session, err := s.users.Session(ctx, userID)
-	return session, cookies, err
 }
 
-// joinExisting handles registration with an e-mail that already has an
-// account: the right password proves ownership and joins this university.
-func (s *Service) joinExisting(ctx context.Context, u authdb.User, password, consent string) (apigen.Session, []*http.Cookie, error) {
+// claimUnverified handles a registration with the address of an account
+// whose e-mail was never verified: anyone may have created it, so it belongs
+// to whoever controls the mailbox. The new registration replaces the
+// password, name and language, ends every session and one-time link of the
+// account (in every university) and sends a fresh verification letter; the
+// answer is the same as for a new account. Invitations from a university stay
+// valid: they are in the same mailbox.
+func (s *Service) claimUnverified(ctx context.Context, userID uuid.UUID, in registrant) error {
+	var sids []uuid.UUID
+	err := s.db.Tx(ctx, func(ctx context.Context) error {
+		q := s.q(ctx)
+		// One-time tokens first, then the user row: the order in which every
+		// verification path locks them, so the two cannot deadlock.
+		if err := s.consumeTokensEverywhere(ctx, userID, purposeVerifyEmail, purposeResetPassword, purposeLoginCode); err != nil {
+			return err
+		}
+		u, err := q.LockUser(ctx, userID)
+		if err != nil {
+			return err
+		}
+		if u.EmailVerifiedAt != nil {
+			// Verified meanwhile: the address is taken.
+			return errEmailTaken
+		}
+		if err := q.UpsertPasswordIdentity(ctx, authdb.UpsertPasswordIdentityParams{
+			UserID: u.ID, Subject: u.ID.String(), PasswordHash: &in.hash,
+		}); err != nil {
+			return err
+		}
+		if err := q.SetRegistrant(ctx, authdb.SetRegistrantParams{FullName: in.name, Locale: in.locale, ID: u.ID}); err != nil {
+			return err
+		}
+		u.FullName, u.Locale = in.name, in.locale
+		if sids, err = s.revokeEverywhere(ctx, u.ID, "account_claimed", nil); err != nil {
+			return err
+		}
+		return s.joinAndVerify(ctx, u, in.consent, true)
+	})
+	if err != nil {
+		return err
+	}
+	return s.revocations.deny(ctx, sids...)
+}
+
+// joinAndVerify makes the registrant a student of this university (an
+// existing membership keeps its roles) and sends the verification letter
+// (inside the transaction of ctx).
+func (s *Service) joinAndVerify(ctx context.Context, u authdb.User, consent string, claimed bool) error {
+	if err := s.users.EnsureProfile(ctx, u.ID, u.FullName); err != nil {
+		return err
+	}
+	if _, err := s.users.Join(ctx, u.ID, []string{string(authz.RoleStudent)}, user.StatusActive, &consent); err != nil {
+		return err
+	}
+	if err := s.sendVerification(ctx, u.ID, u.Email, u.FullName, u.Locale); err != nil {
+		return err
+	}
+	return s.audit.Record(ctx, audit.Event{
+		Action: "auth.register", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
+		Metadata: map[string]any{"claimed_unverified": claimed},
+	})
+}
+
+// consumeTokensEverywhere voids the outstanding one-time tokens of an account
+// in every university. Like revokeEverywhere, it is a deliberate system-scoped
+// statement filtered by user_id, confined to its own small transaction (a
+// savepoint inside the caller's).
+func (s *Service) consumeTokensEverywhere(ctx context.Context, userID uuid.UUID, purposes ...string) error {
+	err := s.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		return s.q(ctx).ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: userID, Purposes: purposes})
+	})
+	if err != nil {
+		return fmt.Errorf("auth: consume tokens everywhere: %w", err)
+	}
+	return nil
+}
+
+// joinExisting handles registration with the address of an account whose
+// e-mail is verified: the right password proves ownership and joins this
+// university. Like sign-in, the attempts count towards the per-address limit
+// and a wrong password is recorded, so registration cannot be used to guess
+// passwords past the sign-in lock (audit С-2).
+func (s *Service) joinExisting(ctx context.Context, u authdb.User, email, password, consent string) (Registered, error) {
+	if err := s.limiter.Allow(ctx, "login:email:"+email, limitLoginEmail, errTooManyAttempts); err != nil {
+		return Registered{}, err
+	}
 	hash, err := s.q(ctx).GetPasswordHash(ctx, u.ID)
 	if db.IsNoRows(err) {
 		_, _ = VerifyPassword(burnPasswordCheck(), password)
-		return apigen.Session{}, nil, errEmailTaken
+		return Registered{}, errEmailTaken
 	}
 	if err != nil {
-		return apigen.Session{}, nil, fmt.Errorf("auth: password: %w", err)
+		return Registered{}, fmt.Errorf("auth: password: %w", err)
 	}
 	if ok, err := VerifyPassword(hash, password); err != nil || !ok {
-		return apigen.Session{}, nil, errEmailTaken
+		_ = s.db.Tx(ctx, func(ctx context.Context) error {
+			return s.audit.Record(ctx, audit.Event{
+				Action: "auth.login_failed", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
+				Metadata: map[string]any{"via": "register"},
+			})
+		})
+		return Registered{}, errEmailTaken
 	}
 	var cookies []*http.Cookie
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
@@ -367,16 +496,25 @@ func (s *Service) joinExisting(ctx context.Context, u authdb.User, password, con
 		return err
 	})
 	if err != nil {
-		return apigen.Session{}, nil, err
+		return Registered{}, err
 	}
+	_ = s.limiter.Reset(ctx, "login:email:"+email)
 	session, err := s.users.Session(ctx, u.ID)
-	return session, cookies, err
+	if err != nil {
+		return Registered{}, err
+	}
+	return Registered{Session: &session, Cookies: cookies}, nil
 }
 
+// domainAllowed reports whether registration accepts the address: any
+// address when the university restricts no domains.
 func domainAllowed(email string, domains []string) bool {
-	if len(domains) == 0 {
-		return true
-	}
+	return len(domains) == 0 || domainListed(email, domains)
+}
+
+// domainListed reports whether the address is on one of the domains (or
+// their subdomains).
+func domainListed(email string, domains []string) bool {
 	_, domain, ok := strings.Cut(email, "@")
 	if !ok {
 		return false
@@ -431,6 +569,12 @@ func (s *Service) Login(ctx context.Context, body apigen.LoginRequest) (apigen.S
 		if err := s.admit(ctx, u); err != nil {
 			return err
 		}
+		// A password proves nothing about the mailbox: until the address is
+		// verified, no session starts (an invitation activated by admit is
+		// rolled back with this error).
+		if u.EmailVerifiedAt == nil {
+			return errEmailUnverified
+		}
 		if err := s.q(ctx).TouchIdentity(ctx, authdb.TouchIdentityParams{UserID: u.ID, Provider: providerPassword}); err != nil {
 			return err
 		}
@@ -464,6 +608,7 @@ func (s *Service) RequestLoginCode(ctx context.Context, body apigen.EmailRequest
 	if err := s.limiter.Allow(ctx, "otp:email:"+email, limitCodeEmail, errTooManyAttempts); err != nil {
 		return err
 	}
+	defer s.holdAnswer(ctx, time.Now())
 	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return nil
@@ -516,6 +661,44 @@ func (s *Service) createToken(ctx context.Context, userID uuid.UUID, purpose str
 	return nil
 }
 
+// useLoginCode consumes the active sign-in code of the account that matches
+// (inside the transaction of ctx). A wrong code counts an attempt against
+// every active code, burns those that reached the limit and is recorded; the
+// caller commits the transaction either way.
+func (s *Service) useLoginCode(ctx context.Context, userID uuid.UUID, code string) (bool, error) {
+	q := s.q(ctx)
+	tokens, err := q.ListActiveLoginCodes(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	var match *authdb.AuthToken
+	for i := range tokens {
+		if hmac.Equal(tokens[i].TokenHash, codeHash(s.keys, tokens[i].ID, userID, code)) {
+			match = &tokens[i]
+		}
+	}
+	if match != nil {
+		n, err := q.ConsumeAuthToken(ctx, match.ID)
+		return n == 1, err
+	}
+	for i := range tokens {
+		t := &tokens[i]
+		attempts, err := q.CountLoginCodeAttempt(ctx, t.ID)
+		if err != nil {
+			return false, err
+		}
+		if attempts >= maxCodeAttempts {
+			if _, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
+				return false, err
+			}
+		}
+	}
+	return false, s.audit.Record(ctx, audit.Event{
+		Action: "auth.login_code_failed", ActorID: userID, TargetType: "user", TargetID: userID.String(),
+		Metadata: map[string]any{"active_codes": len(tokens)},
+	})
+}
+
 // VerifyLoginCode signs in with an e-mailed code.
 func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequest) (apigen.Session, []*http.Cookie, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
@@ -528,7 +711,14 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	if len(code) != 6 || strings.Trim(code, "0123456789") != "" {
 		return apigen.Session{}, nil, errCodeInvalid
 	}
-	u, err := s.q(ctx).GetUserByEmail(ctx, normalizeEmail(string(body.Email)))
+	email := normalizeEmail(string(body.Email))
+	// Every attempt counts towards the account's allowance, whatever code it
+	// targets; a successful sign-in resets it. Without it five codes an hour
+	// with five attempts each would allow 25 guesses an hour (audit Н-1).
+	if err := s.limiter.Allow(ctx, "otp-verify:email:"+email, limitCodeGuessEmail, errTooManyAttempts); err != nil {
+		return apigen.Session{}, nil, err
+	}
+	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return apigen.Session{}, nil, errCodeInvalid
 	}
@@ -540,37 +730,13 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	var out outcome
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
-		tokens, err := q.ListActiveLoginCodes(ctx, u.ID)
+		matched, err := s.useLoginCode(ctx, u.ID, code)
 		if err != nil {
 			return err
 		}
-		var match *authdb.AuthToken
-		for i := range tokens {
-			if hmac.Equal(tokens[i].TokenHash, codeHash(s.keys, tokens[i].ID, u.ID, code)) {
-				match = &tokens[i]
-			}
-		}
-		if match == nil {
-			for i := range tokens {
-				t := &tokens[i]
-				attempts, err := q.CountLoginCodeAttempt(ctx, t.ID)
-				if err != nil {
-					return err
-				}
-				if attempts >= maxCodeAttempts {
-					if _, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
-						return err
-					}
-				}
-			}
+		if !matched {
 			out.err = errCodeInvalid
 			return nil
-		}
-		if n, err := q.ConsumeAuthToken(ctx, match.ID); err != nil || n == 0 {
-			if err == nil {
-				out.err = errCodeInvalid
-			}
-			return err
 		}
 		if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
 			return err
@@ -593,6 +759,7 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	if err != nil {
 		return apigen.Session{}, nil, err
 	}
+	_ = s.limiter.Reset(ctx, "otp-verify:email:"+email)
 	session, err := s.users.Session(ctx, u.ID)
 	return session, cookies, err
 }
@@ -660,7 +827,18 @@ func (s *Service) Refresh(ctx context.Context, refresh, csrf string) ([]*http.Co
 		if err != nil {
 			return err
 		}
-		if u.Status != "active" || !ok || m.Status == user.StatusSuspended {
+		lost := u.Status != "active" || !ok || m.Status == user.StatusSuspended
+		if !lost && u.EmailVerifiedAt == nil {
+			// A session of an account that signs in only with a password and
+			// never verified its address dates from before verification was
+			// required: it ends until the address is verified.
+			sso, err := q.HasSingleSignOn(ctx, u.ID)
+			if err != nil {
+				return err
+			}
+			lost = !sso
+		}
+		if lost {
 			reason := "access_lost"
 			if _, err := q.RevokeSession(ctx, authdb.RevokeSessionParams{Reason: &reason, ID: sess.ID, UserID: sess.UserID}); err != nil {
 				return err
@@ -798,7 +976,31 @@ func (s *Service) RevokeSession(ctx context.Context, id uuid.UUID) (bool, error)
 	return id == p.SessionID, s.revocations.deny(ctx, id)
 }
 
-// RevokeOtherSessions ends every session of the user except the current one.
+// revokeEverywhere ends the sessions of an account in every university,
+// except the one given. The account and its password are shared by all its
+// universities, so a change of credentials or "sign out everywhere" must reach
+// sessions opened elsewhere too.
+//
+// This is a deliberate cross-tenant operation: the system scope is confined
+// to this small transaction, whose only statement is filtered by user_id. Run
+// inside the transaction that changes the credentials, it becomes a savepoint
+// of it, so the revocation commits (or rolls back) together with the change.
+// The caller puts the returned sessions on the deny-list after the commit.
+func (s *Service) revokeEverywhere(ctx context.Context, userID uuid.UUID, reason string, except *uuid.UUID) ([]uuid.UUID, error) {
+	var sids []uuid.UUID
+	err := s.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		sids, err = s.q(ctx).RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: userID, ExceptID: except})
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("auth: revoke sessions everywhere: %w", err)
+	}
+	return sids, nil
+}
+
+// RevokeOtherSessions ends every session of the user, in every university,
+// except the current one.
 func (s *Service) RevokeOtherSessions(ctx context.Context) error {
 	p, err := authz.Require(ctx)
 	if err != nil {
@@ -806,8 +1008,7 @@ func (s *Service) RevokeOtherSessions(ctx context.Context) error {
 	}
 	var sids []uuid.UUID
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
-		reason := "user"
-		sids, err = s.q(ctx).RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: p.UserID, ExceptID: &p.SessionID})
+		sids, err = s.revokeEverywhere(ctx, p.UserID, "user", &p.SessionID)
 		if err != nil {
 			return err
 		}
@@ -832,12 +1033,22 @@ func (s *Service) sendVerification(ctx context.Context, userID uuid.UUID, email,
 	})
 }
 
-// VerifyEmail confirms the address with the token from the letter.
-func (s *Service) VerifyEmail(ctx context.Context, token string) error {
+// VerifyEmail confirms the address with the token from the letter. Opening
+// the link proves control of the mailbox, so it also signs in: the link of a
+// new registration leads straight to onboarding. When the account may not
+// enter this university (suspended), the address stays verified and the
+// error is returned without a session.
+func (s *Service) VerifyEmail(ctx context.Context, token string) (apigen.Session, []*http.Cookie, error) {
 	if _, err := tenancy.Require(ctx); err != nil {
-		return err
+		return apigen.Session{}, nil, err
 	}
-	return s.db.Tx(ctx, func(ctx context.Context) error {
+	if err := s.limiter.Allow(ctx, "verify-email:ip:"+clientKey(ctx), limitVerifyIP, errTooManyAttempts); err != nil {
+		return apigen.Session{}, nil, err
+	}
+	var cookies []*http.Cookie
+	var userID uuid.UUID
+	var out outcome
+	err := s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
 		t, err := q.GetAuthToken(ctx, authdb.GetAuthTokenParams{TokenHash: linkHash(s.keys, strings.TrimSpace(token)), Purposes: []string{purposeVerifyEmail}})
 		if db.IsNoRows(err) {
@@ -855,33 +1066,100 @@ func (s *Service) VerifyEmail(ctx context.Context, token string) error {
 		if err := q.MarkEmailVerified(ctx, t.UserID); err != nil {
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{Action: "auth.email_verified", ActorID: t.UserID, TargetType: "user", TargetID: t.UserID.String()})
-	})
-}
-
-// ResendVerification sends the verification letter again.
-func (s *Service) ResendVerification(ctx context.Context) error {
-	p, err := authz.Require(ctx)
-	if err != nil {
-		return err
-	}
-	if err := s.limiter.Allow(ctx, "verify-resend:user:"+p.UserID.String(), limitResendUser, errTooManyAttempts); err != nil {
-		return err
-	}
-	return s.db.Tx(ctx, func(ctx context.Context) error {
-		q := s.q(ctx)
-		u, err := q.GetUserByID(ctx, p.UserID)
+		if err := s.audit.Record(ctx, audit.Event{Action: "auth.email_verified", ActorID: t.UserID, TargetType: "user", TargetID: t.UserID.String()}); err != nil {
+			return err
+		}
+		u, err := q.GetUserByID(ctx, t.UserID)
 		if err != nil {
 			return err
 		}
-		if u.EmailVerifiedAt != nil {
-			return nil
-		}
-		if err := q.ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: u.ID, Purposes: []string{purposeVerifyEmail}}); err != nil {
+		if err := s.admit(ctx, u); err != nil {
+			if _, ok := apperr.As(err); ok {
+				out.err = err
+				return nil
+			}
 			return err
 		}
-		return s.sendVerification(ctx, u.ID, u.Email, u.FullName, u.Locale)
+		if err := s.audit.Record(ctx, audit.Event{
+			Action: "auth.login", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
+			Metadata: map[string]any{"method": "email_link"},
+		}); err != nil {
+			return err
+		}
+		userID = u.ID
+		cookies, err = s.startSession(ctx, u.ID, u.IsSuperAdmin)
+		return err
 	})
+	if err == nil {
+		err = out.err
+	}
+	if err != nil {
+		return apigen.Session{}, nil, err
+	}
+	session, err := s.users.Session(ctx, userID)
+	return session, cookies, err
+}
+
+// ResendVerification sends the verification letter again: to the signed-in
+// member's own address, or to the address a visitor gives (who has no session
+// before the e-mail is verified). For visitors the answer never reveals
+// whether the address has an account.
+func (s *Service) ResendVerification(ctx context.Context, body *apigen.EmailRequest) error {
+	if p, ok := authz.FromContext(ctx); ok {
+		if err := s.limiter.Allow(ctx, "verify-resend:user:"+p.UserID.String(), limitResendUser, errTooManyAttempts); err != nil {
+			return err
+		}
+		return s.db.Tx(ctx, func(ctx context.Context) error {
+			u, err := s.q(ctx).GetUserByID(ctx, p.UserID)
+			if err != nil {
+				return err
+			}
+			return s.resendTo(ctx, u)
+		})
+	}
+	if _, err := tenancy.Require(ctx); err != nil {
+		return err
+	}
+	if body == nil {
+		return apperr.Validation(apperr.FieldError{Field: "email", Code: validate.CodeRequired})
+	}
+	email := normalizeEmail(string(body.Email))
+	if err := s.limiter.Allow(ctx, "verify-resend:ip:"+clientKey(ctx), limitRecoveryIP, errTooManyAttempts); err != nil {
+		return err
+	}
+	if err := s.limiter.Allow(ctx, "verify-mail:email:"+email, limitVerifyMail, errTooManyAttempts); err != nil {
+		return err
+	}
+	defer s.holdAnswer(ctx, time.Now())
+	u, err := s.q(ctx).GetUserByEmail(ctx, email)
+	if db.IsNoRows(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("auth: find user: %w", err)
+	}
+	if u.Status != "active" || u.EmailVerifiedAt != nil {
+		return nil
+	}
+	return s.db.Tx(ctx, func(ctx context.Context) error {
+		m, ok, err := s.users.Membership(ctx, u.ID)
+		if err != nil || !ok || m.Status == user.StatusSuspended {
+			return err
+		}
+		return s.resendTo(ctx, u)
+	})
+}
+
+// resendTo replaces the pending verification links of the account in this
+// university with a new letter (inside the transaction of ctx).
+func (s *Service) resendTo(ctx context.Context, u authdb.User) error {
+	if u.EmailVerifiedAt != nil {
+		return nil
+	}
+	if err := s.q(ctx).ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: u.ID, Purposes: []string{purposeVerifyEmail}}); err != nil {
+		return err
+	}
+	return s.sendVerification(ctx, u.ID, u.Email, u.FullName, u.Locale)
 }
 
 // ForgotPassword e-mails a reset link without revealing whether the address
@@ -897,6 +1175,7 @@ func (s *Service) ForgotPassword(ctx context.Context, body apigen.EmailRequest) 
 	if err := s.limiter.Allow(ctx, "recovery:email:"+email, limitRecoveryMail, errTooManyAttempts); err != nil {
 		return err
 	}
+	defer s.holdAnswer(ctx, time.Now())
 	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return nil
@@ -926,7 +1205,7 @@ func (s *Service) ForgotPassword(ctx context.Context, body apigen.EmailRequest) 
 }
 
 // ResetPassword sets a new password with a reset or invitation link. Every
-// session of the account ends.
+// session of the account ends, in every university.
 func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRequest) error {
 	if _, err := tenancy.Require(ctx); err != nil {
 		return err
@@ -968,6 +1247,13 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 		if err != nil {
 			return err
 		}
+		// Only one of two simultaneous requests with the same link may win:
+		// the row is locked and checked again by the update.
+		if n, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
+			return err
+		} else if n == 0 {
+			return errTokenInvalid
+		}
 		if err := q.ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: u.ID, Purposes: purposes}); err != nil {
 			return err
 		}
@@ -982,8 +1268,7 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 				return err
 			}
 		}
-		reason := "password_reset"
-		if sids, err = q.RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: u.ID}); err != nil {
+		if sids, err = s.revokeEverywhere(ctx, u.ID, "password_reset", nil); err != nil {
 			return err
 		}
 		return s.audit.Record(ctx, audit.Event{
@@ -997,7 +1282,12 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 	return s.revocations.deny(ctx, sids...)
 }
 
-// ChangePassword replaces the password and ends the other sessions.
+// ChangePassword replaces the password and ends the other sessions, in every
+// university. An account without a password (created by single sign-on)
+// sets its first one with a sign-in code from the e-mail: a session alone is
+// not enough, or a stolen session would become a lasting password that
+// outlives the account being switched off at the university's identity
+// provider (audit Н-3).
 func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChangeRequest) error {
 	p, err := authz.Require(ctx)
 	if err != nil {
@@ -1010,41 +1300,75 @@ func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChange
 	if err != nil {
 		return fmt.Errorf("auth: user: %w", err)
 	}
+	errIncorrect := apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+	first := false
 	current, err := s.q(ctx).GetPasswordHash(ctx, p.UserID)
 	switch {
 	case db.IsNoRows(err):
-		// Accounts created by single sign-on or invitation may set a first password.
+		first = true
 		if body.CurrentPassword != "" {
-			return apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+			return errIncorrect
+		}
+		if body.Code == nil || strings.TrimSpace(*body.Code) == "" {
+			return errReauthRequired
 		}
 	case err != nil:
 		return fmt.Errorf("auth: password: %w", err)
 	default:
 		if ok, err := VerifyPassword(current, body.CurrentPassword); err != nil || !ok {
-			return apperr.New(apperr.KindValidation, "auth.password_incorrect", "the current password is wrong")
+			return errIncorrect
 		}
 	}
 	if err := CheckPassword(body.NewPassword, u.Email, u.FullName); err != nil {
 		return err
+	}
+	email := normalizeEmail(u.Email)
+	if first {
+		if err := s.limiter.Allow(ctx, "otp-verify:email:"+email, limitCodeGuessEmail, errTooManyAttempts); err != nil {
+			return err
+		}
 	}
 	hash, err := HashPassword(body.NewPassword)
 	if err != nil {
 		return err
 	}
 	var sids []uuid.UUID
+	var out outcome
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
+		if first {
+			matched, err := s.useLoginCode(ctx, u.ID, strings.TrimSpace(*body.Code))
+			if err != nil {
+				return err
+			}
+			if !matched {
+				out.err = apperr.New(apperr.KindValidation, errCodeInvalid.Code, "the code is wrong or expired")
+				return nil
+			}
+			// The code proves control of the mailbox.
+			if err := q.MarkEmailVerified(ctx, u.ID); err != nil {
+				return err
+			}
+		}
 		if err := q.UpsertPasswordIdentity(ctx, authdb.UpsertPasswordIdentityParams{UserID: u.ID, Subject: u.ID.String(), PasswordHash: &hash}); err != nil {
 			return err
 		}
-		reason := "password_changed"
-		if sids, err = q.RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: u.ID, ExceptID: &p.SessionID}); err != nil {
+		if sids, err = s.revokeEverywhere(ctx, u.ID, "password_changed", &p.SessionID); err != nil {
 			return err
 		}
-		return s.audit.Record(ctx, audit.Event{Action: "auth.password_changed", TargetType: "user", TargetID: u.ID.String()})
+		return s.audit.Record(ctx, audit.Event{
+			Action: "auth.password_changed", TargetType: "user", TargetID: u.ID.String(),
+			Metadata: map[string]any{"first": first},
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("auth: change password: %w", err)
+	}
+	if out.err != nil {
+		return out.err
+	}
+	if first {
+		_ = s.limiter.Reset(ctx, "otp-verify:email:"+email)
 	}
 	return s.revocations.deny(ctx, sids...)
 }

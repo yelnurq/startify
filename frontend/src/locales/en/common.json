@@ -129,7 +129,10 @@
       "oidc_failed": "University SSO sign-in failed. Try again or sign in with e-mail.",
       "not_a_member": "This account is not part of the university yet. Sign up with the same email and password, and the account will join it.",
       "account_suspended": "Access to this account has been suspended by the university administrator.",
-      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes."
+      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes.",
+      "email_unverified": "Your e-mail is not confirmed yet. Open the link from the letter or send it again.",
+      "sso_link_denied": "This account belongs to another university, so university SSO cannot be linked to it. Sign in with the password or an e-mailed code.",
+      "reauth_required": "To set your first password, confirm it with a code from the e-mail."
     },
     "tenant": {
       "not_found": "No university was found at this address.",
@@ -165,7 +168,8 @@
       "too_many_rows": "Too many rows: at most {{max}} per import.",
       "too_many_columns": "Too many columns: at most {{max}}.",
       "missing_columns": "Required columns are missing: {{columns}}.",
-      "duplicate_columns": "Columns are repeated: {{columns}}."
+      "duplicate_columns": "Columns are repeated: {{columns}}.",
+      "too_many_invitations": "Too many invitations were sent today. Split the file and continue the import tomorrow."
     },
     "member": {
       "not_found": "The member was not found.",

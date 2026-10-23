@@ -1,38 +1,62 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
-import { CircleCheck, Mail, MailCheck } from 'lucide-react';
-import { useState } from 'react';
+import { CircleCheck, Mail } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from '@/shared/forms/zod';
 
 import { Button, Callout, EmptyState, Field, Input, Spinner, toast } from '@/design-system';
-import { api, unwrap } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
 import { i18n } from '@/shared/i18n';
 
-import { sessionQuery, useForgotPassword, useResendVerification, useResetPassword } from './api';
-import { AuthPage, FormAlert, PasswordInput, PasswordStrength } from './components';
+import {
+  landingAfterSignIn,
+  sessionQuery,
+  useForgotPassword,
+  useResetPassword,
+  useStoreSession,
+  verifyEmail,
+} from './api';
+import {
+  AuthPage,
+  FormAlert,
+  PasswordInput,
+  PasswordStrength,
+  ResendVerificationButton,
+} from './components';
 
-/** Consumes the e-mail verification token once (queries are de-duplicated). */
+/**
+ * Consumes the e-mail verification token once (queries are de-duplicated).
+ * The link signs in, so the page continues where the member is expected:
+ * onboarding after a new registration, otherwise the app.
+ */
 export function VerifyEmailPage({ token }: { token?: string }) {
   const { t } = useTranslation(['auth', 'common']);
+  const navigate = useNavigate();
+  const storeSession = useStoreSession();
   const session = useQuery(sessionQuery);
-  const resend = useResendVerification();
   const verification = useQuery({
     queryKey: ['verify-email', token],
-    queryFn: async () => {
-      await unwrap(api.POST('/auth/email/verify', { body: { token: token ?? '' } }));
-      return true;
-    },
+    queryFn: () => verifyEmail(token ?? ''),
     enabled: Boolean(token),
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
   });
 
-  const signedIn = Boolean(session.data);
+  const verified = verification.data;
+  const continued = useRef(false);
+  useEffect(() => {
+    if (!verified || continued.current) return;
+    continued.current = true;
+    storeSession(verified);
+    toast.success(t('verify.successTitle'));
+    void navigate({ href: landingAfterSignIn(verified), replace: true });
+  }, [verified, storeSession, navigate, t]);
+
+  const signedInEmail = session.data?.user.email;
   const failed = !token || verification.isError;
 
   return (
@@ -43,7 +67,7 @@ export function VerifyEmailPage({ token }: { token?: string }) {
           {t('verify.checking')}
         </p>
       )}
-      {verification.isSuccess && (
+      {verified && (
         <EmptyState
           size="sm"
           illustration="inbox"
@@ -51,8 +75,8 @@ export function VerifyEmailPage({ token }: { token?: string }) {
           description={t('verify.successText')}
           action={
             <Button asChild>
-              <Link to={signedIn ? '/app' : '/login'}>
-                {signedIn ? t('verify.toApp') : t('verify.toLogin')}
+              <Link to={verified.membership.onboarded ? '/app' : '/onboarding'}>
+                {t('verify.toApp')}
               </Link>
             </Button>
           }
@@ -63,22 +87,8 @@ export function VerifyEmailPage({ token }: { token?: string }) {
           <Callout tone="danger" title={t('verify.failedTitle')}>
             {verification.error ? errorMessage(verification.error) : t('verify.failedText')}
           </Callout>
-          {signedIn ? (
-            <Button
-              variant="secondary"
-              leftIcon={resend.isSuccess ? <MailCheck /> : <Mail />}
-              loading={resend.isPending}
-              disabled={resend.isSuccess}
-              onClick={() => {
-                resend.mutate(undefined, {
-                  onError: (err) => {
-                    toast.error(errorMessage(err));
-                  },
-                });
-              }}
-            >
-              {resend.isSuccess ? t('verify.resent') : t('verify.resend')}
-            </Button>
+          {signedInEmail ? (
+            <ResendVerificationButton email={signedInEmail} />
           ) : (
             <Button asChild variant="secondary">
               <Link to="/login">{t('verify.toLogin')}</Link>

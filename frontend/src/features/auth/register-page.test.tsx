@@ -13,7 +13,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import type { Tenant } from './api';
+import type { Session, Tenant } from './api';
 import { RegisterForm } from './register-page';
 
 const server = setupServer();
@@ -129,5 +129,69 @@ describe('RegisterForm', () => {
       locale: 'ru',
     });
     expect(idempotencyKey).toBeTruthy();
+  });
+
+  it('starts no session for a new account: the link from the letter signs in', async () => {
+    let resent: unknown;
+    server.use(
+      http.post('*/api/v1/auth/register', () =>
+        HttpResponse.json({ verification_sent: true }, { status: 202 }),
+      ),
+      http.post('*/api/v1/auth/email/resend', async ({ request }) => {
+        resent = await request.json();
+        return new HttpResponse(null, { status: 202 });
+      }),
+    );
+    const user = await renderForm();
+    await fillValid(user, 'aigerim.saparova@kazutb.edu.kz');
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    expect(await screen.findByText('Проверьте почту')).toBeInTheDocument();
+    expect(screen.getByText(/aigerim\.saparova@kazutb\.edu\.kz/)).toBeInTheDocument();
+    expect(screen.queryByText('onboarding')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Отправить письмо ещё раз' }));
+    expect(await screen.findByRole('button', { name: 'Письмо отправлено' })).toBeDisabled();
+    expect(resent).toEqual({ email: 'aigerim.saparova@kazutb.edu.kz' });
+  });
+
+  it('signs in an account with a verified e-mail that joins with its password', async () => {
+    const session: Session = {
+      user: {
+        id: '0190a000-0000-7000-8000-000000000010',
+        email: 'aigerim.saparova@kazutb.edu.kz',
+        email_verified: true,
+        full_name: 'Айгерім Сапарова',
+        locale: 'ru',
+        avatar_url: null,
+        is_super_admin: false,
+        created_at: '2026-10-01T09:00:00Z',
+      },
+      membership: {
+        tenant_id: tenant.id,
+        roles: ['student'],
+        status: 'active',
+        faculty: null,
+        department: null,
+        group: null,
+        study_level: null,
+        course: null,
+        onboarded: false,
+      },
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        name: tenant.name,
+        short_name: tenant.short_name,
+      },
+    };
+    server.use(
+      http.post('*/api/v1/auth/register', () => HttpResponse.json(session, { status: 201 })),
+    );
+    const user = await renderForm();
+    await fillValid(user, 'aigerim.saparova@kazutb.edu.kz');
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    expect(await screen.findByText('onboarding')).toBeInTheDocument();
   });
 });
