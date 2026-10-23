@@ -154,17 +154,28 @@ export function useMentor(projectId: string, stepKey: string) {
     [queryClient, key],
   );
 
+  /**
+   * Asks the mentor. `onUnsent` gets the question back when it never reached
+   * the server (limit, rate limit, no network), so the person keeps the text.
+   */
   const send = useCallback(
-    (content: string, mode: MentorMode | undefined) => {
+    (content: string, mode: MentorMode | undefined, onUnsent?: (content: string) => void) => {
       controller.current?.abort();
       const current = new AbortController();
       controller.current = current;
       let text = '';
       let finished = false;
+      // The server stores the question first and echoes it as `message`.
+      let accepted = false;
       setStream({ status: 'streaming', text });
+      const fail = (message: string) => {
+        setStream({ status: 'failed', text, message });
+        if (!accepted) onUnsent?.(content);
+      };
 
       const onEvent = (event: ServerEvent) => {
         if (event.event === 'message') {
+          accepted = true;
           const message = payload(event) as MentorMessage | undefined;
           if (message) append(message);
         } else if (event.event === 'delta') {
@@ -178,11 +189,7 @@ export function useMentor(projectId: string, stepKey: string) {
         } else if (event.event === 'error') {
           const problem = payload(event) as Problem | undefined;
           finished = true;
-          setStream({
-            status: 'failed',
-            text,
-            message: errorMessage(problem ? new ApiError(problem) : undefined),
-          });
+          fail(errorMessage(problem ? new ApiError(problem) : undefined));
         }
       };
 
@@ -193,13 +200,11 @@ export function useMentor(projectId: string, stepKey: string) {
         current.signal,
       )
         .then(() => {
-          if (!finished && !current.signal.aborted) {
-            setStream({ status: 'failed', text, message: errorMessage(undefined) });
-          }
+          if (!finished && !current.signal.aborted) fail(errorMessage(undefined));
         })
         .catch((err: unknown) => {
           if (current.signal.aborted) return;
-          setStream({ status: 'failed', text, message: errorMessage(err) });
+          fail(errorMessage(err));
         })
         .finally(() => {
           if (controller.current === current) controller.current = null;
