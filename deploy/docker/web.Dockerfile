@@ -15,4 +15,6 @@ COPY deploy/nginx/web.conf /etc/nginx/conf.d/default.conf
 COPY deploy/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /src/frontend/dist /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=3s --retries=5 CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
+# The web server's own file: "/" goes to the API, which serves only known
+# university hosts, so a probe by IP would test the API instead.
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 CMD wget -q -O /dev/null http://127.0.0.1:8080/index.html || exit 1
