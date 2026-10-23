@@ -166,7 +166,8 @@
       "empty": "The file has no data rows.",
       "too_many_rows": "Too many rows: at most {{max}} per import.",
       "missing_columns": "Required columns are missing: {{columns}}.",
-      "duplicate_columns": "Columns are repeated: {{columns}}."
+      "duplicate_columns": "Columns are repeated: {{columns}}.",
+      "too_many_invitations": "Too many invitations were sent today. Split the file and continue the import tomorrow."
     },
     "member": {
       "not_found": "The member was not found.",

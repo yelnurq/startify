@@ -37,7 +37,16 @@ func New(client *redis.Client) *Limiter { return &Limiter{l: redis_rate.NewLimit
 // Allow consumes one event of key; when the allowance is exhausted it returns
 // a rate-limited error with the code and a Retry-After hint.
 func (r *Limiter) Allow(ctx context.Context, key string, limit Limit, code string) error {
-	res, err := r.l.Allow(ctx, "rl:"+key, redis_rate.Limit{Rate: limit.Rate, Burst: limit.Burst, Period: limit.Period})
+	return r.AllowN(ctx, key, limit, 1, code)
+}
+
+// AllowN consumes n events of key at once, or none of them when fewer remain
+// (a batch, such as the invitations of one import). n of zero always passes.
+func (r *Limiter) AllowN(ctx context.Context, key string, limit Limit, n int, code string) error {
+	if n <= 0 {
+		return nil
+	}
+	res, err := r.l.AllowN(ctx, "rl:"+key, redis_rate.Limit{Rate: limit.Rate, Burst: limit.Burst, Period: limit.Period}, n)
 	if err != nil {
 		return apperr.Internal(fmt.Errorf("ratelimit: %w", err))
 	}

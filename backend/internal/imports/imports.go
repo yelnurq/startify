@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
 	"github.com/yelnurq/startify/backend/internal/user"
@@ -62,19 +64,36 @@ var studyLevels = map[string]string{
 	"doctorate": "doctorate", "phd": "doctorate", "докторантура": "doctorate", "доктор": "doctorate",
 }
 
+// importableRoles are the roles a file may grant (D-026): the roles of
+// students and of the staff who supervise, mentor and judge them.
+// Administration, innovation managers, leadership and outside partners are
+// appointed in the interface, never by a file.
+var importableRoles = []authz.Role{authz.RoleStudent, authz.RoleSupervisor, authz.RoleMentor, authz.RoleJury}
+
+// limitInvitations bounds the invitation letters a university's imports send
+// a day, so the platform (and the university's mail server) cannot be used to
+// mail arbitrary addresses at will.
+var limitInvitations = ratelimit.Limit{Rate: 5000, Burst: 5000, Period: 24 * time.Hour}
+
 // Service imports spreadsheets.
 type Service struct {
-	db    *db.DB
-	org   *org.Service
-	users *user.Service
-	auth  *auth.Service
-	audit *audit.Logger
+	db          *db.DB
+	org         *org.Service
+	users       *user.Service
+	auth        *auth.Service
+	audit       *audit.Logger
+	limiter     *ratelimit.Limiter
+	invitations ratelimit.Limit
 }
 
 // NewService returns the import service.
-func NewService(database *db.DB, orgs *org.Service, users *user.Service, authSvc *auth.Service, auditLog *audit.Logger) *Service {
-	return &Service{db: database, org: orgs, users: users, auth: authSvc, audit: auditLog}
+func NewService(database *db.DB, orgs *org.Service, users *user.Service, authSvc *auth.Service, auditLog *audit.Logger, limiter *ratelimit.Limiter) *Service {
+	return &Service{db: database, org: orgs, users: users, auth: authSvc, audit: auditLog, limiter: limiter, invitations: limitInvitations}
 }
+
+// LimitInvitations replaces the daily allowance of invitation letters (tests,
+// installations that onboard a very large university at once).
+func (s *Service) LimitInvitations(l ratelimit.Limit) { s.invitations = l }
 
 func (s *Service) q(ctx context.Context) *importsdb.Queries { return importsdb.New(s.db.Conn(ctx)) }
 
@@ -337,8 +356,7 @@ func parseRoles(s string) ([]string, bool) {
 		if a, ok := aliases[part]; ok {
 			role = a
 		}
-		// Administrative roles are granted in the interface, never by file.
-		if !role.Valid() || role == authz.RoleTenantAdmin || role == authz.RoleLeadership {
+		if !slices.Contains(importableRoles, role) {
 			return nil, false
 		}
 		if !slices.Contains(out, string(role)) {
@@ -415,6 +433,11 @@ func (s *Service) Commit(ctx context.Context, id uuid.UUID) (apigen.ImportResult
 		if err := s.plan(ctx, kind, rows); err != nil {
 			return err
 		}
+		if kind == apigen.ImportKindStudents {
+			if err := s.allowInvitations(ctx, rows); err != nil {
+				return err
+			}
+		}
 		if kind == apigen.ImportKindStructure {
 			result, err = s.applyStructure(ctx, rows)
 		} else {
@@ -445,6 +468,22 @@ func (s *Service) Commit(ctx context.Context, id uuid.UUID) (apigen.ImportResult
 		return result, fmt.Errorf("imports: commit: %w", err)
 	}
 	return result, nil
+}
+
+// allowInvitations takes the invitation letters of the rows that create
+// members from the university's daily allowance, all or none.
+func (s *Service) allowInvitations(ctx context.Context, rows []apigen.ImportRow) error {
+	t, err := tenancy.Require(ctx)
+	if err != nil {
+		return err
+	}
+	n := 0
+	for _, r := range rows {
+		if r.Action == apigen.ImportRowActionCreate {
+			n++
+		}
+	}
+	return s.limiter.AllowN(ctx, "import-invitations:"+t.ID.String(), s.invitations, n, "import.too_many_invitations")
 }
 
 func names(v map[string]string, prefix string) apiconv.Text {

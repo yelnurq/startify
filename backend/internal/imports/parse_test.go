@@ -99,15 +99,20 @@ func TestParseRoles(t *testing.T) {
 		"":        "student",
 		"Студент": "student",
 		"научный руководитель; ментор": "supervisor,mentor",
-		"jury, jury":                 "jury",
-		"innovation_manager|partner": "innovation_manager,partner",
+		"jury, jury":           "jury",
+		"сарапшы | supervisor": "jury,supervisor",
 	} {
 		got, ok := parseRoles(in)
 		if !ok || strings.Join(got, ",") != want {
 			t.Errorf("%q: %v %v", in, got, ok)
 		}
 	}
-	for _, bad := range []string{"tenant_admin", "leadership", "ректор", "student,,god"} {
+	// Administration, innovation managers, leadership and outside partners
+	// are appointed in the interface, never by a file (D-026).
+	for _, bad := range []string{
+		"tenant_admin", "leadership", "innovation_manager", "partner", "student, partner",
+		"innovation_manager|partner", "ректор", "student,,god",
+	} {
 		if _, ok := parseRoles(bad); ok {
 			t.Errorf("%q accepted", bad)
 		}

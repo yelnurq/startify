@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/xuri/excelize/v2"
@@ -17,6 +18,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/mail"
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
+	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/seed"
 )
@@ -174,6 +176,57 @@ func TestMemberChangeIsNotSavedWithoutRevocation(t *testing.T) {
 	}
 	if len(roles) != 1 || roles[0] != "student" || status != "active" {
 		t.Fatalf("membership changed: %v %s", roles, status)
+	}
+}
+
+func TestImportCodesIgnoreCaseAndInvitationsAreLimited(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	admin := seedAdmin(t, h, ts)
+	upload := func(kind, data string) apigen.ImportJob {
+		t.Helper()
+		rec := admin.do(http.MethodPost, "/api/v1/admin/imports", multipartForm(t, map[string]string{"kind": kind}, "file", kind+".csv", []byte(data)))
+		expect(t, rec, http.StatusCreated)
+		return decode[apigen.ImportJob](t, rec)
+	}
+	commit := func(job apigen.ImportJob) *httptest.ResponseRecorder {
+		return admin.do(http.MethodPost, "/api/v1/admin/imports/"+job.Id.String()+"/commit", nil)
+	}
+
+	// A faculty imported as "ROB" and later as "rob" is one faculty.
+	expect(t, commit(upload("structure", "Код факультета;Название факультета;Код кафедры;Название кафедры\n"+
+		"ROB;Факультет робототехники;MECH;Кафедра мехатроники\n")), http.StatusOK)
+	again := upload("structure", "Факультет коды;Факультет атауы;Кафедра коды;Кафедра атауы\n"+
+		"rob;Робототехника факультеті;mech;Мехатроника кафедрасы\n")
+	if again.Summary.ToCreate != 0 || again.Summary.ToUpdate != 1 {
+		t.Fatalf("second structure preview: %+v", again.Summary)
+	}
+	expect(t, commit(again), http.StatusOK)
+	found := 0
+	for _, f := range decode[struct{ Items []apigen.Faculty }](t, admin.do(http.MethodGet, "/api/v1/faculties", nil)).Items {
+		if strings.EqualFold(f.Code, "rob") {
+			found++
+			if f.Name.Ru == nil || f.Name.Kk == nil || len(f.Departments) != 1 {
+				t.Fatalf("merged faculty: %+v", f)
+			}
+		}
+	}
+	if found != 1 {
+		t.Fatalf("%d faculties for one code", found)
+	}
+
+	// Invitation letters come out of a daily allowance, all or none.
+	h.services.Imports.LimitInvitations(ratelimit.Limit{Rate: 2, Burst: 2, Period: 24 * time.Hour})
+	students := upload("students", "почта,фио\ninv1@qadam.test,Бірінші Студент\ninv2@qadam.test,Екінші Студент\ninv3@qadam.test,Үшінші Студент\n")
+	expectProblem(t, commit(students), http.StatusTooManyRequests, "import.too_many_invitations")
+	if items := decode[apigen.MemberPage](t, admin.do(http.MethodGet, "/api/v1/admin/members?q=inv1", nil)).Items; len(items) != 0 {
+		t.Fatalf("a refused import was applied: %+v", items)
+	}
+	h.services.Imports.LimitInvitations(ratelimit.Limit{Rate: 10, Burst: 10, Period: 24 * time.Hour})
+	rec := commit(students)
+	expect(t, rec, http.StatusOK)
+	if res := decode[apigen.ImportResult](t, rec); res.Invited != 3 {
+		t.Fatalf("invited %d", res.Invited)
 	}
 }
 

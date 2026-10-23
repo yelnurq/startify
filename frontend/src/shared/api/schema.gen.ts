@@ -694,7 +694,10 @@ export interface paths {
         /**
          * Apply a previewed import
          * @description Valid rows are written; invalid rows are skipped. New students receive an invitation
-         *     letter. Errors: `import.already_committed` (409).
+         *     letter. Codes of faculties, departments and groups match without regard to case. A file
+         *     grants only the roles `student`, `supervisor`, `mentor` and `jury`. Errors:
+         *     `import.already_committed` (409), `import.too_many_invitations` (429: the university's daily
+         *     allowance of invitation letters would be exceeded; nothing is applied).
          */
         post: operations["commitImport"];
         delete?: never;

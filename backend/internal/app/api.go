@@ -201,7 +201,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 		Org:         orgs,
 		Files:       fileSvc,
 		Team:        team.NewService(a.DB, users, mailer, limiter, auditLog),
-		Imports:     imports.NewService(a.DB, orgs, users, authSvc, auditLog),
+		Imports:     imports.NewService(a.DB, orgs, users, authSvc, auditLog, limiter),
 	}, nil
 }
 
