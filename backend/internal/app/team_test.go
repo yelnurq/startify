@@ -11,7 +11,7 @@ import (
 
 func TestTeamBoard(t *testing.T) {
 	h := newHarness(t)
-	seedTenants(t, h)
+	ts := seedTenants(t, h)
 	author := h.browser(t, kazutbHost)
 	register(t, author, "kamila@qadam.test", "Камила Есенова")
 	replier := h.browser(t, kazutbHost)
@@ -75,6 +75,10 @@ func TestTeamBoard(t *testing.T) {
 	h.validate(t, http.MethodPost, path+"/responses", rec)
 	expectProblem(t, replier.do(http.MethodPost, path+"/responses", apigen.TeamResponseCreate{Message: "И ещё раз, на всякий случай."}),
 		http.StatusConflict, "team.already_responded")
+	// What the request allows comes first, whatever the message says.
+	expectProblem(t, author.do(http.MethodPost, path+"/responses", apigen.TeamResponseCreate{Message: "Я"}), http.StatusConflict, "team.own_request")
+	expectProblem(t, replier.do(http.MethodPost, path+"/responses", apigen.TeamResponseCreate{Message: "Ещё"}), http.StatusConflict, "team.already_responded")
+	expectProblem(t, bystander.do(http.MethodPost, path+"/responses", apigen.TeamResponseCreate{Message: "Коротко"}), http.StatusUnprocessableEntity, "validation.failed")
 
 	letter := h.lastMail(t, "kamila@qadam.test", mail.TemplateTeamResponse)
 	if letter.Data["responder"] != "Арман Тоқтаров" || letter.Data["link"] != "http://kazutb.localhost/team/"+req.Id.String() {
@@ -115,6 +119,13 @@ func TestTeamBoard(t *testing.T) {
 	}
 	expectProblem(t, author.do(http.MethodPatch, path, apigen.TeamRequestUpdate{Title: ptr("Старая версия заголовка")},
 		func(r *http.Request) { r.Header.Set("If-Match", version) }), http.StatusPreconditionFailed, "precondition.failed")
+
+	// A moderator's edit of someone's request is recorded with its author.
+	moderator := seedAdmin(t, h, ts)
+	expect(t, moderator.do(http.MethodPatch, path, apigen.TeamRequestUpdate{Title: ptr("Сервис бронирования лабораторий кампуса")}), http.StatusOK)
+	if actions := auditActions(t, h, req.Id.String()); count(actions, "team.request_updated") != 2 {
+		t.Fatalf("audit %v", actions)
+	}
 
 	closed := apigen.TeamRequestStatusClosed
 	expectProblem(t, replier.do(http.MethodPatch, path, apigen.TeamRequestUpdate{Status: &closed}), http.StatusForbidden, "team.forbidden")

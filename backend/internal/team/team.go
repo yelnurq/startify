@@ -337,10 +337,18 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, body apigen.TeamRequ
 		if !etagMatches(ifMatch, r.UpdatedAt) {
 			return apperr.PreconditionFailed("precondition.failed", "the request was changed since it was loaded")
 		}
+		author := r.AuthorID
 		r, err = q.UpdateTeamRequest(ctx, teamdb.UpdateTeamRequestParams{
 			Title: f.title, Description: f.description, RolesNeeded: f.roles, Skills: f.skills, Status: status, ID: id,
 		})
 		if err != nil {
+			return err
+		}
+		// A moderator's change of someone's request is recorded with its author.
+		if err := s.audit.Record(ctx, audit.Event{
+			Action: "team.request_updated", TargetType: "team_request", TargetID: id.String(),
+			Metadata: map[string]any{"author_id": author, "moderated": author != p.UserID, "status": r.Status},
+		}); err != nil {
 			return err
 		}
 		views, err := s.view(ctx, p.UserID, []teamdb.TeamRequest{r})
@@ -425,11 +433,59 @@ func (s *Service) Responses(ctx context.Context, id uuid.UUID) ([]apigen.TeamRes
 	return out, nil
 }
 
+var (
+	errOwnRequest       = apperr.Conflict("team.own_request", "you cannot reply to your own request")
+	errClosed           = apperr.Conflict("team.closed", "the request is closed")
+	errAlreadyResponded = apperr.Conflict("team.already_responded", "you have already replied")
+)
+
+// replyable loads a request the member may reply to (inside the transaction
+// of ctx): someone else's, open, not answered by them yet.
+func (s *Service) replyable(ctx context.Context, id, member uuid.UUID) (teamdb.TeamRequest, error) {
+	q := s.q(ctx)
+	r, err := q.GetTeamRequest(ctx, id)
+	if db.IsNoRows(err) {
+		return r, errNotFound
+	}
+	if err != nil {
+		return r, err
+	}
+	switch {
+	case r.AuthorID == member:
+		return r, errOwnRequest
+	case r.Status != statusOpen:
+		return r, errClosed
+	}
+	responded, err := q.RespondedRequests(ctx, teamdb.RespondedRequestsParams{Ids: []uuid.UUID{id}, AuthorID: member})
+	if err != nil {
+		return r, err
+	}
+	if len(responded) > 0 {
+		return r, errAlreadyResponded
+	}
+	return r, nil
+}
+
 // Respond replies to an open request of someone else and notifies its author.
+// What the request allows is decided before the message is checked: a reply
+// to one's own or an answered request is a conflict whatever it says.
 func (s *Service) Respond(ctx context.Context, id uuid.UUID, body apigen.TeamResponseCreate) (apigen.TeamResponse, error) {
 	p, err := authz.Require(ctx)
 	if err != nil {
 		return apigen.TeamResponse{}, err
+	}
+	t, err := tenancy.Require(ctx)
+	if err != nil {
+		return apigen.TeamResponse{}, err
+	}
+	if err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+		_, err := s.replyable(ctx, id, p.UserID)
+		return err
+	}); err != nil {
+		if _, ok := apperr.As(err); ok {
+			return apigen.TeamResponse{}, err
+		}
+		return apigen.TeamResponse{}, fmt.Errorf("team: respond: %w", err)
 	}
 	var v validate.Errors
 	message := v.Paragraph("message", body.Message, 10, 1000)
@@ -439,29 +495,16 @@ func (s *Service) Respond(ctx context.Context, id uuid.UUID, body apigen.TeamRes
 	if err := s.limiter.Allow(ctx, "team-respond:"+p.UserID.String(), limitRespond, "rate_limited"); err != nil {
 		return apigen.TeamResponse{}, err
 	}
-	t, err := tenancy.Require(ctx)
-	if err != nil {
-		return apigen.TeamResponse{}, err
-	}
 	var out apigen.TeamResponse
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
 		q := s.q(ctx)
-		r, err := q.GetTeamRequest(ctx, id)
-		if db.IsNoRows(err) {
-			return errNotFound
-		}
+		r, err := s.replyable(ctx, id, p.UserID)
 		if err != nil {
 			return err
 		}
-		switch {
-		case r.AuthorID == p.UserID:
-			return apperr.Conflict("team.own_request", "you cannot reply to your own request")
-		case r.Status != statusOpen:
-			return apperr.Conflict("team.closed", "the request is closed")
-		}
 		resp, err := q.CreateTeamResponse(ctx, teamdb.CreateTeamResponseParams{RequestID: id, AuthorID: p.UserID, Message: message})
 		if db.IsUniqueViolation(err, "") {
-			return apperr.Conflict("team.already_responded", "you have already replied")
+			return errAlreadyResponded
 		}
 		if err != nil {
 			return err

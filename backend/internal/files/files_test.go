@@ -78,7 +78,7 @@ func TestOrientationIsReadAndApplied(t *testing.T) {
 			if got := jpegOrientation(data); got != int(orientation) {
 				t.Fatalf("orientation %d (%v): read %d", orientation, order, got)
 			}
-			out, err := ProcessAvatar(data)
+			out, err := ProcessAvatar(context.Background(), data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -102,7 +102,7 @@ func TestProcessAvatar(t *testing.T) {
 	if err := png.Encode(&buf, wide); err != nil {
 		t.Fatal(err)
 	}
-	out, err := ProcessAvatar(buf.Bytes())
+	out, err := ProcessAvatar(context.Background(), buf.Bytes())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,17 +113,17 @@ func TestProcessAvatar(t *testing.T) {
 
 	buf.Reset()
 	_ = png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 40, 40)))
-	if _, err := ProcessAvatar(buf.Bytes()); !apperr.Is(err, "files.image_too_small") {
+	if _, err := ProcessAvatar(context.Background(), buf.Bytes()); !apperr.Is(err, "files.image_too_small") {
 		t.Fatalf("small image: %v", err)
 	}
-	if _, err := ProcessAvatar([]byte("<svg onload=alert(1)>")); !apperr.Is(err, "files.unsupported_type") {
+	if _, err := ProcessAvatar(context.Background(), []byte("<svg onload=alert(1)>")); !apperr.Is(err, "files.unsupported_type") {
 		t.Fatalf("svg: %v", err)
 	}
 	// A header promising a gigantic image is refused before decoding.
 	ihdr := []byte("IHDR\x00\x01\x00\x00\x00\x01\x00\x00\x08\x02\x00\x00\x00")
 	bomb := append([]byte("\x89PNG\r\n\x1a\n\x00\x00\x00\x0d"), ihdr...)
 	bomb = binary.BigEndian.AppendUint32(bomb, crc32.ChecksumIEEE(ihdr))
-	if _, err := ProcessAvatar(bomb); !apperr.Is(err, "files.image_too_large") {
+	if _, err := ProcessAvatar(context.Background(), bomb); !apperr.Is(err, "files.image_too_large") {
 		t.Fatalf("bomb: %v", err)
 	}
 }
@@ -276,7 +276,7 @@ func TestProcessCover(t *testing.T) {
 		{1000, 2000, 1000, 562}, // tall: full width, cropped height
 		{800, 450, 800, 450},    // small 16:9 stays as is
 	} {
-		out, err := ProcessCover(encode(tc.w, tc.h))
+		out, err := ProcessCover(context.Background(), encode(tc.w, tc.h))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -285,7 +285,7 @@ func TestProcessCover(t *testing.T) {
 			t.Fatalf("%dx%d: got %s %dx%d %v", tc.w, tc.h, format, cfg.Width, cfg.Height, err)
 		}
 	}
-	if _, err := ProcessCover(encode(200, 100)); !apperr.Is(err, "files.image_too_small") {
+	if _, err := ProcessCover(context.Background(), encode(200, 100)); !apperr.Is(err, "files.image_too_small") {
 		t.Fatalf("small: %v", err)
 	}
 	// Orientations 5-8 swap the sides.
@@ -294,5 +294,79 @@ func TestProcessCover(t *testing.T) {
 	rotated := orientRect(src, 6)
 	if rotated.Bounds().Dx() != 2 || rotated.Bounds().Dy() != 4 || rotated.RGBAAt(1, 3).R != 255 {
 		t.Fatalf("rotated %v", rotated.Bounds())
+	}
+}
+
+// pngHeader is the start of a PNG that claims a size; nothing follows it.
+func pngHeader(w, h uint32) []byte {
+	ihdr := append([]byte("IHDR"), binary.BigEndian.AppendUint32(binary.BigEndian.AppendUint32(nil, w), h)...)
+	ihdr = append(ihdr, 8, 2, 0, 0, 0)
+	out := append([]byte("\x89PNG\r\n\x1a\n\x00\x00\x00\x0d"), ihdr...)
+	return binary.BigEndian.AppendUint32(out, crc32.ChecksumIEEE(ihdr))
+}
+
+func TestPicturesAreCheckedBeforeDecoding(t *testing.T) {
+	ctx := context.Background()
+	for _, size := range [][2]uint32{{5000, 5000}, {9000, 100}, {100, 9000}} {
+		for name, process := range map[string]func(context.Context, []byte) ([]byte, error){"avatar": ProcessAvatar, "cover": ProcessCover} {
+			if _, err := process(ctx, pngHeader(size[0], size[1])); !apperr.Is(err, "files.image_too_large") {
+				t.Errorf("%s %dx%d: %v", name, size[0], size[1], err)
+			}
+		}
+	}
+	// A 12-megapixel phone photo is within the limit.
+	if _, err := ProcessCover(ctx, pngHeader(4032, 3024)); !apperr.Is(err, "files.image_invalid") {
+		t.Fatalf("phone photo header: %v", err)
+	}
+}
+
+func TestCoverOrientationWithoutAFullCopy(t *testing.T) {
+	// A 960×540 photo taken with the phone turned: shown upright it is
+	// 540×960, and its red corner is the top right.
+	img := image.NewRGBA(image.Rect(0, 0, 960, 540))
+	for y := range 540 {
+		for x := range 960 {
+			c := color.RGBA{B: 255, A: 255}
+			if x < 480 && y < 270 {
+				c = color.RGBA{R: 255, A: 255}
+			}
+			img.SetRGBA(x, y, c)
+		}
+	}
+	out, err := ProcessCover(context.Background(), exifJPEG(t, img, 6, binary.BigEndian))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cover, err := jpeg.Decode(bytes.NewReader(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := cover.Bounds(); b.Dx() != 540 || b.Dy() != 303 {
+		t.Fatalf("cover %v", b)
+	}
+	if !redAt(cover, 500, 50) || redAt(cover, 100, 50) || redAt(cover, 500, 250) {
+		t.Fatal("the cover is not the upright centre of the photo")
+	}
+}
+
+func TestDecodingWaitsForASlot(t *testing.T) {
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 100, 100))); err != nil {
+		t.Fatal(err)
+	}
+	for range decodeSlots {
+		decoding <- struct{}{}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	_, err := ProcessAvatar(ctx, buf.Bytes())
+	for range decodeSlots {
+		<-decoding
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("busy decoder: %v", err)
+	}
+	if _, err := ProcessAvatar(context.Background(), buf.Bytes()); err != nil {
+		t.Fatalf("free decoder: %v", err)
 	}
 }

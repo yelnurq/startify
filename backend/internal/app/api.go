@@ -151,7 +151,7 @@ func (a *API) services(ctx context.Context) (*Services, error) {
 	if a.Scanner != nil {
 		fileSvc.WithScanner(a.Scanner)
 	}
-	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations)
+	users := user.NewService(a.DB, orgs, fileSvc, tenants, auditLog, revocations, limiter)
 	authSvc := auth.NewService(auth.Deps{
 		Config: cfg.Auth, PublicURL: cfg.App.PublicURL, DB: a.DB, Keys: keys, Revocations: revocations,
 		Limiter: limiter, Mailer: mailer, Users: users, Tenants: tenants, Audit: auditLog,

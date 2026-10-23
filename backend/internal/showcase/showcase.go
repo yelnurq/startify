@@ -780,11 +780,14 @@ func (s *Service) SetCover(ctx context.Context, projectID uuid.UUID, form *multi
 	if err := a.RequireEdit(); err != nil {
 		return apigen.ShowcaseEntry{}, err
 	}
+	if err := s.Limiter.Allow(ctx, files.ImagesKey(a.Principal.UserID), files.LimitImages, "rate_limited"); err != nil {
+		return apigen.ShowcaseEntry{}, err
+	}
 	_, part, err := files.ReadForm(form, "file", maxCover)
 	if err != nil {
 		return apigen.ShowcaseEntry{}, err
 	}
-	image, err := files.ProcessCover(part.Data)
+	image, err := files.ProcessCover(ctx, part.Data)
 	if err != nil {
 		return apigen.ShowcaseEntry{}, err
 	}
