@@ -30,6 +30,7 @@ import { TagPicker } from '@/shared/forms/tag-picker';
 import { useFormatters } from '@/shared/i18n/format';
 
 import {
+  pageTag,
   projectContactsQuery,
   showcaseEntryQuery,
   useDeleteShowcaseCover,
@@ -271,7 +272,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
    * at once; overlapping fields keep this editor's value until the person
    * chooses (D-036, as in the step editor).
    */
-  const mergeNewer = async (): Promise<boolean> => {
+  const mergeNewer = async (): Promise<'merged' | false> => {
     const fresh = await refetch();
     if (!fresh) {
       toast.error(t('editor.actions.stale'));
@@ -285,21 +286,24 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
       setConflict({ fields: conflicts, theirs });
       return false;
     }
-    await save.mutateAsync({ body: bodyOf(merged), etag: fresh.etag });
+    await save.mutateAsync({ body: bodyOf(merged), etag: fresh.etag ?? pageTag(fresh.data) });
     setBase(merged);
     toast.success(t('editor.actions.merged'));
-    return true;
+    return 'merged';
   };
 
-  /** Saves the page if needed; resolves false when it could not be saved. */
-  const persist = async (): Promise<boolean> => {
+  /**
+   * Saves the page if needed; resolves false when it could not be saved and
+   * 'merged' when it was saved together with someone else's changes.
+   */
+  const persist = async (): Promise<boolean | 'merged'> => {
     if (!dirty && entry.saved) return true;
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) return false;
     const saving = draft;
     try {
-      await save.mutateAsync({ body: bodyOf(saving), etag });
+      await save.mutateAsync({ body: bodyOf(saving), etag: etag ?? pageTag(entry) });
       setBase(saving);
       setConflict(null);
       return true;
@@ -315,7 +319,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
   };
 
   const onSave = async () => {
-    if (await persist()) toast.success(t('editor.actions.saved'));
+    if ((await persist()) === true) toast.success(t('editor.actions.saved'));
   };
 
   const onPublish = async () => {
