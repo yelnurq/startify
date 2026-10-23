@@ -73,16 +73,20 @@ var (
 // lecture hall signing in at once; guessing is stopped by the limits per
 // account and per code (D-029).
 var (
-	limitLoginIP      = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
-	limitLoginEmail   = ratelimit.Limit{Rate: 10, Burst: 10, Period: 15 * time.Minute}
-	limitRegisterIP   = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
-	limitCodeIP       = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
-	limitCodeEmail    = ratelimit.PerHour(5)
-	limitVerifyIP     = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
-	limitRecoveryIP   = ratelimit.Limit{Rate: 120, Burst: 40, Period: time.Hour}
-	limitRecoveryMail = ratelimit.PerHour(5)
-	limitResendUser   = ratelimit.PerHour(5)
-	limitPasswordUser = ratelimit.PerHour(10)
+	limitLoginIP    = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
+	limitLoginEmail = ratelimit.Limit{Rate: 10, Burst: 10, Period: 15 * time.Minute}
+	limitRegisterIP = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
+	limitCodeIP     = ratelimit.Limit{Rate: 300, Burst: 100, Period: time.Hour}
+	limitCodeEmail  = ratelimit.PerHour(5)
+	// limitCodeGuessEmail bounds sign-in code attempts per account across all
+	// its codes: ten at once, then ten a day (≈300 guesses of a 6-digit code
+	// a month instead of ≈18 000).
+	limitCodeGuessEmail = ratelimit.Limit{Rate: 10, Burst: 10, Period: 24 * time.Hour}
+	limitVerifyIP       = ratelimit.Limit{Rate: 600, Burst: 120, Period: time.Hour}
+	limitRecoveryIP     = ratelimit.Limit{Rate: 120, Burst: 40, Period: time.Hour}
+	limitRecoveryMail   = ratelimit.PerHour(5)
+	limitResendUser     = ratelimit.PerHour(5)
+	limitPasswordUser   = ratelimit.PerHour(10)
 	// limitVerifyMail caps verification letters to one address (registrations
 	// and resends), so the platform cannot be used to flood a mailbox.
 	limitVerifyMail = ratelimit.PerHour(5)
@@ -103,7 +107,14 @@ type Service struct {
 	cookies     cookieJar
 	oidc        *oidcProviders
 	now         func() time.Time
+	// answerFloor is the least time of answers that must not reveal whether
+	// an address has an account (see holdAnswer).
+	answerFloor time.Duration
 }
+
+// defaultAnswerFloor is well above the few milliseconds that looking
+// an account up, storing a token and queueing a letter take.
+const defaultAnswerFloor = 300 * time.Millisecond
 
 // Deps are the collaborators of the service.
 type Deps struct {
@@ -137,8 +148,26 @@ func NewService(d Deps) *Service {
 			accessTTL:  d.Config.AccessTTL,
 			refreshTTL: d.Config.RefreshTTL,
 		},
-		oidc: newOIDCProviders(),
-		now:  time.Now,
+		oidc:        newOIDCProviders(),
+		now:         time.Now,
+		answerFloor: defaultAnswerFloor,
+	}
+}
+
+// holdAnswer delays an answer about an address until answerFloor has passed
+// since start. Requests for codes, reset links and verification letters
+// return at once for unknown addresses but only after a transaction and a
+// queued letter for known ones; the floor removes the difference (audit Н-2).
+func (s *Service) holdAnswer(ctx context.Context, start time.Time) {
+	wait := s.answerFloor - time.Since(start)
+	if wait <= 0 {
+		return
+	}
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+	case <-t.C:
 	}
 }
 
@@ -578,6 +607,7 @@ func (s *Service) RequestLoginCode(ctx context.Context, body apigen.EmailRequest
 	if err := s.limiter.Allow(ctx, "otp:email:"+email, limitCodeEmail, errTooManyAttempts); err != nil {
 		return err
 	}
+	defer s.holdAnswer(ctx, time.Now())
 	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return nil
@@ -642,7 +672,14 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	if len(code) != 6 || strings.Trim(code, "0123456789") != "" {
 		return apigen.Session{}, nil, errCodeInvalid
 	}
-	u, err := s.q(ctx).GetUserByEmail(ctx, normalizeEmail(string(body.Email)))
+	email := normalizeEmail(string(body.Email))
+	// Every attempt counts towards the account's allowance, whatever code it
+	// targets; a successful sign-in resets it. Without it five codes an hour
+	// with five attempts each would allow 25 guesses an hour (audit Н-1).
+	if err := s.limiter.Allow(ctx, "otp-verify:email:"+email, limitCodeGuessEmail, errTooManyAttempts); err != nil {
+		return apigen.Session{}, nil, err
+	}
+	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return apigen.Session{}, nil, errCodeInvalid
 	}
@@ -678,7 +715,10 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 				}
 			}
 			out.err = errCodeInvalid
-			return nil
+			return s.audit.Record(ctx, audit.Event{
+				Action: "auth.login_code_failed", ActorID: u.ID, TargetType: "user", TargetID: u.ID.String(),
+				Metadata: map[string]any{"active_codes": len(tokens)},
+			})
 		}
 		if n, err := q.ConsumeAuthToken(ctx, match.ID); err != nil || n == 0 {
 			if err == nil {
@@ -707,6 +747,7 @@ func (s *Service) VerifyLoginCode(ctx context.Context, body apigen.LoginCodeRequ
 	if err != nil {
 		return apigen.Session{}, nil, err
 	}
+	_ = s.limiter.Reset(ctx, "otp-verify:email:"+email)
 	session, err := s.users.Session(ctx, u.ID)
 	return session, cookies, err
 }
@@ -1066,6 +1107,7 @@ func (s *Service) ResendVerification(ctx context.Context, body *apigen.EmailRequ
 	if err := s.limiter.Allow(ctx, "verify-mail:email:"+email, limitVerifyMail, errTooManyAttempts); err != nil {
 		return err
 	}
+	defer s.holdAnswer(ctx, time.Now())
 	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return nil
@@ -1110,6 +1152,7 @@ func (s *Service) ForgotPassword(ctx context.Context, body apigen.EmailRequest) 
 	if err := s.limiter.Allow(ctx, "recovery:email:"+email, limitRecoveryMail, errTooManyAttempts); err != nil {
 		return err
 	}
+	defer s.holdAnswer(ctx, time.Now())
 	u, err := s.q(ctx).GetUserByEmail(ctx, email)
 	if db.IsNoRows(err) {
 		return nil

@@ -539,6 +539,60 @@ func TestNoSessionBeforeTheEmailIsVerified(t *testing.T) {
 		http.StatusTooManyRequests, "auth.too_many_attempts")
 }
 
+func TestSignInCodeGuessesAreCappedPerAccount(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	const email = "guessed@qadam.test"
+	register(t, h.browser(t, kazutbHost), email, "Код Иесі")
+	attacker := h.browser(t, kazutbHost)
+	guess := func(code string) *httptest.ResponseRecorder {
+		return attacker.do(http.MethodPost, "/api/v1/auth/otp/verify", apigen.LoginCodeRequest{Email: openapiEmail(email), Code: code})
+	}
+	other := func(code string) string {
+		if code == "000000" {
+			return "111111"
+		}
+		return "000000"
+	}
+	newCode := func() string {
+		expect(t, attacker.do(http.MethodPost, "/api/v1/auth/otp/request", apigen.EmailRequest{Email: openapiEmail(email)}), http.StatusAccepted)
+		return h.lastMail(t, email, mail.TemplateLoginCode).Data["code"]
+	}
+
+	// Ten wrong guesses spread over two letters (a code burns after five);
+	// each one is recorded.
+	for range 2 {
+		code := newCode()
+		for range 5 {
+			expectProblem(t, guess(other(code)), http.StatusUnauthorized, "auth.code_invalid")
+		}
+	}
+	if n := countAudit(t, h, "auth.login_code_failed", email); n != 10 {
+		t.Fatalf("%d failed codes recorded, want 10", n)
+	}
+	// Even the right code of a new letter waits: the allowance is per account.
+	expectProblem(t, guess(newCode()), http.StatusTooManyRequests, "auth.too_many_attempts")
+	// The password still works.
+	login(t, h.browser(t, kazutbHost), email, password)
+}
+
+func TestAnswersAboutAddressesTakeTheSameTime(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	register(t, h.browser(t, kazutbHost), "known@qadam.test", "Белгілі Адам")
+	b := h.browser(t, kazutbHost)
+	for _, path := range []string{"/api/v1/auth/otp/request", "/api/v1/auth/password/forgot", "/api/v1/auth/email/resend"} {
+		for _, email := range []string{"ghost@qadam.test", "known@qadam.test"} {
+			start := time.Now()
+			expect(t, b.do(http.MethodPost, path, apigen.EmailRequest{Email: openapiEmail(email)}), http.StatusAccepted)
+			// Unknown addresses used to be answered at once.
+			if took := time.Since(start); took < 295*time.Millisecond {
+				t.Errorf("%s answered %s in %s", path, email, took)
+			}
+		}
+	}
+}
+
 func TestCredentialChangesEndSessionsInEveryUniversity(t *testing.T) {
 	h := newHarness(t)
 	seedTenants(t, h)
