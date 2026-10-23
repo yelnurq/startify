@@ -23,6 +23,9 @@ UPDATE users SET avatar_file_id = @avatar_file_id WHERE id = @id;
 -- name: GetMembership :one
 SELECT * FROM memberships WHERE tenant_id = app_current_tenant() AND user_id = @user_id;
 
+-- name: LockMembership :one
+SELECT * FROM memberships WHERE tenant_id = app_current_tenant() AND user_id = @user_id FOR UPDATE;
+
 -- name: CreateMembership :one
 INSERT INTO memberships (tenant_id, user_id, roles, status, consent_version, consent_at)
 VALUES (@tenant_id, @user_id, @roles, @status, @consent_version, @consent_at)

@@ -325,13 +325,20 @@ func (s *Service) CurrentSettings(ctx context.Context) (Settings, error) {
 	return out, nil
 }
 
-// Handler serves the tenant operations of the API.
-type Handler struct {
-	svc *Service
+// LoginOptions tells the sign-in page about sign-in methods other modules
+// own (the university directory).
+type LoginOptions interface {
+	LoginOptions(ctx context.Context) (apigen.DirectoryLogin, error)
 }
 
-// NewHandler returns the tenant handler.
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
+// Handler serves the tenant operations of the API.
+type Handler struct {
+	svc   *Service
+	login LoginOptions
+}
+
+// NewHandler returns the tenant handler; login may be nil (no directory).
+func NewHandler(svc *Service, login LoginOptions) *Handler { return &Handler{svc: svc, login: login} }
 
 // GetCurrentTenant implements apigen.StrictServerInterface.
 func (h *Handler) GetCurrentTenant(ctx context.Context, _ apigen.GetCurrentTenantRequestObject) (apigen.GetCurrentTenantResponseObject, error) {
@@ -380,6 +387,9 @@ func (h *Handler) GetCurrentTenant(ctx context.Context, _ apigen.GetCurrentTenan
 		}
 		return nil
 	})
+	if err == nil && h.login != nil {
+		out.DirectoryLogin, err = h.login.LoginOptions(ctx)
+	}
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, err
