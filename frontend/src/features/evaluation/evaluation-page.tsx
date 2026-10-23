@@ -40,6 +40,7 @@ import {
   toast,
   TruncatedText,
 } from '@/design-system';
+import { AiNotice } from '@/features/ai/ai-notice';
 import type { Project } from '@/features/projects/api';
 import { apiFetch, ApiError, throwProblem } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
@@ -149,6 +150,7 @@ function NoEvaluation({ project, manages }: { project: Project; manages: boolean
         }
       />
       {!allowed && <Callout tone="info">{t('empty.readonly')}</Callout>}
+      {allowed && <AiNotice externalOnly />}
       <Card className="gap-3 p-5">
         <h2 className="text-sm font-semibold text-ink">{t('empty.includes')}</h2>
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -392,6 +394,7 @@ function Report({
           </p>
         )}
       </Callout>
+      {canRequest && <AiNotice externalOnly />}
 
       {evaluation.summary && (
         <section aria-labelledby="eval-summary" className="flex flex-col gap-2">
