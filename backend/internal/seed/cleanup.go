@@ -68,8 +68,10 @@ UPDATE files SET deleted_at = now()
 			// Conversations name their project without a foreign key.
 			{nil, `DELETE FROM ai_conversations WHERE subject_type = 'project_step' AND subject_id = ANY($1)`, []any{projects}},
 			{&c.Projects, `DELETE FROM projects WHERE id = ANY($1)`, []any{projects}},
-			{&c.Requests, `DELETE FROM team_requests WHERE title LIKE $1 OR author_id = ANY($2) OR title ~ $3`,
-				[]any{e2eTitles, accounts, legacyRequests}},
+			{
+				&c.Requests, `DELETE FROM team_requests WHERE title LIKE $1 OR author_id = ANY($2) OR title ~ $3`,
+				[]any{e2eTitles, accounts, legacyRequests},
+			},
 			{&c.Contacts, `DELETE FROM contact_requests WHERE email::text LIKE $1 OR email::text ~ $2`, []any{e2eSenders, legacySenders}},
 			{&c.Documents, `DELETE FROM knowledge_documents WHERE title LIKE $1`, []any{e2eTitles}},
 			{&c.Imports, `DELETE FROM import_jobs WHERE rows::text LIKE '%e2e.%@qadam.test%'`, nil},
