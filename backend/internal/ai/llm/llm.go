@@ -163,7 +163,8 @@ type Provider interface {
 	// Local reports whether the provider runs inside the university network;
 	// data sent elsewhere is redacted and users are warned.
 	Local() bool
-	// DefaultModel is used when a route names no model.
+	// DefaultModel is used when a route names no model; it is empty for a
+	// feature the provider cannot serve (embeddings on Anthropic).
 	DefaultModel(f Feature) string
 	Complete(ctx context.Context, req CompletionRequest) (*CompletionResponse, error)
 	Stream(ctx context.Context, req CompletionRequest) (<-chan StreamEvent, error)

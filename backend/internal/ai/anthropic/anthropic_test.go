@@ -142,6 +142,24 @@ func TestRefusalAndErrors(t *testing.T) {
 	}
 }
 
+// A stream that fails before the answer starts is an error of Stream itself,
+// so that the gateway can fall back to the next provider (С-15).
+func TestStreamFailureBeforeTheAnswer(t *testing.T) {
+	p, _ := fake(t, func(w http.ResponseWriter) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = fmt.Fprint(w, `{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}`)
+	})
+	events, err := p.Stream(context.Background(), llm.CompletionRequest{
+		Model: "claude-sonnet-5-5", MaxTokens: 100, Messages: []llm.Message{{Role: llm.RoleUser, Content: "Сәлем"}},
+	})
+	if !errors.Is(err, llm.ErrUnavailable) || events != nil {
+		t.Fatalf("401 must fail the stream: %v %v", events, err)
+	}
+	if m := p.DefaultModel(llm.FeatureEmbedding); m != "" {
+		t.Fatalf("Anthropic has no embedding model, got %q", m)
+	}
+}
+
 func TestStream(t *testing.T) {
 	p, c := fake(t, func(w http.ResponseWriter) {
 		w.Header().Set("Content-Type", "text/event-stream")
