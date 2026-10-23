@@ -191,6 +191,19 @@ func SecurityHeaders(hsts bool) func(http.Handler) http.Handler {
 	}
 }
 
+// NoStoreByDefault marks API responses private and not to be stored unless
+// the handler chooses its own caching (public pictures; the showcase, which
+// revalidates). Answers depend on the signed-in member: neither a shared
+// cache nor the browser's history may show them to someone else, e.g. after
+// signing out on a shared computer.
+func NoStoreByDefault(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handlers that cache differently replace the header.
+		w.Header().Set("Cache-Control", "private, no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // MaxBody limits the request body size. Requests to the upload routes may be
 // as large as uploadLimit (handlers enforce the limit of each kind of file);
 // the route decides, not the Content-Type header, which any client can set.

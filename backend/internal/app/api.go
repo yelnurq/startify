@@ -285,6 +285,7 @@ func (a *API) Handler(ctx context.Context) (http.Handler, *Services, error) {
 
 	r.Route(apiBase, func(api chi.Router) {
 		api.Use(
+			httpx.NoStoreByDefault,
 			httpx.Timeout(a.Config.HTTP.RequestTimeout, streams),
 			httpx.MaxBody(a.Config.HTTP.MaxBodyBytes, a.Config.Files.MaxBytes+1<<20, uploads),
 			httpx.KeepRequest,
