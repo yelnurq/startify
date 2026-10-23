@@ -169,6 +169,29 @@ func TestSingleSignOn(t *testing.T) {
 	}
 }
 
+func TestUnverifiedPasswordSessionsEndAtRefresh(t *testing.T) {
+	h := newHarness(t)
+	ts := seedTenants(t, h)
+	idp, provider := startIDP(t, h, ts.kazutb)
+
+	// A session opened before verification was required, by an account
+	// that signs in only with a password and never verified its address.
+	legacy := h.browser(t, kazutbHost)
+	register(t, legacy, "legacy@qadam.test", "Ескі Сессия")
+	h.db.Exec(t, "UPDATE users SET email_verified_at = NULL WHERE email = 'legacy@qadam.test'")
+	expectProblem(t, legacy.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusUnauthorized, "auth.session_revoked")
+
+	// Single sign-on vouches for the account even when the provider does not
+	// vouch for its address.
+	sso := h.browser(t, kazutbHost)
+	idp.QueueUser(ssoUser{sub: "kazutb-7007", email: "unverified-sso@qadam.test", name: "SSO Пайдаланушы", verified: false})
+	signInWithSSO(t, sso, provider, nil)
+	if decode[apigen.Session](t, sso.do(http.MethodGet, "/api/v1/auth/session", nil)).User.EmailVerified {
+		t.Fatal("the provider did not vouch for the address")
+	}
+	expect(t, sso.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusNoContent)
+}
+
 func TestFirstPasswordNeedsAnEmailedCode(t *testing.T) {
 	h := newHarness(t)
 	ts := seedTenants(t, h)

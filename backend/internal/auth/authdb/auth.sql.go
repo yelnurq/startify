@@ -380,6 +380,17 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return i, err
 }
 
+const hasSingleSignOn = `-- name: HasSingleSignOn :one
+SELECT EXISTS (SELECT 1 FROM user_identities WHERE user_id = $1 AND provider <> 'password')
+`
+
+func (q *Queries) HasSingleSignOn(ctx context.Context, userID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasSingleSignOn, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listActiveLoginCodes = `-- name: ListActiveLoginCodes :many
 SELECT id, tenant_id, user_id, purpose, token_hash, attempts, expires_at, consumed_at, created_at FROM auth_tokens
  WHERE user_id = $1 AND purpose = 'login_code'

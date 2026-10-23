@@ -827,7 +827,18 @@ func (s *Service) Refresh(ctx context.Context, refresh, csrf string) ([]*http.Co
 		if err != nil {
 			return err
 		}
-		if u.Status != "active" || !ok || m.Status == user.StatusSuspended {
+		lost := u.Status != "active" || !ok || m.Status == user.StatusSuspended
+		if !lost && u.EmailVerifiedAt == nil {
+			// A session of an account that signs in only with a password and
+			// never verified its address dates from before verification was
+			// required: it ends until the address is verified.
+			sso, err := q.HasSingleSignOn(ctx, u.ID)
+			if err != nil {
+				return err
+			}
+			lost = !sso
+		}
+		if lost {
 			reason := "access_lost"
 			if _, err := q.RevokeSession(ctx, authdb.RevokeSessionParams{Reason: &reason, ID: sess.ID, UserID: sess.UserID}); err != nil {
 				return err
