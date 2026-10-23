@@ -53,6 +53,7 @@ import { HistorySheet } from './history-sheet';
 import { useStepEditor } from './hooks';
 import { MaterialsPanel } from './materials';
 import { mentionablePeople } from './mentions';
+import { STEP_FRESH_MS } from './prefetch';
 import type { SaveStatus, Tagged } from './step-editor';
 import { LeanCanvas, UnitEconomicsPanel } from './step-extras';
 import { ApproveDialog, CheckCard, ConflictDialog } from './step-panels';
@@ -83,11 +84,15 @@ export function StepPage(props: StepPageProps) {
   const step = findStep(props.template, props.stepKey);
   const query = useQuery({
     ...stepQuery(props.project.id, props.stepKey),
-    // Always start editing from the server's latest version.
-    refetchOnMount: 'always',
+    // Editing starts from the server's latest version: the route loader has
+    // just fetched it, anything older is fetched again first.
+    staleTime: STEP_FRESH_MS,
     refetchOnWindowFocus: false,
     enabled: step !== undefined,
   });
+  // Answers an earlier visit's editor left in the cache carry no server time.
+  const current =
+    query.data !== undefined && (query.dataUpdatedAt > 0 || query.isFetchedAfterMount);
   if (!step) {
     return (
       <EmptyState
@@ -104,7 +109,7 @@ export function StepPage(props: StepPageProps) {
     );
   }
   if (query.isError) return <Callout tone="danger">{errorMessage(query.error)}</Callout>;
-  if (!query.data || !query.isFetchedAfterMount) {
+  if (!query.data || !current) {
     return (
       <div className="flex flex-col gap-6" aria-busy>
         <Skeleton className="h-24 rounded-xl" />

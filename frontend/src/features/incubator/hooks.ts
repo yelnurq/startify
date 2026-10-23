@@ -46,13 +46,19 @@ export function useStepEditor(projectId: string, stepKey: string, initial: Tagge
 
   useEffect(() => {
     editor.resume();
-    // Leaving the step sends what is left; the cache keeps the last version.
+    // Leaving the step sends what is left; the cache keeps the last version
+    // for other views (the lean canvas), marked as not fresh from the server
+    // so that the next visit fetches the step again before editing.
     return () => {
       editor.dispose();
-      queryClient.setQueryData(stepQuery(projectId, stepKey).queryKey, {
-        data: { ...editor.getSnapshot().step, values: editor.getSnapshot().values },
-        etag: editor.currentEtag,
-      });
+      queryClient.setQueryData(
+        stepQuery(projectId, stepKey).queryKey,
+        {
+          data: { ...editor.getSnapshot().step, values: editor.getSnapshot().values },
+          etag: editor.currentEtag,
+        },
+        { updatedAt: 0 },
+      );
     };
   }, [editor, queryClient, projectId, stepKey]);
 
