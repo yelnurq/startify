@@ -77,7 +77,7 @@ func TestTeamBoard(t *testing.T) {
 		http.StatusConflict, "team.already_responded")
 
 	letter := h.lastMail(t, "kamila@qadam.test", mail.TemplateTeamResponse)
-	if letter.Data["responder"] != "Арман Тоқтаров" || letter.Data["link"] != "http://kazutb.localhost/team/"+req.Id.String() {
+	if letter.Data["responder"] != "Арман Тоқтаров" || letter.Data["link"] != "http://kazutb.localhost:3000/team/"+req.Id.String() {
 		t.Fatalf("notification: %+v", letter)
 	}
 

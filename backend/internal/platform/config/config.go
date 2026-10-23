@@ -90,8 +90,9 @@ type AI struct {
 type Tenant struct {
 	// BaseDomain: "kazutb.<base>" resolves to the tenant with slug "kazutb".
 	BaseDomain string `koanf:"base_domain"`
-	// Default is the tenant served on the bare base domain and unknown hosts
-	// (development and single-university installations). Empty disables it.
+	// Default is the tenant served on the bare base domain, the host of the
+	// public URL and localhost (development and single-university
+	// installations); other unknown hosts serve no tenant. Empty disables it.
 	Default string `koanf:"default"`
 }
 

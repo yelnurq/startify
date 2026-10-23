@@ -35,13 +35,12 @@ func TestResolve(t *testing.T) {
 		host, slug, origin string
 	}{
 		{"innovation.kazutb.kz", "kazutb", "https://innovation.kazutb.kz"},
-		{"INNOVATION.kazutb.kz:443", "kazutb", "https://INNOVATION.kazutb.kz:443"},
+		// The origin of links in letters never repeats the port or spelling the client sent.
+		{"INNOVATION.kazutb.kz:8443", "kazutb", "https://innovation.kazutb.kz"},
 		{"sandbox.qadam.kz", "sandbox", "https://sandbox.qadam.kz"},
+		{"Sandbox.Qadam.kz.:444", "sandbox", "https://sandbox.qadam.kz"},
 		{"qadam.kz", "kazutb", "https://qadam.kz"},
-		// Unknown hosts fall back to the default tenant, but links in letters
-		// never point at a host the platform does not own.
-		{"evil.example", "kazutb", "https://qadam.kz"},
-		{"a.b.qadam.kz", "kazutb", "https://qadam.kz"},
+		{"localhost:8080", "kazutb", "https://qadam.kz"},
 	}
 	for _, c := range cases {
 		got, ok, err := svc.Resolve(ctx, c.host)
@@ -52,13 +51,32 @@ func TestResolve(t *testing.T) {
 			t.Errorf("%s: got %s %s, want %s %s", c.host, got.Slug, got.Origin, c.slug, c.origin)
 		}
 	}
+	// Unknown hosts (a forged Host header sent straight to the API) belong to
+	// no university, not to the default one.
+	for _, host := range []string{"evil.example", "a.b.qadam.kz", "qadam.kz.evil.example", ".qadam.kz", ""} {
+		if got, ok, err := svc.Resolve(ctx, host); err != nil || ok {
+			t.Errorf("%q resolved to %+v (%v)", host, got, err)
+		}
+	}
+
+	// The public URL's port is part of the addresses of every university.
+	dev, _ := tenant.NewService(database.App, config.Tenant{BaseDomain: "localhost", Default: "kazutb"}, "http://localhost:3000")
+	for host, origin := range map[string]string{
+		"localhost:3000":         "http://localhost:3000",
+		"kazutb.localhost:9999":  "http://kazutb.localhost:3000",
+		"sandbox.localhost:3000": "http://sandbox.localhost:3000",
+	} {
+		if got, ok, _ := dev.Resolve(ctx, host); !ok || got.Origin != origin {
+			t.Errorf("%s: origin %q, want %q", host, got.Origin, origin)
+		}
+	}
 
 	database.Exec(t, "UPDATE tenants SET status = 'suspended' WHERE slug = 'sandbox'")
 	fresh, _ := tenant.NewService(database.App, config.Tenant{BaseDomain: "qadam.kz"}, "https://qadam.kz")
 	if _, ok, _ := fresh.Resolve(ctx, "sandbox.qadam.kz"); ok {
 		t.Fatal("suspended tenant resolved")
 	}
-	if _, ok, _ := fresh.Resolve(ctx, "unknown.example"); ok {
+	if _, ok, _ := fresh.Resolve(ctx, "qadam.kz"); ok {
 		t.Fatal("no default tenant configured, yet resolved")
 	}
 	brief, err := svc.Brief(ctx, k.ID)

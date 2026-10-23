@@ -26,10 +26,13 @@ import (
 )
 
 // Resolved hosts are cached for a minute; unknown hosts only briefly, so a
-// newly created university appears at once.
+// newly created university appears at once. Host headers are chosen by
+// clients, so the cache is bounded.
 const (
-	cacheTTL     = time.Minute
-	missCacheTTL = 5 * time.Second
+	cacheTTL        = time.Minute
+	missCacheTTL    = 5 * time.Second
+	maxCacheEntries = 1024
+	maxHostLength   = 253
 )
 
 // Service resolves and describes tenants.
@@ -38,15 +41,20 @@ type Service struct {
 	baseDomain string
 	defaultTen string
 	publicURL  *url.URL
+	// fallbackHosts serve the default tenant: the bare base domain, the host
+	// of the public URL and localhost (development). Any other unknown host
+	// belongs to no tenant.
+	fallbackHosts map[string]bool
 
-	mu    sync.Mutex
-	cache map[string]cacheEntry
+	mu         sync.Mutex
+	cache      map[string]cacheEntry
+	cacheLimit int
 }
 
 type cacheEntry struct {
+	// tenant carries the origin of the host for links in letters.
 	tenant  tenancy.Tenant
 	found   bool
-	trusted bool
 	expires time.Time
 }
 
@@ -56,23 +64,40 @@ func NewService(database *db.DB, cfg config.Tenant, publicURL string) (*Service,
 	if err != nil {
 		return nil, fmt.Errorf("tenant: public url: %w", err)
 	}
+	base := strings.ToLower(strings.TrimSpace(cfg.BaseDomain))
+	fallback := map[string]bool{"localhost": true, strings.ToLower(u.Hostname()): true}
+	if base != "" {
+		fallback[base] = true
+	}
 	return &Service{
-		db:         database,
-		baseDomain: strings.ToLower(strings.TrimSpace(cfg.BaseDomain)),
-		defaultTen: strings.ToLower(strings.TrimSpace(cfg.Default)),
-		publicURL:  u,
-		cache:      map[string]cacheEntry{},
+		db:            database,
+		baseDomain:    base,
+		defaultTen:    strings.ToLower(strings.TrimSpace(cfg.Default)),
+		publicURL:     u,
+		fallbackHosts: fallback,
+		cache:         map[string]cacheEntry{},
+		cacheLimit:    maxCacheEntries,
 	}, nil
 }
 
-// Resolve maps a Host header to a tenant. The bool reports whether one was found.
-func (s *Service) Resolve(ctx context.Context, hostHeader string) (tenancy.Tenant, bool, error) {
-	host := strings.ToLower(hostHeader)
+// normalizeHost lower-cases a Host header and drops its port and trailing dot.
+func normalizeHost(hostHeader string) string {
+	host := strings.ToLower(strings.TrimSpace(hostHeader))
 	if h, _, err := net.SplitHostPort(host); err == nil {
 		host = h
 	}
-	host = strings.TrimSuffix(host, ".")
+	return strings.TrimSuffix(host, ".")
+}
 
+// Resolve maps a Host header to a tenant. The bool reports whether one was
+// found. The origin of the tenant (where links in letters lead) is built from
+// the stored domain or the configuration, never from the port or spelling the
+// client sent.
+func (s *Service) Resolve(ctx context.Context, hostHeader string) (tenancy.Tenant, bool, error) {
+	host := normalizeHost(hostHeader)
+	if host == "" || len(host) > maxHostLength {
+		return tenancy.Tenant{}, false, nil
+	}
 	s.mu.Lock()
 	entry, cached := s.cache[host]
 	s.mu.Unlock()
@@ -82,45 +107,56 @@ func (s *Service) Resolve(ctx context.Context, hostHeader string) (tenancy.Tenan
 		if err != nil {
 			return tenancy.Tenant{}, false, err
 		}
-		s.mu.Lock()
-		s.cache[host] = entry
-		s.mu.Unlock()
+		s.remember(host, entry)
 	}
 	if !entry.found {
 		return tenancy.Tenant{}, false, nil
 	}
-	t := entry.tenant
-	// Links in e-mails go to the address the user came from only when that
-	// address is known to belong to the tenant; otherwise to the configured
-	// public URL (no password-reset poisoning through a forged Host header).
-	if entry.trusted {
-		t.Origin = s.publicURL.Scheme + "://" + hostHeader
-	} else {
-		t.Origin = strings.TrimSuffix(s.publicURL.String(), "/")
+	return entry.tenant, true, nil
+}
+
+// remember caches a lookup. When the cache is full, expired entries go first,
+// then arbitrary ones (map order is random); they are looked up again on demand.
+func (s *Service) remember(host string, entry cacheEntry) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.cache[host]; !ok && len(s.cache) >= s.cacheLimit {
+		now := time.Now()
+		for h, e := range s.cache {
+			if now.After(e.expires) {
+				delete(s.cache, h)
+			}
+		}
+		for h := range s.cache {
+			if len(s.cache) < s.cacheLimit {
+				break
+			}
+			delete(s.cache, h)
+		}
 	}
-	return t, true, nil
+	s.cache[host] = entry
 }
 
 func (s *Service) lookup(ctx context.Context, host string) (cacheEntry, error) {
 	q := tenantdb.New(s.db.Conn(ctx))
 	entry := cacheEntry{expires: time.Now().Add(cacheTTL)}
+	var origin string
 
 	row, err := q.GetTenantByDomain(ctx, host)
 	switch {
 	case err == nil:
-		entry.found, entry.trusted = true, true
+		entry.found, origin = true, s.hostOrigin(host)
 	case db.IsNoRows(err):
-		if slug, ok := strings.CutSuffix(host, "."+s.baseDomain); ok && !strings.Contains(slug, ".") {
+		if slug, ok := strings.CutSuffix(host, "."+s.baseDomain); ok && slug != "" && !strings.Contains(slug, ".") {
 			row, err = q.GetTenantBySlug(ctx, slug)
 			if err == nil {
-				entry.found, entry.trusted = true, true
+				entry.found, origin = true, s.hostOrigin(host)
 			}
 		}
-		if !entry.found && s.defaultTen != "" {
+		if !entry.found && s.defaultTen != "" && s.fallbackHosts[host] {
 			row, err = q.GetTenantBySlug(ctx, s.defaultTen)
 			if err == nil {
-				entry.found = true
-				entry.trusted = host == s.baseDomain
+				entry.found, origin = true, strings.TrimSuffix(s.publicURL.String(), "/")
 			}
 		}
 		if err != nil && !db.IsNoRows(err) {
@@ -129,22 +165,30 @@ func (s *Service) lookup(ctx context.Context, host string) (cacheEntry, error) {
 	default:
 		return entry, fmt.Errorf("tenant: lookup %s: %w", host, err)
 	}
+	if entry.found && row.Status == "suspended" {
+		entry.found = false
+	}
 	if !entry.found {
 		entry.expires = time.Now().Add(missCacheTTL)
+		return entry, nil
 	}
-	if entry.found {
-		if row.Status == "suspended" {
-			entry.found = false
-		} else {
-			entry.tenant = tenancy.Tenant{ID: row.ID, Slug: row.Slug, Locale: row.DefaultLocale}
-		}
-	}
+	entry.tenant = tenancy.Tenant{ID: row.ID, Slug: row.Slug, Locale: row.DefaultLocale, Origin: origin}
 	return entry, nil
 }
 
+// hostOrigin is the address of a host that belongs to a tenant: the scheme
+// and port of the public URL with the host as stored.
+func (s *Service) hostOrigin(host string) string {
+	if port := s.publicURL.Port(); port != "" {
+		host = net.JoinHostPort(host, port)
+	}
+	return s.publicURL.Scheme + "://" + host
+}
+
 // Middleware attaches the tenant of the host to the request and scopes data
-// access to it. Requests for unknown hosts continue without a tenant; handlers
-// that need one answer 404 tenant.not_found.
+// access to it. Requests for unknown hosts (including a forged Host header
+// sent straight to the API) continue without a tenant; handlers that need one
+// answer 404 tenant.not_found.
 func (s *Service) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t, ok, err := s.Resolve(r.Context(), r.Host)
@@ -217,15 +261,11 @@ func (s *Service) Universities(ctx context.Context, ids []uuid.UUID) (map[uuid.U
 func (s *Service) origin(slug, domain string) string {
 	switch {
 	case domain != "":
-		return s.publicURL.Scheme + "://" + domain
+		return s.hostOrigin(strings.ToLower(domain))
 	case slug == s.defaultTen || s.baseDomain == "":
 		return strings.TrimSuffix(s.publicURL.String(), "/")
 	}
-	host := slug + "." + s.baseDomain
-	if port := s.publicURL.Port(); port != "" {
-		host = net.JoinHostPort(host, port)
-	}
-	return s.publicURL.Scheme + "://" + host
+	return s.hostOrigin(slug + "." + s.baseDomain)
 }
 
 // Settings are the sign-up rules of the current tenant.

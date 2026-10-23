@@ -85,7 +85,7 @@ func signInWithSSO(t *testing.T, b *browser, provider uuid.UUID, tamper func(url
 	}
 	_ = resp.Body.Close()
 	callback, err := url.Parse(resp.Header.Get("Location"))
-	if err != nil || callback.Host != kazutbHost {
+	if err != nil || callback.Hostname() != kazutbHost {
 		t.Fatalf("identity provider redirected to %q", resp.Header.Get("Location"))
 	}
 	query := callback.Query()

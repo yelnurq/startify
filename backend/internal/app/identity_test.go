@@ -153,7 +153,7 @@ func TestRegistrationProfileAndSession(t *testing.T) {
 
 	// The verification letter confirms the address.
 	letter := h.lastMail(t, "aru@qadam.test", mail.TemplateVerifyEmail)
-	if !strings.HasPrefix(letter.Data["link"], "http://kazutb.localhost/verify-email?token=") || letter.Locale != "ru" {
+	if !strings.HasPrefix(letter.Data["link"], "http://kazutb.localhost:3000/verify-email?token=") || letter.Locale != "ru" {
 		t.Fatalf("verification letter: %+v", letter)
 	}
 	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: "forged"}), http.StatusBadRequest, "auth.token_invalid")
