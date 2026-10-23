@@ -6,6 +6,8 @@ import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
 import { releaseBoot } from './boot';
+import { installChunkReload } from './chunk-reload';
+import { RouteErrorPage } from './error-page';
 import { forgetUserData, watchSessionUser } from './session-watch';
 
 const queryClient = new QueryClient({
@@ -24,8 +26,12 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
+  defaultErrorComponent: RouteErrorPage,
   scrollRestoration: true,
 });
+
+// A page left open across a deployment reloads once to get the new code.
+installChunkReload();
 
 // The server-drawn first screen of public pages gives way once the first page
 // is drawn with its code and data.

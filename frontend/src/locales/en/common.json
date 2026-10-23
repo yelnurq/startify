@@ -298,5 +298,13 @@
   "diff": {
     "added": "added:",
     "removed": "removed:"
+  },
+  "errorPage": {
+    "title": "This page could not be opened",
+    "outdatedTitle": "A new version of Qadam is out",
+    "outdatedText": "The page is out of date after an update. Reload it to continue."
+  },
+  "pageTitles": {
+    "format": "{{page}} — Qadam"
   }
 }
