@@ -7,11 +7,14 @@ import (
 	"image/color"
 	"image/png"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/yelnurq/startify/backend/internal/apigen"
@@ -414,6 +417,109 @@ func TestTenantIsolationOfSessions(t *testing.T) {
 		r.Password = "Not-The-Right-One-1"
 		return r
 	}()), http.StatusConflict, "auth.email_taken")
+}
+
+func TestCredentialChangesEndSessionsInEveryUniversity(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	const email = "two-universities@qadam.test"
+	k := h.browser(t, kazutbHost)
+	register(t, k, email, "Жюри Екі Университет")
+	// The same account joins the sandbox university with its password.
+	s := h.browser(t, sandboxHost)
+	register(t, s, email, "Жюри Екі Университет")
+	expect(t, s.do(http.MethodGet, "/api/v1/me", nil), http.StatusOK)
+	ended := func(b *browser) {
+		t.Helper()
+		expectProblem(t, b.do(http.MethodGet, "/api/v1/me", nil), http.StatusUnauthorized, "auth.unauthenticated")
+		expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusUnauthorized, "auth.session_revoked")
+	}
+
+	// "Sign out everywhere" in one university ends the sessions in the other.
+	expect(t, k.do(http.MethodDelete, "/api/v1/auth/sessions", nil), http.StatusNoContent)
+	ended(s)
+	expect(t, k.do(http.MethodGet, "/api/v1/me", nil), http.StatusOK)
+
+	// So does a change of the password...
+	s = h.browser(t, sandboxHost)
+	login(t, s, email, password)
+	expect(t, k.do(http.MethodPut, "/api/v1/auth/password",
+		apigen.PasswordChangeRequest{CurrentPassword: password, NewPassword: "Second-Steppe-Password-8"}), http.StatusNoContent)
+	ended(s)
+	expect(t, k.do(http.MethodGet, "/api/v1/me", nil), http.StatusOK)
+
+	// ...and a reset from a letter, which ends the current university's sessions too.
+	s = h.browser(t, sandboxHost)
+	login(t, s, email, "Second-Steppe-Password-8")
+	other := h.browser(t, kazutbHost)
+	expect(t, other.do(http.MethodPost, "/api/v1/auth/password/forgot", apigen.EmailRequest{Email: openapiEmail(email)}), http.StatusAccepted)
+	token := linkToken(t, h.lastMail(t, email, mail.TemplatePasswordReset))
+	expect(t, other.do(http.MethodPost, "/api/v1/auth/password/reset", apigen.PasswordResetRequest{Token: token, Password: "Third-Steppe-Password-9"}), http.StatusNoContent)
+	ended(s)
+	ended(k)
+	login(t, h.browser(t, sandboxHost), email, "Third-Steppe-Password-9")
+}
+
+// waitForLockWaits polls until n queries of the test database wait for a row lock.
+func waitForLockWaits(t *testing.T, h *harness, n int) {
+	t.Helper()
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, h.db.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		var waiting int
+		err := conn.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity
+			WHERE datname = current_database() AND wait_event_type = 'Lock'`).Scan(&waiting)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if waiting >= n {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("%d queries never waited for a lock", n)
+}
+
+func TestPasswordResetLinkWorksOnceUnderConcurrency(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	const email = "once@qadam.test"
+	register(t, h.browser(t, kazutbHost), email, "Бір Рет")
+	expect(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/password/forgot", apigen.EmailRequest{Email: openapiEmail(email)}),
+		http.StatusAccepted)
+	token := linkToken(t, h.lastMail(t, email, mail.TemplatePasswordReset))
+
+	// Another request is using the same link and has not committed yet.
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, h.db.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	first, err := conn.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := first.Exec(ctx, "UPDATE auth_tokens SET consumed_at = now() WHERE purpose = 'reset_password' AND consumed_at IS NULL"); err != nil {
+		t.Fatal(err)
+	}
+	second := h.browser(t, kazutbHost)
+	done := make(chan *httptest.ResponseRecorder, 1)
+	go func() {
+		done <- second.do(http.MethodPost, "/api/v1/auth/password/reset", apigen.PasswordResetRequest{Token: token, Password: "Parallel-Password-11"})
+	}()
+	waitForLockWaits(t, h, 1)
+	if err := first.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	expectProblem(t, <-done, http.StatusBadRequest, "auth.token_invalid")
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/login",
+		apigen.LoginRequest{Email: openapiEmail(email), Password: "Parallel-Password-11"}), http.StatusUnauthorized, "auth.invalid_credentials")
 }
 
 func ptr[T any](v T) *T { return &v }

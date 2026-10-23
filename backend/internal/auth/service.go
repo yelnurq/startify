@@ -798,7 +798,31 @@ func (s *Service) RevokeSession(ctx context.Context, id uuid.UUID) (bool, error)
 	return id == p.SessionID, s.revocations.deny(ctx, id)
 }
 
-// RevokeOtherSessions ends every session of the user except the current one.
+// revokeEverywhere ends the sessions of an account in every university,
+// except the one given. The account and its password are shared by all its
+// universities, so a change of credentials or "sign out everywhere" must reach
+// sessions opened elsewhere too.
+//
+// This is a deliberate cross-tenant operation: the system scope is confined
+// to this small transaction, whose only statement is filtered by user_id. Run
+// inside the transaction that changes the credentials, it becomes a savepoint
+// of it, so the revocation commits (or rolls back) together with the change.
+// The caller puts the returned sessions on the deny-list after the commit.
+func (s *Service) revokeEverywhere(ctx context.Context, userID uuid.UUID, reason string, except *uuid.UUID) ([]uuid.UUID, error) {
+	var sids []uuid.UUID
+	err := s.db.Tx(db.WithSystem(ctx), func(ctx context.Context) error {
+		var err error
+		sids, err = s.q(ctx).RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: userID, ExceptID: except})
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("auth: revoke sessions everywhere: %w", err)
+	}
+	return sids, nil
+}
+
+// RevokeOtherSessions ends every session of the user, in every university,
+// except the current one.
 func (s *Service) RevokeOtherSessions(ctx context.Context) error {
 	p, err := authz.Require(ctx)
 	if err != nil {
@@ -806,8 +830,7 @@ func (s *Service) RevokeOtherSessions(ctx context.Context) error {
 	}
 	var sids []uuid.UUID
 	err = s.db.Tx(ctx, func(ctx context.Context) error {
-		reason := "user"
-		sids, err = s.q(ctx).RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: p.UserID, ExceptID: &p.SessionID})
+		sids, err = s.revokeEverywhere(ctx, p.UserID, "user", &p.SessionID)
 		if err != nil {
 			return err
 		}
@@ -926,7 +949,7 @@ func (s *Service) ForgotPassword(ctx context.Context, body apigen.EmailRequest) 
 }
 
 // ResetPassword sets a new password with a reset or invitation link. Every
-// session of the account ends.
+// session of the account ends, in every university.
 func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRequest) error {
 	if _, err := tenancy.Require(ctx); err != nil {
 		return err
@@ -968,6 +991,13 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 		if err != nil {
 			return err
 		}
+		// Only one of two simultaneous requests with the same link may win:
+		// the row is locked and checked again by the update.
+		if n, err := q.ConsumeAuthToken(ctx, t.ID); err != nil {
+			return err
+		} else if n == 0 {
+			return errTokenInvalid
+		}
 		if err := q.ConsumeUserTokens(ctx, authdb.ConsumeUserTokensParams{UserID: u.ID, Purposes: purposes}); err != nil {
 			return err
 		}
@@ -982,8 +1012,7 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 				return err
 			}
 		}
-		reason := "password_reset"
-		if sids, err = q.RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: u.ID}); err != nil {
+		if sids, err = s.revokeEverywhere(ctx, u.ID, "password_reset", nil); err != nil {
 			return err
 		}
 		return s.audit.Record(ctx, audit.Event{
@@ -997,7 +1026,8 @@ func (s *Service) ResetPassword(ctx context.Context, body apigen.PasswordResetRe
 	return s.revocations.deny(ctx, sids...)
 }
 
-// ChangePassword replaces the password and ends the other sessions.
+// ChangePassword replaces the password and ends the other sessions, in every
+// university.
 func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChangeRequest) error {
 	p, err := authz.Require(ctx)
 	if err != nil {
@@ -1037,8 +1067,7 @@ func (s *Service) ChangePassword(ctx context.Context, body apigen.PasswordChange
 		if err := q.UpsertPasswordIdentity(ctx, authdb.UpsertPasswordIdentityParams{UserID: u.ID, Subject: u.ID.String(), PasswordHash: &hash}); err != nil {
 			return err
 		}
-		reason := "password_changed"
-		if sids, err = q.RevokeUserSessions(ctx, authdb.RevokeUserSessionsParams{Reason: &reason, UserID: u.ID, ExceptID: &p.SessionID}); err != nil {
+		if sids, err = s.revokeEverywhere(ctx, u.ID, "password_changed", &p.SessionID); err != nil {
 			return err
 		}
 		return s.audit.Record(ctx, audit.Event{Action: "auth.password_changed", TargetType: "user", TargetID: u.ID.String()})
