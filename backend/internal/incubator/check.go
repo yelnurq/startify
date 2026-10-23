@@ -111,7 +111,7 @@ func (s *Service) Check(ctx context.Context, projectID uuid.UUID, key string) (a
 	if err != nil {
 		return apigen.Step{}, fmt.Errorf("incubator: check: %w", err)
 	}
-	return s.stepAPI(ctx, st, &row)
+	return s.stepAPI(ctx, a, st, &row)
 }
 
 // labelled keeps only the answers to the template's fields.

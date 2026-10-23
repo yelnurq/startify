@@ -138,8 +138,38 @@ func TestMockMaterialsUseOnlyTheProjectData(t *testing.T) {
 	for i, s := range c.Slides {
 		titles[i] = s.Title
 	}
-	// Slides without data are left out instead of being invented.
-	if strings.Join(titles, "|") != "AgroScan|Problem|Solution|Market|Team|The ask" {
+	// The deck keeps the 12 classic slides; a slide without data says what to
+	// add instead of being invented.
+	if strings.Join(titles, "|") != "AgroScan|Problem|Customer|Solution|Market|Competitors|Business model|Traction and metrics|Team|Roadmap|The ask|Contact" {
 		t.Fatal(titles)
+	}
+	if b := c.Slides[2].Bullets; len(b) != 1 || b[0] != "The team has not filled in this section yet" {
+		t.Fatalf("customer slide %v", b)
+	}
+	if b := c.Slides[1].Bullets; len(b) == 0 || !strings.Contains(b[0], "Фермеры") {
+		t.Fatalf("problem slide %v", b)
+	}
+}
+
+func TestDeckSchemaAsksForTenToTwelveSlides(t *testing.T) {
+	v, err := schema.Compile(pitchSchema.Name, pitchSchema.JSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deck := func(n int) string {
+		slides := make([]map[string]any, n)
+		for i := range slides {
+			slides[i] = map[string]any{"title": "S", "bullets": []string{"b"}}
+		}
+		raw, _ := json.Marshal(map[string]any{
+			"tagline": "", "problem": "", "customer": "", "solution": "", "market": "", "competition": "",
+			"business_model": "", "traction": "", "team": "", "ask": "", "slides": slides,
+		})
+		return string(raw)
+	}
+	for n, ok := range map[int]bool{6: false, 9: false, 10: true, 12: true, 13: false} {
+		if _, err := v.Validate(deck(n)); (err == nil) != ok {
+			t.Errorf("%d slides: %v", n, err)
+		}
 	}
 }

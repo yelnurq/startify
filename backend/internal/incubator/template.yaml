@@ -3,7 +3,10 @@
 # Field types: text, textarea, number, select, list (of strings), table (rows
 # of columns), url. "required" fields with min_length / min_items are the
 # minimum a step needs to be completed; "criteria" describe a strong answer
-# (the AI checks them and the student sees them as a checklist).
+# (the AI checks them and the student sees them as a checklist). "sensitive"
+# fields — unit economics, the novelty and the unfair advantage of the
+# solution — are withheld outside the team and its supervisors when the
+# project hides sensitive details, and never reach the showcase.
 version: 1
 stages:
   - key: idea
@@ -258,6 +261,7 @@ stages:
             label: {kk: "Негізгі мүмкіндіктер", ru: "Ключевые возможности", en: "Key features"}
           - key: novelty
             type: textarea
+            sensitive: true
             required: true
             min_length: 40
             max_length: 1500
@@ -268,6 +272,7 @@ stages:
               en: "Technology, approach or model that others do not have."
           - key: unfair_advantage
             type: textarea
+            sensitive: true
             max_length: 1000
             label: {kk: "Теңдесі жоқ артықшылық", ru: "Нечестное преимущество", en: "Unfair advantage"}
             hint:
@@ -644,9 +649,11 @@ stages:
             text: {kk: "LTV/CAC 3-тен жоғары немесе оған жету жоспары бар.", ru: "LTV/CAC больше 3 или есть план, как этого достичь.", en: "LTV/CAC is above 3 or there is a plan to get there."}
           - fields: [assumptions]
             text: {kk: "Әр санның артындағы болжамдар көрсетілген.", ru: "Для каждой цифры указаны допущения.", en: "Assumptions behind every number are stated."}
+        # Unit economics is sensitive as a whole (Project.hide_sensitive).
         fields:
           - key: unit
             type: text
+            sensitive: true
             required: true
             min_length: 3
             max_length: 120
@@ -657,26 +664,31 @@ stages:
               en: "Customer, order, monthly subscription…"
           - key: price
             type: number
+            sensitive: true
             unit: kzt
             required: true
             label: {kk: "Орташа чек, теңге", ru: "Средний чек, тенге", en: "Average price, tenge"}
           - key: variable_cost
             type: number
+            sensitive: true
             unit: kzt
             required: true
             label: {kk: "Бірлікке ауыспалы шығын, теңге", ru: "Переменные затраты на единицу, тенге", en: "Variable cost per unit, tenge"}
           - key: cac
             type: number
+            sensitive: true
             unit: kzt
             required: true
             label: {kk: "Клиентті тарту құны (CAC), теңге", ru: "Стоимость привлечения клиента (CAC), тенге", en: "Customer acquisition cost (CAC), tenge"}
           - key: purchases
             type: number
+            sensitive: true
             unit: count
             required: true
             label: {kk: "Клиенттің бүкіл кезеңдегі сатып алулары", ru: "Покупок за время жизни клиента", en: "Purchases per customer lifetime"}
           - key: assumptions
             type: textarea
+            sensitive: true
             required: true
             min_length: 40
             max_length: 1500

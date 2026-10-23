@@ -31,6 +31,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/platform/ratelimit"
 	"github.com/yelnurq/startify/backend/internal/platform/tenancy"
 	"github.com/yelnurq/startify/backend/internal/platform/validate"
+	"github.com/yelnurq/startify/backend/internal/project"
 )
 
 var (
@@ -150,16 +151,25 @@ func (s *Service) RequestMaterial(ctx context.Context, projectID uuid.UUID, body
 	return materialAPI(&row), nil
 }
 
+// visible reports whether the member may see a material: one written from
+// sensitive answers is withheld like the answers themselves.
+func visible(a project.Access, m *incubatordb.ProjectMaterial) bool {
+	return !m.Sensitive || a.SeesSensitive()
+}
+
 // Materials lists the generated materials of a project.
 func (s *Service) Materials(ctx context.Context, projectID uuid.UUID) (apigen.MaterialList, error) {
-	if _, err := s.Projects.Access(ctx, projectID); err != nil {
+	a, err := s.Projects.Access(ctx, projectID)
+	if err != nil {
 		return apigen.MaterialList{}, err
 	}
 	out := apigen.MaterialList{Items: []apigen.Material{}}
-	err := s.DB.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		rows, err := s.q(ctx).ListMaterials(ctx, projectID)
 		for i := range rows {
-			out.Items = append(out.Items, materialAPI(&rows[i]))
+			if visible(a, &rows[i]) {
+				out.Items = append(out.Items, materialAPI(&rows[i]))
+			}
 		}
 		return err
 	})
@@ -171,16 +181,17 @@ func (s *Service) Materials(ctx context.Context, projectID uuid.UUID) (apigen.Ma
 
 // MaterialFile opens a ready material for download.
 func (s *Service) MaterialFile(ctx context.Context, projectID, materialID uuid.UUID) (filesdb.File, io.ReadCloser, error) {
-	if _, err := s.Projects.Access(ctx, projectID); err != nil {
+	a, err := s.Projects.Access(ctx, projectID)
+	if err != nil {
 		return filesdb.File{}, nil, err
 	}
 	var m incubatordb.ProjectMaterial
-	err := s.DB.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.DB.ReadTx(ctx, func(ctx context.Context) error {
 		var err error
 		m, err = s.q(ctx).GetMaterial(ctx, incubatordb.GetMaterialParams{ID: materialID, ProjectID: projectID})
 		return err
 	})
-	if db.IsNoRows(err) {
+	if db.IsNoRows(err) || (err == nil && !visible(a, &m)) {
 		return filesdb.File{}, nil, errMaterialNotFound
 	}
 	if err != nil {
@@ -347,8 +358,22 @@ func (w *MaterialWorker) generate(ctx context.Context, args MaterialArgs) error 
 		if err != nil {
 			return err
 		}
-		return incubatordb.New(w.DB.Conn(ctx)).SetMaterialReady(ctx, incubatordb.SetMaterialReadyParams{ID: args.MaterialID, FileID: &f.ID})
+		return incubatordb.New(w.DB.Conn(ctx)).SetMaterialReady(ctx, incubatordb.SetMaterialReadyParams{
+			ID: args.MaterialID, FileID: &f.ID, Sensitive: sensitiveAnswers(rows),
+		})
 	})
+}
+
+// sensitiveAnswers reports whether any sensitive field of the project has an
+// answer: a material written from such data is withheld like the answers.
+func sensitiveAnswers(rows []incubatordb.ProjectStepDatum) bool {
+	tmpl := Default()
+	for i := range rows {
+		if st, ok := tmpl.Step(rows[i].StepKey); ok && st.HasSensitive(decodeValues(rows[i].Data)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (w *MaterialWorker) pdf(ctx context.Context, name string, d docData) ([]byte, error) {

@@ -71,13 +71,30 @@ func (a Access) Archived() bool { return a.Project.ArchivedAt != nil }
 // CanEdit reports whether the member may change the project's answers.
 func (a Access) CanEdit() bool { return a.Team() && !a.Archived() }
 
-// CanApprove reports whether the member may approve steps.
+// CanApprove reports whether the member may approve steps: the supervisor
+// or a moderator, never someone approving their own team's work.
 func (a Access) CanApprove() bool {
-	return !a.Archived() && (a.Role == RoleSupervisor || a.Principal.Has(moderators...))
+	return !a.Archived() && !a.Team() && (a.Role == RoleSupervisor || a.Principal.Has(moderators...))
+}
+
+// CanComment reports whether the member may write in the project's
+// comments: the team, its supervisors and innovation managers (leadership
+// and administrators read).
+func (a Access) CanComment() bool {
+	return a.Team() || a.Role == RoleSupervisor || a.Principal.Has(authz.RoleInnovationManager)
 }
 
 // CanModerate reports whether the member manages projects of the university.
 func (a Access) CanModerate() bool { return a.Principal.Has(moderators...) }
+
+// SeesSensitive reports whether the member sees the project's sensitive
+// details (unit economics, the novelty and the unfair advantage of the
+// solution): the team and its supervisors always — supervisors approve
+// those steps too — and everyone else only while the project does not hide
+// them.
+func (a Access) SeesSensitive() bool {
+	return !a.Project.HideSensitive || a.Team() || a.Role == RoleSupervisor
+}
 
 // RequireEdit fails unless the member may edit.
 func (a Access) RequireEdit() error {
@@ -335,6 +352,21 @@ func (s *Service) Count(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("project: count: %w", err)
 	}
 	return int(n), nil
+}
+
+// Lock takes the project row for the rest of the transaction of ctx.
+// Writers that change a project together with its parts (progress, team,
+// showcase page) take it first: they apply one after another, each seeing
+// what the previous one committed, and always lock in the same order.
+func (s *Service) Lock(ctx context.Context, projectID uuid.UUID) error {
+	_, err := s.q(ctx).LockProjectRow(ctx, projectID)
+	if db.IsNoRows(err) {
+		return errNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("project: lock: %w", err)
+	}
+	return nil
 }
 
 // SetVisibility records who can see the project (called by the showcase in

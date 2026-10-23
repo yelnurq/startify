@@ -12,7 +12,9 @@ import (
 )
 
 // ShowcaseDraft is the showcase page suggested from the incubator answers.
-// It never contains unit economics or technology details.
+// It never contains sensitive fields (unit economics, the novelty and the
+// unfair advantage of the solution), whatever the project hides: they are
+// left out before the draft is assembled.
 type ShowcaseDraft struct {
 	Tagline  string
 	Problem  string
@@ -43,9 +45,12 @@ func DraftShowcase(ctx context.Context, database *db.DB, projectID uuid.UUID, ta
 	if err != nil {
 		return ShowcaseDraft{}, fmt.Errorf("incubator: showcase draft: %w", err)
 	}
+	tmpl := Default()
 	steps := map[string]Values{}
 	for i := range rows {
-		steps[rows[i].StepKey] = decodeValues(rows[i].Data)
+		if st, ok := tmpl.Step(rows[i].StepKey); ok {
+			steps[rows[i].StepKey] = st.Redact(decodeValues(rows[i].Data))
+		}
 	}
 	get := func(step, field string) string {
 		s, _ := steps[step][field].(string)

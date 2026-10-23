@@ -83,9 +83,13 @@ type Criterion struct {
 
 // Field is an input of a step, or a column of a table.
 type Field struct {
-	Key         string       `yaml:"key"`
-	Type        string       `yaml:"type"`
-	Required    bool         `yaml:"required"`
+	Key      string `yaml:"key"`
+	Type     string `yaml:"type"`
+	Required bool   `yaml:"required"`
+	// Sensitive fields (unit economics, the novelty and the unfair advantage
+	// of the solution) are withheld outside the team when the project hides
+	// sensitive details, and never reach the showcase.
+	Sensitive   bool         `yaml:"sensitive"`
 	MinLength   int          `yaml:"min_length"`
 	MaxLength   int          `yaml:"max_length"`
 	MinItems    int          `yaml:"min_items"`
@@ -176,6 +180,9 @@ func checkFields(path string, fields []Field, top bool) error {
 				return fmt.Errorf("incubator: template: %s has no %s label", where, l)
 			}
 		}
+		if f.Sensitive && !top {
+			return fmt.Errorf("incubator: template: %s: only fields of a step can be sensitive", where)
+		}
 		switch f.Type {
 		case TypeText, TypeTextarea, TypeNumber, TypeURL:
 		case TypeSelect:
@@ -198,6 +205,38 @@ func checkFields(path string, fields []Field, top bool) error {
 		}
 	}
 	return nil
+}
+
+// SensitiveKeys are the keys of the step's sensitive fields, in order.
+func (s *Step) SensitiveKeys() []string {
+	var out []string
+	for i := range s.Fields {
+		if s.Fields[i].Sensitive {
+			out = append(out, s.Fields[i].Key)
+		}
+	}
+	return out
+}
+
+// Redact returns the values without the sensitive fields of the step.
+func (s *Step) Redact(values Values) Values {
+	out := Values{}
+	for k, v := range values {
+		if f := s.Field(k); f == nil || !f.Sensitive {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// HasSensitive reports whether a sensitive field of the step has an answer.
+func (s *Step) HasSensitive(values Values) bool {
+	for i := range s.Fields {
+		if f := &s.Fields[i]; f.Sensitive && (present(values[f.Key]) || f.filled(values[f.Key]) > 0) {
+			return true
+		}
+	}
+	return false
 }
 
 // Field finds a field of the step.

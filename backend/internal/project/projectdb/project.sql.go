@@ -361,6 +361,20 @@ func (q *Queries) LockProject(ctx context.Context, id uuid.UUID) (Project, error
 	return i, err
 }
 
+const lockProjectRow = `-- name: LockProjectRow :one
+SELECT id FROM projects WHERE id = $1 AND deleted_at IS NULL FOR NO KEY UPDATE
+`
+
+// Serialises writers of a project's parts. NO KEY UPDATE does not wait for
+// the KEY SHARE locks that inserting a step, a member or a page takes on the
+// project (foreign keys), so concurrent writers queue instead of deadlocking.
+func (q *Queries) LockProjectRow(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockProjectRow, id)
+	var id_2 uuid.UUID
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
 const removeMember = `-- name: RemoveMember :exec
 DELETE FROM project_members WHERE project_id = $1 AND user_id = $2
 `
