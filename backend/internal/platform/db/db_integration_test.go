@@ -3,11 +3,15 @@ package db_test
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/yelnurq/startify/backend/internal/platform/config"
 	"github.com/yelnurq/startify/backend/internal/platform/db"
 	"github.com/yelnurq/startify/backend/internal/platform/testpg"
 )
@@ -185,5 +189,62 @@ func TestIsUniqueViolation(t *testing.T) {
 	})
 	if !db.IsUniqueViolation(err, "uniq_v_key") || !db.IsUniqueViolation(err, "") || db.IsUniqueViolation(err, "other") {
 		t.Fatalf("IsUniqueViolation misclassified %v", err)
+	}
+}
+
+// connectAs opens a pool to the test database as another login role.
+func connectAs(t *testing.T, d *testpg.Database, role string) *db.DB {
+	t.Helper()
+	u, err := url.Parse(d.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u.User = url.UserPassword(role, "role-check")
+	pcfg, err := pgxpool.ParseConfig(u.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := db.Open(context.Background(), pcfg)
+	if err != nil {
+		t.Fatalf("connect as %s: %v", role, err)
+	}
+	t.Cleanup(conn.Close)
+	return conn
+}
+
+func TestRequireRestrictedRole(t *testing.T) {
+	d := pg.NewDB(t)
+	ctx := context.Background()
+
+	if err := d.App.RequireRestrictedRole(ctx); err != nil {
+		t.Fatalf("the application role must pass: %v", err)
+	}
+
+	// The API and the worker refuse the schema owner (here a superuser) at start-up.
+	_, err := db.Connect(ctx, config.Database{URL: d.OwnerURL, MaxConns: 2})
+	if err == nil || !strings.Contains(err.Error(), "is a superuser") || !strings.Contains(err.Error(), "QADAM_DATABASE_MIGRATE_URL") {
+		t.Fatalf("superuser: %v", err)
+	}
+
+	// Roles belong to the whole server: the names must not clash between runs.
+	suffix := strings.ReplaceAll(uuid.Must(uuid.NewV7()).String()[24:], "-", "")
+	bypass, owner, member := "bypass_"+suffix, "owner_"+suffix, "member_"+suffix
+	d.Exec(t,
+		"CREATE ROLE "+bypass+" LOGIN BYPASSRLS PASSWORD 'role-check'",
+		"CREATE ROLE "+owner+" LOGIN PASSWORD 'role-check'",
+		"CREATE ROLE "+member+" LOGIN PASSWORD 'role-check' IN ROLE "+owner,
+		"CREATE TABLE owned_notes (id int)",
+		"ALTER TABLE owned_notes OWNER TO "+owner,
+	)
+	for role, want := range map[string]string{
+		bypass: "BYPASSRLS",
+		owner:  "owns tables such as public.owned_notes",
+		// A member of the owner can SET ROLE to it.
+		member: "owns tables such as public.owned_notes",
+	} {
+		err := connectAs(t, d, role).RequireRestrictedRole(ctx)
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: %v, want %q", role, err, want)
+		}
 	}
 }

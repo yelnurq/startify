@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/exaring/otelpgx"
 	"github.com/google/uuid"
@@ -38,7 +39,8 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
-// Connect opens a pool and verifies connectivity.
+// Connect opens the pool of the application role, verifies connectivity and
+// refuses a role that row-level security does not bind (RequireRestrictedRole).
 func Connect(ctx context.Context, cfg config.Database) (*DB, error) {
 	pcfg, err := pgxpool.ParseConfig(cfg.URL)
 	if err != nil {
@@ -47,7 +49,65 @@ func Connect(ctx context.Context, cfg config.Database) (*DB, error) {
 	pcfg.MaxConns = cfg.MaxConns
 	pcfg.MinConns = cfg.MinConns
 	pcfg.ConnConfig.Tracer = otelpgx.NewTracer()
-	return Open(ctx, pcfg)
+	d, err := Open(ctx, pcfg)
+	if err != nil {
+		return nil, err
+	}
+	if err := d.RequireRestrictedRole(ctx); err != nil {
+		d.Close()
+		return nil, err
+	}
+	return d, nil
+}
+
+// restrictedRoleQuery reports why the current role is not bound by row-level
+// security. Superusers and BYPASSRLS roles skip every policy; a table owner
+// skips the policies of its tables. Membership counts as well: a member of
+// such a role can SET ROLE to it.
+const restrictedRoleQuery = `
+SELECT current_user::text,
+       EXISTS (SELECT 1 FROM pg_roles r WHERE r.rolsuper AND pg_has_role(current_user, r.oid, 'MEMBER')),
+       EXISTS (SELECT 1 FROM pg_roles r WHERE r.rolbypassrls AND pg_has_role(current_user, r.oid, 'MEMBER')),
+       coalesce((SELECT string_agg(t.name, ', ')
+                   FROM (SELECT n.nspname || '.' || c.relname AS name
+                           FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                          WHERE c.relkind IN ('r', 'p')
+                            AND n.nspname <> 'information_schema' AND n.nspname NOT LIKE 'pg\_%'
+                            AND pg_has_role(current_user, c.relowner, 'MEMBER')
+                          ORDER BY 1
+                          LIMIT 3) t), '')`
+
+// RequireRestrictedRole fails unless the pool's role is subject to row-level
+// security: not a superuser, without BYPASSRLS and owning no table, directly
+// or through role membership. Without this check, putting the schema owner
+// into QADAM_DATABASE_URL "to make it work" would silently switch off tenant
+// isolation in the database.
+func (d *DB) RequireRestrictedRole(ctx context.Context) error {
+	var (
+		role              string
+		superuser, bypass bool
+		owned             string
+	)
+	if err := d.pool.QueryRow(ctx, restrictedRoleQuery).Scan(&role, &superuser, &bypass, &owned); err != nil {
+		return fmt.Errorf("db: check role: %w", err)
+	}
+	var reasons []string
+	switch {
+	case superuser:
+		// A superuser is a member of every role: it also bypasses and owns.
+		reasons = append(reasons, "is a superuser")
+	case bypass:
+		reasons = append(reasons, "bypasses row-level security (BYPASSRLS)")
+	}
+	if owned != "" && !superuser {
+		reasons = append(reasons, "owns tables such as "+owned)
+	}
+	if len(reasons) == 0 {
+		return nil
+	}
+	return fmt.Errorf("db: QADAM_DATABASE_URL connects as %q, which %s, so row-level security would not isolate universities; "+
+		"connect as the restricted application role (qadam_app) and keep the schema owner in QADAM_DATABASE_MIGRATE_URL",
+		role, strings.Join(reasons, " and "))
 }
 
 // Open opens a pool from a prepared configuration.
