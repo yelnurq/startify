@@ -79,7 +79,7 @@ jobs:
           cp .env.example .env
           docker compose --env-file .env -f deploy/docker-compose.yml config --quiet
           $COMPOSE up -d --build --wait api worker web mailpit
-          $COMPOSE run --rm --no-deps api /app/seed
+          $COMPOSE run --rm --no-deps worker /app/seed
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -96,7 +96,7 @@ jobs:
         run: npx playwright test
       - name: Service logs
         if: failure()
-        run: $COMPOSE logs --no-color api worker web migrate minio-init
+        run: $COMPOSE logs --no-color api worker web migrate db-roles minio-init
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

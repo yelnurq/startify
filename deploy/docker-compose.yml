@@ -18,7 +18,6 @@ x-backend-env: &backend-env
   # Showcase pages for search engines are built on the web client's index.html.
   QADAM_APP_SHELL_URL: http://web:8080/index.html
   QADAM_DATABASE_URL: postgres://qadam_app:${APP_DB_PASSWORD}@postgres:5432/qadam?sslmode=disable
-  QADAM_DATABASE_MIGRATE_URL: postgres://qadam:${POSTGRES_PASSWORD}@postgres:5432/qadam?sslmode=disable
   QADAM_VALKEY_ADDR: valkey:6379
   QADAM_VALKEY_PASSWORD: ${VALKEY_PASSWORD:?set VALKEY_PASSWORD in .env}
   QADAM_LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -74,15 +73,33 @@ services:
       POSTGRES_DB: qadam
       POSTGRES_USER: qadam
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U qadam -d qadam"]
       interval: 5s
       timeout: 5s
       retries: 20
+
+  # Creates the login roles of the API (qadam_app) and of the worker and the
+  # seed (qadam_worker, the only one that may enter the system scope) with the
+  # passwords from .env; runs on every start, so existing databases get them too.
+  db-roles:
+    image: pgvector/pgvector:pg17
+    entrypoint: ["sh", "/init/roles.sh"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: qadam
+      POSTGRES_USER: qadam
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+      WORKER_DB_PASSWORD: ${WORKER_DB_PASSWORD:?set WORKER_DB_PASSWORD in .env}
+    volumes:
+      - ./postgres/roles.sh:/init/roles.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   # Revoked sessions, role versions and rate-limit counters live here: only
   # clients with the password may read or change them.
@@ -167,10 +184,13 @@ services:
         BUILT_AT: ${BUILT_AT:-unknown}
     image: qadam/api:${VERSION:-dev}
     command: ["/app/migrate", "up"]
-    environment: *backend-env
+    # Only migrations see the schema owner's password.
+    environment:
+      <<: *backend-env
+      QADAM_DATABASE_MIGRATE_URL: postgres://qadam:${POSTGRES_PASSWORD}@postgres:5432/qadam?sslmode=disable
     depends_on:
-      postgres:
-        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
     restart: "no"
 
   api:
@@ -191,11 +211,15 @@ services:
       timeout: 5s
       retries: 20
 
+  # The worker (and the seed: `make seed` runs it in this service) connects as
+  # qadam_worker; only the worker gets that password.
   worker:
     image: qadam/api:${VERSION:-dev}
     restart: unless-stopped
     command: ["/app/worker"]
-    environment: *backend-env
+    environment:
+      <<: *backend-env
+      QADAM_DATABASE_WORKER_URL: postgres://qadam_worker:${WORKER_DB_PASSWORD:?set WORKER_DB_PASSWORD in .env}@postgres:5432/qadam?sslmode=disable
     depends_on:
       migrate:
         condition: service_completed_successfully

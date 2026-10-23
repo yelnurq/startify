@@ -47,10 +47,11 @@ ps: ## Show the state of every service
 
 infra: .env ## Start only infrastructure, for running api/worker/web natively
 	$(COMPOSE) up -d --wait postgres valkey minio gotenberg mailpit
+	$(COMPOSE) run --rm db-roles
 	$(COMPOSE) run --rm minio-init
 
 seed: .env ## Load demo data into the running stack (KazUTB, demo accounts)
-	$(COMPOSE) run --rm --no-deps api /app/seed
+	$(COMPOSE) run --rm --no-deps worker /app/seed
 
 compose-check: .env ## Validate the base compose file alone and with the development file
 	$(COMPOSE_BASE) config --quiet
