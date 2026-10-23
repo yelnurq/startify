@@ -57,10 +57,25 @@ func registration(email, name string) apigen.RegisterRequest {
 	}
 }
 
+// register signs a student up as the web client and the mailbox would: a new
+// account opens the verification link from its letter, which signs it in; an
+// account with a verified e-mail joins the university with its password.
 func register(t *testing.T, b *browser, email, name string) apigen.Session {
 	t.Helper()
 	rec := b.do(http.MethodPost, "/api/v1/auth/register", registration(email, name))
-	expect(t, rec, http.StatusCreated)
+	if rec.Code == http.StatusCreated {
+		return decode[apigen.Session](t, rec)
+	}
+	expect(t, rec, http.StatusAccepted)
+	return verifyEmail(t, b, email)
+}
+
+// verifyEmail opens the latest verification link sent to the address.
+func verifyEmail(t *testing.T, b *browser, email string) apigen.Session {
+	t.Helper()
+	letter := b.h.lastMail(t, strings.ToLower(email), mail.TemplateVerifyEmail)
+	rec := b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: linkToken(t, letter)})
+	expect(t, rec, http.StatusOK)
 	return decode[apigen.Session](t, rec)
 }
 
@@ -132,11 +147,25 @@ func TestRegistrationProfileAndSession(t *testing.T) {
 	stale.ConsentVersion = "2020-01"
 	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/register", stale), http.StatusUnprocessableEntity, "auth.consent_required")
 
+	// Registration only sends the verification letter: no session yet.
 	rec := b.do(http.MethodPost, "/api/v1/auth/register", registration("Aru@Qadam.test", "Ару Бекова"))
-	expect(t, rec, http.StatusCreated)
+	expect(t, rec, http.StatusAccepted)
 	h.validate(t, http.MethodPost, "/api/v1/auth/register", rec)
+	if !decode[apigen.VerificationSent](t, rec).VerificationSent || len(b.jar) != 0 {
+		t.Fatalf("registration started a session: %s %v", rec.Body, b.jar)
+	}
+	letter := h.lastMail(t, "aru@qadam.test", mail.TemplateVerifyEmail)
+	if !strings.HasPrefix(letter.Data["link"], "http://kazutb.localhost:3000/verify-email?token=") || letter.Locale != "ru" {
+		t.Fatalf("verification letter: %+v", letter)
+	}
+
+	// The link signs in and confirms the address, once.
+	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: "forged"}), http.StatusBadRequest, "auth.token_invalid")
+	rec = b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: linkToken(t, letter)})
+	expect(t, rec, http.StatusOK)
+	h.validate(t, http.MethodPost, "/api/v1/auth/email/verify", rec)
 	session := decode[apigen.Session](t, rec)
-	if session.User.Email != "aru@qadam.test" || session.User.EmailVerified || session.Membership.Onboarded ||
+	if session.User.Email != "aru@qadam.test" || !session.User.EmailVerified || session.Membership.Onboarded ||
 		len(session.Membership.Roles) != 1 || session.Membership.Roles[0] != apigen.RoleStudent {
 		t.Fatalf("unexpected session: %+v", session)
 	}
@@ -149,25 +178,15 @@ func TestRegistrationProfileAndSession(t *testing.T) {
 			t.Fatalf("cookie %s must be httpOnly", name)
 		}
 	}
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: linkToken(t, letter)}),
+		http.StatusBadRequest, "auth.token_invalid")
+	rec = b.do(http.MethodGet, "/api/v1/auth/session", nil)
+	expect(t, rec, http.StatusOK)
+	h.validate(t, http.MethodGet, "/api/v1/auth/session", rec)
 	// The address is taken; the right password would prove ownership, another one does not.
 	taken := registration("aru@qadam.test", "Ару")
 	taken.Password = "Different-Password-9"
 	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/register", taken), http.StatusConflict, "auth.email_taken")
-
-	// The verification letter confirms the address.
-	letter := h.lastMail(t, "aru@qadam.test", mail.TemplateVerifyEmail)
-	if !strings.HasPrefix(letter.Data["link"], "http://kazutb.localhost:3000/verify-email?token=") || letter.Locale != "ru" {
-		t.Fatalf("verification letter: %+v", letter)
-	}
-	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: "forged"}), http.StatusBadRequest, "auth.token_invalid")
-	expect(t, b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: linkToken(t, letter)}), http.StatusNoContent)
-	expectProblem(t, b.do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: linkToken(t, letter)}), http.StatusBadRequest, "auth.token_invalid")
-	rec = b.do(http.MethodGet, "/api/v1/auth/session", nil)
-	expect(t, rec, http.StatusOK)
-	h.validate(t, http.MethodGet, "/api/v1/auth/session", rec)
-	if !decode[apigen.Session](t, rec).User.EmailVerified {
-		t.Fatal("e-mail not verified")
-	}
 
 	// Onboarding fills the faculty and the level from the group.
 	rec = b.do(http.MethodGet, "/api/v1/study-groups?q="+url.QueryEscape("ИС-23"), nil)
@@ -417,6 +436,107 @@ func TestTenantIsolationOfSessions(t *testing.T) {
 		r.Password = "Not-The-Right-One-1"
 		return r
 	}()), http.StatusConflict, "auth.email_taken")
+}
+
+func countAudit(t *testing.T, h *harness, action, userEmail string) int {
+	t.Helper()
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, h.db.OwnerURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	var n int
+	err = conn.QueryRow(ctx, `SELECT count(*) FROM audit_log a JOIN users u ON u.id = a.actor_id
+		WHERE a.action = $1 AND u.email = $2`, action, userEmail).Scan(&n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func TestNoSessionBeforeTheEmailIsVerified(t *testing.T) {
+	h := newHarness(t)
+	seedTenants(t, h)
+	const victim = "rector@qadam.test"
+	letters := func() int {
+		n := 0
+		for _, m := range h.mails(t) {
+			if m.To == victim && m.Template == mail.TemplateVerifyEmail {
+				n++
+			}
+		}
+		return n
+	}
+
+	// Someone registers an address they do not control: no session, and the
+	// right password does not sign in until the address is verified.
+	squatter := h.browser(t, kazutbHost)
+	claim := registration(victim, "Ректор Самозванец")
+	claim.Password = "Squatter-Password-13"
+	expect(t, squatter.do(http.MethodPost, "/api/v1/auth/register", claim), http.StatusAccepted)
+	squatterLink := linkToken(t, h.lastMail(t, victim, mail.TemplateVerifyEmail))
+	rec := squatter.do(http.MethodPost, "/api/v1/auth/login", apigen.LoginRequest{Email: openapiEmail(victim), Password: claim.Password})
+	expectProblem(t, rec, http.StatusForbidden, "auth.email_unverified")
+	if len(squatter.jar) != 0 {
+		t.Fatalf("cookies after an unverified sign-in: %v", squatter.jar)
+	}
+	expectProblem(t, squatter.do(http.MethodPost, "/api/v1/auth/login", apigen.LoginRequest{Email: openapiEmail(victim), Password: "Not-The-Password-1"}),
+		http.StatusUnauthorized, "auth.invalid_credentials")
+	expectProblem(t, squatter.do(http.MethodGet, "/api/v1/auth/session", nil), http.StatusUnauthorized, "auth.unauthenticated")
+
+	// The letter can be sent again without a session; unknown addresses get the same answer.
+	before := letters()
+	rec = h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/email/resend", apigen.EmailRequest{Email: openapiEmail(victim)})
+	expect(t, rec, http.StatusAccepted)
+	h.validate(t, http.MethodPost, "/api/v1/auth/email/resend", rec)
+	expect(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/email/resend", apigen.EmailRequest{Email: openapiEmail("ghost@qadam.test")}),
+		http.StatusAccepted)
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/email/resend", nil), http.StatusUnprocessableEntity, "validation.failed")
+	if letters() != before+1 {
+		t.Fatal("the letter was not sent again")
+	}
+	for _, m := range h.mails(t) {
+		if m.To == "ghost@qadam.test" {
+			t.Fatal("letter sent to an unknown address")
+		}
+	}
+	// Each new letter replaces the previous links.
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/email/verify", apigen.TokenRequest{Token: squatterLink}),
+		http.StatusBadRequest, "auth.token_invalid")
+
+	// The owner of the mailbox registers too: the unverified account is
+	// theirs now, with their name and password; the squatter's password and
+	// sessions are gone.
+	h.db.Exec(t, "UPDATE users SET email_verified_at = now() WHERE email = '"+victim+"'")
+	legacy := h.browser(t, kazutbHost)
+	login(t, legacy, victim, claim.Password)
+	h.db.Exec(t, "UPDATE users SET email_verified_at = NULL WHERE email = '"+victim+"'")
+	owner := h.browser(t, kazutbHost)
+	expect(t, owner.do(http.MethodPost, "/api/v1/auth/register", registration(victim, "Ректор Настоящий")), http.StatusAccepted)
+	expectProblem(t, legacy.do(http.MethodGet, "/api/v1/me", nil), http.StatusUnauthorized, "auth.unauthenticated")
+	expectProblem(t, legacy.do(http.MethodPost, "/api/v1/auth/refresh", nil), http.StatusUnauthorized, "auth.session_revoked")
+	session := verifyEmail(t, owner, victim)
+	if session.User.FullName != "Ректор Настоящий" || !session.User.EmailVerified {
+		t.Fatalf("claimed account: %+v", session.User)
+	}
+	expectProblem(t, h.browser(t, kazutbHost).do(http.MethodPost, "/api/v1/auth/login",
+		apigen.LoginRequest{Email: openapiEmail(victim), Password: claim.Password}), http.StatusUnauthorized, "auth.invalid_credentials")
+	login(t, h.browser(t, kazutbHost), victim, password)
+
+	// A verified account is no longer claimed by registering: a wrong
+	// password is a failed sign-in, counted with those of /auth/login.
+	before = countAudit(t, h, "auth.login_failed", victim)
+	guesser := h.browser(t, kazutbHost)
+	for range 10 {
+		expectProblem(t, guesser.do(http.MethodPost, "/api/v1/auth/register", claim), http.StatusConflict, "auth.email_taken")
+	}
+	if got := countAudit(t, h, "auth.login_failed", victim) - before; got != 10 {
+		t.Fatalf("%d failed attempts recorded, want 10", got)
+	}
+	expectProblem(t, guesser.do(http.MethodPost, "/api/v1/auth/register", claim), http.StatusTooManyRequests, "auth.too_many_attempts")
+	expectProblem(t, guesser.do(http.MethodPost, "/api/v1/auth/login", apigen.LoginRequest{Email: openapiEmail(victim), Password: password}),
+		http.StatusTooManyRequests, "auth.too_many_attempts")
 }
 
 func TestCredentialChangesEndSessionsInEveryUniversity(t *testing.T) {

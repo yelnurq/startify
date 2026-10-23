@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from '@/shared/forms/zod';
 
-import { Button, Field, Input } from '@/design-system';
+import { Button, Callout, Field, Input } from '@/design-system';
+import { ApiError } from '@/shared/api/client';
 import { codeMessage, errorMessage } from '@/shared/api/errors';
 import { applyFieldErrors } from '@/shared/forms/validation';
 import { useLocalized } from '@/shared/i18n/localized';
@@ -19,7 +20,13 @@ import {
   useRequestLoginCode,
   useSignIn,
 } from './api';
-import { AuthPage, Divider, FormAlert, PasswordInput } from './components';
+import {
+  AuthPage,
+  Divider,
+  FormAlert,
+  PasswordInput,
+  ResendVerificationButton,
+} from './components';
 
 const schema = z.object({
   email: z.email().max(254),
@@ -57,6 +64,8 @@ export function LoginPage({ redirect, error }: { redirect?: string; error?: stri
   const requestCode = useRequestLoginCode();
   const text = useLocalized();
   const [formError, setFormError] = useState<string | null>(error ? codeMessage(error) : null);
+  // The password was right, but the address waits for its verification link.
+  const [unverified, setUnverified] = useState<string | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
@@ -64,10 +73,15 @@ export function LoginPage({ redirect, error }: { redirect?: string; error?: stri
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
+    setUnverified(null);
     try {
       const session = await signIn.mutateAsync(values);
       await navigate({ href: landingAfterSignIn(session, redirect), replace: true });
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'auth.email_unverified') {
+        setUnverified(values.email);
+        return;
+      }
       if (!applyFieldErrors(err, form.setError)) setFormError(errorMessage(err));
     }
   });
@@ -91,6 +105,15 @@ export function LoginPage({ redirect, error }: { redirect?: string; error?: stri
   return (
     <AuthPage title={t('login.title')} subtitle={tenant.data ? text(tenant.data.name) : undefined}>
       <FormAlert message={formError} />
+      {unverified && (
+        <Callout
+          tone="warning"
+          title={t('login.unverifiedTitle')}
+          action={<ResendVerificationButton key={unverified} email={unverified} />}
+        >
+          {t('login.unverifiedText', { email: unverified })}
+        </Callout>
+      )}
       <form className="flex flex-col gap-5" onSubmit={(e) => void onSubmit(e)} noValidate>
         <Field label={t('fields.email')} error={errors.email?.message}>
           <Input

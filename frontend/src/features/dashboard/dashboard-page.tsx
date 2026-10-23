@@ -127,7 +127,7 @@ function VerifyEmailBanner({ email }: { email: string }) {
           loading={resend.isPending}
           disabled={resend.isSuccess}
           onClick={() => {
-            resend.mutate(undefined, {
+            resend.mutate(email, {
               onError: (err) => {
                 toast.error(errorMessage(err));
               },

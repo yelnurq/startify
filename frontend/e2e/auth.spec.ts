@@ -14,23 +14,34 @@ import { codeFrom, linkTo, mailboxMark, waitForMessage } from './support/mailpit
 // A seeded account that no other spec signs in with (its inbox stays predictable).
 const CODE_USER = 'gulnar@qadam.test';
 
-test('a student signs up, completes onboarding and confirms the e-mail', async ({
+test('a student signs up, confirms the e-mail and completes onboarding', async ({
   page,
   isMobile,
 }) => {
   test.skip(isMobile, 'sign-ups are rate-limited per IP; the desktop project covers the flow');
   const email = uniqueEmail('signup');
+  const password = 'Жасыл алма таңертең 2026';
   const since = await mailboxMark();
 
   await page.goto('/register');
   await page.getByLabel('Имя и фамилия').fill('Айым Нұрланқызы');
   await page.getByLabel('Электронная почта').fill(email);
-  await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill('Жасыл алма таңертең 2026');
+  await page.getByRole('textbox', { name: 'Пароль', exact: true }).fill(password);
   await page
     .getByRole('checkbox', { name: 'Даю согласие на сбор и обработку моих персональных данных' })
     .check();
   await page.getByRole('button', { name: 'Создать аккаунт' }).click();
 
+  // No session until the address is verified: the password alone does not sign in.
+  await expect(page.getByText('Проверьте почту')).toBeVisible();
+  await expect(page).toHaveURL(/\/register$/);
+  await submitSignIn(page, email, password);
+  await expect(page.getByText('Подтвердите почту')).toBeVisible();
+  await expect(page).toHaveURL(/\/login/);
+
+  // The link from the letter confirms the address, signs in and opens onboarding.
+  const letter = await waitForMessage(email, { since, subject: /подтвердите/ });
+  await page.goto(linkTo(letter, '/verify-email'));
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByRole('button', { name: 'Далее' }).click();
 
@@ -52,13 +63,9 @@ test('a student signs up, completes onboarding and confirms the e-mail', async (
   await page.getByRole('button', { name: 'Готово' }).click();
 
   await expect(page).toHaveURL(/\/app$/);
-  // The dashboard greets by the first name.
+  // The dashboard greets by the first name; the address is already confirmed.
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Айым!');
-  await expect(page.getByText('Подтвердите почту')).toBeVisible();
-
-  const letter = await waitForMessage(email, { since, subject: /подтвердите/ });
-  await page.goto(linkTo(letter, '/verify-email'));
-  await expect(page.getByText('Почта подтверждена')).toBeVisible();
+  await expect(page.getByText('Подтвердите почту')).toBeHidden();
 
   // The profile: a headline, a skill and a public page.
   await page.goto('/app/profile');

@@ -11,6 +11,13 @@ INSERT INTO users (email, full_name, locale, email_verified_at)
 VALUES (@email, @full_name, @locale, @email_verified_at)
 RETURNING *;
 
+-- name: LockUser :one
+SELECT * FROM users WHERE id = @id FOR UPDATE;
+
+-- name: SetRegistrant :exec
+-- A new registration of an address that was never verified names the account anew.
+UPDATE users SET full_name = @full_name, locale = @locale WHERE id = @id AND email_verified_at IS NULL;
+
 -- name: MarkEmailVerified :exec
 UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = @id;
 

@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, Eye, EyeOff, Layers } from 'lucide-react';
+import { ArrowLeft, Check, Eye, EyeOff, Layers, Mail, MailCheck } from 'lucide-react';
 import {
   useRef,
   useState,
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AuthLayout } from '@/app/layouts/auth-layout';
 import {
+  Button,
   Callout,
   cn,
   Illustration,
@@ -20,10 +21,12 @@ import {
   Input,
   Kicker,
   Logo,
+  toast,
 } from '@/design-system';
+import { errorMessage } from '@/shared/api/errors';
 import { useLocalized } from '@/shared/i18n/localized';
 
-import { tenantQuery } from './api';
+import { tenantQuery, useResendVerification } from './api';
 import { passwordScore } from './password';
 
 function AuthAside() {
@@ -121,6 +124,30 @@ export function AuthPage({
 export function FormAlert({ message }: { message: string | null | undefined }) {
   if (!message) return null;
   return <Callout tone="danger">{message}</Callout>;
+}
+
+/** Sends the verification letter to the address again; confirms once sent. */
+export function ResendVerificationButton({ email }: { email: string }) {
+  const { t } = useTranslation('auth');
+  const resend = useResendVerification();
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      leftIcon={resend.isSuccess ? <MailCheck /> : <Mail />}
+      loading={resend.isPending}
+      disabled={resend.isSuccess}
+      onClick={() => {
+        resend.mutate(email, {
+          onError: (err) => {
+            toast.error(errorMessage(err));
+          },
+        });
+      }}
+    >
+      {resend.isSuccess ? t('verify.resent') : t('verify.resend')}
+    </Button>
+  );
 }
 
 type PasswordInputProps = Omit<ComponentProps<typeof Input>, 'type' | 'trailing'>;

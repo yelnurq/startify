@@ -2,6 +2,8 @@ import path from 'node:path';
 
 import { expect, type Page } from '@playwright/test';
 
+import { linkTo, mailboxMark, waitForMessage } from './mailpit';
+
 // Seeded demo accounts (backend seed); all share one password.
 export const DEMO_PASSWORD = 'Qadam-Demo-2026!';
 export const USERS = {
@@ -49,8 +51,9 @@ async function csrfToken(page: Page): Promise<string> {
 }
 
 /**
- * Registers a student through the API (sharing cookies with the page) and,
- * unless told otherwise, completes onboarding — for tests about later screens.
+ * Registers a student through the API (sharing cookies with the page), opens
+ * the verification link from the letter — which signs the student in — and,
+ * unless told otherwise, completes onboarding: for tests about later screens.
  */
 export async function createStudent(
   page: Page,
@@ -61,11 +64,19 @@ export async function createStudent(
   const tenant = await page.request.get('/api/v1/tenant');
   expect(tenant.ok()).toBe(true);
   const { consent } = (await tenant.json()) as { consent: { version: string } };
+  const since = await mailboxMark();
   const registered = await page.request.post('/api/v1/auth/register', {
     headers: { 'Idempotency-Key': crypto.randomUUID() },
     data: { email, password, full_name: name, locale: 'ru', consent_version: consent.version },
   });
-  expect(registered.status(), await registered.text()).toBeLessThan(300);
+  expect(registered.status(), await registered.text()).toBe(202);
+  // No session starts before the e-mail is verified; the link signs in.
+  const letter = await waitForMessage(email, { since, subject: /подтвердите/ });
+  const token = new URL(linkTo(letter, '/verify-email'), 'http://e2e.invalid').searchParams.get(
+    'token',
+  );
+  const verified = await page.request.post('/api/v1/auth/email/verify', { data: { token } });
+  expect(verified.status(), await verified.text()).toBe(200);
   if (onboard) {
     const faculties = await page.request.get('/api/v1/faculties');
     const { items } = (await faculties.json()) as { items: { id: string }[] };

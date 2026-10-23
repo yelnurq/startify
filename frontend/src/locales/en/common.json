@@ -128,7 +128,8 @@
       "oidc_failed": "University SSO sign-in failed. Try again or sign in with e-mail.",
       "not_a_member": "This account is not part of the university yet. Sign up with the same email and password, and the account will join it.",
       "account_suspended": "Access to this account has been suspended by the university administrator.",
-      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes."
+      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes.",
+      "email_unverified": "Your e-mail is not confirmed yet. Open the link from the letter or send it again."
     },
     "tenant": {
       "not_found": "No university was found at this address.",

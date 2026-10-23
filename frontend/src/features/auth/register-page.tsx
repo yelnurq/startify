@@ -7,16 +7,36 @@ import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from '@/shared/forms/zod';
 
-import { Button, Checkbox, EmptyState, Field, Input, Skeleton, toast } from '@/design-system';
+import { Button, Checkbox, EmptyState, Field, Input, Skeleton } from '@/design-system';
 import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
 import { applyFieldErrors } from '@/shared/forms/validation';
 import { i18n, isLocale } from '@/shared/i18n';
 import { useLocalized } from '@/shared/i18n/localized';
 
-import { landingAfterSignIn, tenantQuery, useRegister, type Tenant } from './api';
-import { AuthPage, FormAlert, PasswordInput, PasswordStrength } from './components';
+import { isSession, landingAfterSignIn, tenantQuery, useRegister, type Tenant } from './api';
+import {
+  AuthPage,
+  FormAlert,
+  PasswordInput,
+  PasswordStrength,
+  ResendVerificationButton,
+} from './components';
 import { SsoButtons } from './login-page';
+
+/** After registering: the session starts from the link in the letter. */
+function CheckInbox({ email }: { email: string }) {
+  const { t } = useTranslation('auth');
+  return (
+    <EmptyState
+      size="sm"
+      illustration="inbox"
+      title={t('register.sentTitle')}
+      description={t('register.sentText', { email })}
+      action={<ResendVerificationButton email={email} />}
+    />
+  );
+}
 
 function buildSchema(domains: string[]) {
   return z.object({
@@ -45,6 +65,7 @@ export function RegisterForm({ tenant }: { tenant: Tenant }) {
   const register = useRegister();
   const text = useLocalized();
   const [formError, setFormError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   const consentId = useId();
   const strengthId = useId();
@@ -59,15 +80,20 @@ export function RegisterForm({ tenant }: { tenant: Tenant }) {
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const session = await register.mutateAsync({
+      const result = await register.mutateAsync({
         email: values.email,
         password: values.password,
         full_name: values.full_name,
         locale: isLocale(i18n.language) ? i18n.language : 'kk',
         consent_version: tenant.consent.version,
       });
-      toast.success(t('register.verifySent', { email: values.email }));
-      await navigate({ href: landingAfterSignIn(session), replace: true });
+      // An account with a verified e-mail joined with its password; a new
+      // one is signed in by the link from the letter.
+      if (isSession(result)) {
+        await navigate({ href: landingAfterSignIn(result), replace: true });
+        return;
+      }
+      setSentTo(values.email);
     } catch (err) {
       if (applyFieldErrors(err, form.setError)) return;
       if (err instanceof ApiError) {
@@ -87,6 +113,8 @@ export function RegisterForm({ tenant }: { tenant: Tenant }) {
       setFormError(errorMessage(err));
     }
   });
+
+  if (sentTo) return <CheckInbox email={sentTo} />;
 
   const errors = form.formState.errors;
   return (

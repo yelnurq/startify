@@ -123,6 +123,8 @@ func (c cookieResponse) VisitRegisterResponse(w http.ResponseWriter) error { ret
 
 func (c cookieResponse) VisitVerifyLoginCodeResponse(w http.ResponseWriter) error { return c.write(w) }
 
+func (c cookieResponse) VisitVerifyEmailResponse(w http.ResponseWriter) error { return c.write(w) }
+
 func (c cookieResponse) VisitRefreshSessionResponse(w http.ResponseWriter) error { return c.write(w) }
 
 func (c cookieResponse) VisitLogoutResponse(w http.ResponseWriter) error { return c.write(w) }

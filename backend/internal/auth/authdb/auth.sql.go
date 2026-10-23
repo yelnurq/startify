@@ -448,6 +448,28 @@ func (q *Queries) ListActiveSessions(ctx context.Context, userID uuid.UUID) ([]S
 	return items, nil
 }
 
+const lockUser = `-- name: LockUser :one
+SELECT id, email, email_verified_at, full_name, locale, avatar_file_id, is_super_admin, status, created_at, updated_at FROM users WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, lockUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.EmailVerifiedAt,
+		&i.FullName,
+		&i.Locale,
+		&i.AvatarFileID,
+		&i.IsSuperAdmin,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const markEmailVerified = `-- name: MarkEmailVerified :exec
 UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1
 `
@@ -540,6 +562,22 @@ func (q *Queries) RotateSession(ctx context.Context, arg RotateSessionParams) (i
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setRegistrant = `-- name: SetRegistrant :exec
+UPDATE users SET full_name = $1, locale = $2 WHERE id = $3 AND email_verified_at IS NULL
+`
+
+type SetRegistrantParams struct {
+	FullName string
+	Locale   string
+	ID       uuid.UUID
+}
+
+// A new registration of an address that was never verified names the account anew.
+func (q *Queries) SetRegistrant(ctx context.Context, arg SetRegistrantParams) error {
+	_, err := q.db.Exec(ctx, setRegistrant, arg.FullName, arg.Locale, arg.ID)
+	return err
 }
 
 const touchIdentity = `-- name: TouchIdentity :exec
