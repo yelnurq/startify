@@ -66,8 +66,21 @@ func (m *Metrics) Middleware(next http.Handler) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
-		m.requests.WithLabelValues(r.Method, route, strconv.Itoa(status)).Observe(time.Since(start).Seconds())
+		m.requests.WithLabelValues(methodLabel(r.Method), route, strconv.Itoa(status)).Observe(time.Since(start).Seconds())
 	})
+}
+
+// methodLabel keeps the method label to a fixed set: any client can send a
+// request with a made-up method, and every new label value is a new series
+// held in memory until the process restarts.
+func methodLabel(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut,
+		http.MethodPatch, http.MethodDelete, http.MethodOptions:
+		return method
+	default:
+		return "OTHER"
+	}
 }
 
 // Handler serves the metrics in the Prometheus exposition format.
