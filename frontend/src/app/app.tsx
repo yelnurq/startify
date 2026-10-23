@@ -6,6 +6,7 @@ import { routeTree } from '@/routeTree.gen';
 import { ApiError, setUnauthenticatedHandler } from '@/shared/api/client';
 
 import { releaseBoot } from './boot';
+import { forgetUserData, watchSessionUser } from './session-watch';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,10 +62,15 @@ declare module '@tanstack/react-router' {
   }
 }
 
+// Whoever signs in next at this computer sees nothing cached for the previous user.
+watchSessionUser(queryClient);
+
 // A session lost while working (expired, revoked in another tab): forget it and
-// return to sign-in. Initial visits are handled by the route guards instead.
+// everything fetched with it, and return to sign-in. Initial visits are handled
+// by the route guards instead.
 setUnauthenticatedHandler(() => {
   const hadSession = Boolean(queryClient.getQueryState(sessionQuery.queryKey)?.data);
+  forgetUserData(queryClient);
   queryClient.setQueryData(sessionQuery.queryKey, null);
   const { pathname, search } = window.location;
   if (hadSession && (pathname.startsWith('/app') || pathname.startsWith('/onboarding'))) {
