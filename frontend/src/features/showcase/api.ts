@@ -88,29 +88,42 @@ export function showcaseEntryQuery(projectId: string) {
   });
 }
 
+/** Requests a page of contact requests loads at a time. */
+export const CONTACTS_PAGE = 20;
+
+/** The requests passed on to the team, newest first, page by page. */
 export function projectContactsQuery(projectId: string) {
-  return queryOptions({
+  return infiniteQueryOptions({
     queryKey: ['projects', projectId, 'contacts'],
-    queryFn: async () =>
-      (await unwrap(api.GET('/projects/{projectId}/contacts', { params: { path: { projectId } } })))
-        .items,
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/projects/{projectId}/contacts', {
+          params: {
+            path: { projectId },
+            query: { limit: CONTACTS_PAGE, ...(pageParam ? { cursor: pageParam } : {}) },
+          },
+        }),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
   });
 }
 
+/** The ETag of a page version, as the API sends it. */
+export function pageTag(entry: Pick<ShowcaseEntry, 'version'>): string {
+  return `"${String(entry.version)}"`;
+}
+
 /**
- * Keeps the cached page and the catalogue in step with a change. Covers and
- * status changes return no ETag, so the page is re-read for the next If-Match.
+ * Keeps the cached page and the catalogue in step with a change. Every change
+ * (a save, a cover, a status) answers with the new ETag, which the next
+ * If-Match needs.
  */
 function useEntryChanged(projectId: string) {
   const queryClient = useQueryClient();
-  return (entry: ShowcaseEntry, etag?: string) => {
+  return (entry: ShowcaseEntry, etag: string | undefined) => {
     const key = showcaseEntryQuery(projectId).queryKey;
-    if (etag !== undefined) {
-      queryClient.setQueryData(key, { data: entry, etag });
-    } else {
-      queryClient.setQueryData(key, (old) => (old ? { ...old, data: entry } : old));
-      void queryClient.invalidateQueries({ queryKey: key });
-    }
+    queryClient.setQueryData(key, { data: entry, etag: etag ?? pageTag(entry) });
     void queryClient.invalidateQueries({ queryKey: ['showcase'] });
     void queryClient.invalidateQueries({ queryKey: ['admin', 'showcase'] });
   };
@@ -138,7 +151,7 @@ export function useSetShowcaseCover(projectId: string) {
     mutationFn: (file: File) => {
       const form = new FormData();
       form.append('file', file);
-      return unwrap(
+      return unwrapTagged(
         api.PUT('/projects/{projectId}/showcase/cover', {
           params: { path: { projectId } },
           // The typed body only names the field; the request carries the file itself.
@@ -147,8 +160,8 @@ export function useSetShowcaseCover(projectId: string) {
         }),
       );
     },
-    onSuccess: (entry) => {
-      changed(entry);
+    onSuccess: ({ data, etag }) => {
+      changed(data, etag);
     },
   });
 }
@@ -157,28 +170,29 @@ export function useDeleteShowcaseCover(projectId: string) {
   const changed = useEntryChanged(projectId);
   return useMutation({
     mutationFn: () =>
-      unwrap(
+      unwrapTagged(
         api.DELETE('/projects/{projectId}/showcase/cover', { params: { path: { projectId } } }),
       ),
-    onSuccess: (entry) => {
-      changed(entry);
+    onSuccess: ({ data, etag }) => {
+      changed(data, etag);
     },
   });
 }
 
+/** Publishes the page (true) or takes it off the showcase (false). */
 export function usePublishShowcaseEntry(projectId: string) {
   const changed = useEntryChanged(projectId);
   return useMutation({
     mutationFn: (publish: boolean) =>
-      unwrap(
+      unwrapTagged(
         publish
           ? api.POST('/projects/{projectId}/showcase/publish', { params: { path: { projectId } } })
           : api.POST('/projects/{projectId}/showcase/unpublish', {
               params: { path: { projectId } },
             }),
       ),
-    onSuccess: (entry) => {
-      changed(entry);
+    onSuccess: ({ data, etag }) => {
+      changed(data, etag);
     },
   });
 }
@@ -193,21 +207,24 @@ export function showcaseReviewsQuery(status: ShowcaseStatus) {
   });
 }
 
+/** A review names the version the moderator read: 412 when the team changed it since. */
 export function useReviewShowcaseEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       projectId,
+      version,
       approve,
       comment,
     }: {
       projectId: string;
+      version: number;
       approve: boolean;
       comment?: string;
     }) =>
       unwrap(
         api.POST('/admin/showcase/{projectId}/review', {
-          params: { path: { projectId } },
+          params: { path: { projectId }, header: { 'If-Match': pageTag({ version }) } },
           body: comment ? { approve, comment } : { approve },
         }),
       ),
@@ -219,11 +236,33 @@ export function useReviewShowcaseEntry() {
   });
 }
 
-export function contactRequestsQuery(status: ContactStatus) {
+/** The number of requests of a status for the tab counter (up to a hundred). */
+export function contactCountQuery(status: ContactStatus) {
   return queryOptions({
-    queryKey: ['admin', 'contacts', status],
-    queryFn: async () =>
-      (await unwrap(api.GET('/admin/contacts', { params: { query: { status } } }))).items,
+    queryKey: ['admin', 'contacts', status, 'count'],
+    queryFn: async () => {
+      const page = await unwrap(
+        api.GET('/admin/contacts', { params: { query: { status, limit: 100 } } }),
+      );
+      return { count: page.items.length };
+    },
+  });
+}
+
+/** The requests of a status, newest first, page by page. */
+export function contactRequestsQuery(status: ContactStatus) {
+  return infiniteQueryOptions({
+    queryKey: ['admin', 'contacts', status, 'list'],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/admin/contacts', {
+          params: {
+            query: { status, limit: CONTACTS_PAGE, ...(pageParam ? { cursor: pageParam } : {}) },
+          },
+        }),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
   });
 }
 

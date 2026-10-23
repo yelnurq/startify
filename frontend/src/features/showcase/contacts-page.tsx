@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Building2, Mail, Send, X } from 'lucide-react';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ import { errorMessage } from '@/shared/api/errors';
 import { useFormatters } from '@/shared/i18n/format';
 
 import {
+  contactCountQuery,
   contactRequestsQuery,
   useModerateContact,
   type ContactRequest,
@@ -39,7 +40,7 @@ const STATUS_TONE: Record<ContactStatus, Tone> = {
 export function ContactsPage() {
   const { t } = useTranslation('showcase');
   const [tab, setTab] = useState<ContactStatus>('pending');
-  const counts = useQueries({ queries: TABS.map((status) => contactRequestsQuery(status)) });
+  const counts = useQueries({ queries: TABS.map((status) => contactCountQuery(status)) });
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -54,7 +55,7 @@ export function ContactsPage() {
       >
         <TabsList>
           {TABS.map((status, i) => (
-            <TabsTrigger key={status} value={status} count={counts[i]?.data?.length}>
+            <TabsTrigger key={status} value={status} count={counts[i]?.data?.count}>
               {t(`contacts.tabs.${status}`)}
             </TabsTrigger>
           ))}
@@ -70,8 +71,8 @@ export function ContactsPage() {
 }
 
 function ContactList({ status }: { status: ContactStatus }) {
-  const { t } = useTranslation('showcase');
-  const list = useQuery(contactRequestsQuery(status));
+  const { t } = useTranslation(['showcase', 'common']);
+  const list = useInfiniteQuery(contactRequestsQuery(status));
   if (list.isPending) {
     return (
       <div className="flex flex-col gap-4" aria-busy>
@@ -81,7 +82,8 @@ function ContactList({ status }: { status: ContactStatus }) {
     );
   }
   if (list.isError) return <Callout tone="danger">{errorMessage(list.error)}</Callout>;
-  if (list.data.length === 0) {
+  const contacts = list.data.pages.flatMap((page) => page.items);
+  if (contacts.length === 0) {
     return (
       <EmptyState
         illustration="inbox"
@@ -93,13 +95,25 @@ function ContactList({ status }: { status: ContactStatus }) {
     );
   }
   return (
-    <ul className="flex flex-col gap-4">
-      {list.data.map((contact) => (
-        <li key={contact.id}>
-          <ContactCard contact={contact} />
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-4">
+        {contacts.map((contact) => (
+          <li key={contact.id}>
+            <ContactCard contact={contact} />
+          </li>
+        ))}
+      </ul>
+      {list.hasNextPage && (
+        <Button
+          variant="secondary"
+          className="self-center"
+          loading={list.isFetchingNextPage}
+          onClick={() => void list.fetchNextPage()}
+        >
+          {t('common:actions.loadMore')}
+        </Button>
+      )}
+    </div>
   );
 }
 

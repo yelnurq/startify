@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Callout,
+  ConfirmDialog,
   Dialog,
   DialogBody,
   DialogContent,
@@ -26,11 +27,13 @@ import {
   toast,
   TruncatedText,
 } from '@/design-system';
+import { ApiError } from '@/shared/api/client';
 import { errorMessage } from '@/shared/api/errors';
 import { useFormatters } from '@/shared/i18n/format';
 
 import {
   showcaseReviewsQuery,
+  usePublishShowcaseEntry,
   useReviewShowcaseEntry,
   type ShowcaseEntry,
   type ShowcaseStatus,
@@ -113,17 +116,25 @@ function ReviewList({ status }: { status: ShowcaseStatus }) {
   );
 }
 
+/** The team changed the page after the moderator opened it: they read it again. */
+function reviewError(err: unknown, stale: string): string {
+  return err instanceof ApiError && err.status === 412 ? stale : errorMessage(err);
+}
+
 function ReviewCard({ entry }: { entry: ShowcaseEntry }) {
   const { t } = useTranslation(['showcase', 'common']);
   const { relative } = useFormatters();
   const review = useReviewShowcaseEntry();
+  const takeDown = usePublishShowcaseEntry(entry.project_id);
   const [rejecting, setRejecting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  // The decision is about the version on the screen.
   const approve = () => {
     review.mutate(
-      { projectId: entry.project_id, approve: true },
+      { projectId: entry.project_id, version: entry.version, approve: true },
       {
         onSuccess: () => toast.success(t('moderation.approved')),
-        onError: (err) => toast.error(errorMessage(err)),
+        onError: (err) => toast.error(reviewError(err, t('moderation.stale'))),
       },
     );
   };
@@ -181,6 +192,7 @@ function ReviewCard({ entry }: { entry: ShowcaseEntry }) {
             <span className="whitespace-pre-line">{entry.review_comment}</span>
           </Callout>
         )}
+        {entry.held && <Callout tone="warning">{t('moderation.held')}</Callout>}
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
           {entry.status === 'in_review' && (
             <Button size="sm" leftIcon={<Check />} loading={review.isPending} onClick={approve}>
@@ -204,6 +216,19 @@ function ReviewCard({ entry }: { entry: ShowcaseEntry }) {
               </Button>
             </>
           )}
+          {/* A take-down hides the page everywhere until a moderator approves it again. */}
+          {entry.published_at && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={takeDown.isPending}
+              onClick={() => {
+                setRemoving(true);
+              }}
+            >
+              {t('moderation.takeDown')}
+            </Button>
+          )}
           <Button asChild size="sm" variant="ghost">
             <Link to="/app/projects/$projectId/showcase" params={{ projectId: entry.project_id }}>
               {t('moderation.openProject')}
@@ -226,15 +251,33 @@ function ReviewCard({ entry }: { entry: ShowcaseEntry }) {
         loading={review.isPending}
         onReject={(comment) => {
           review.mutate(
-            { projectId: entry.project_id, approve: false, comment },
+            { projectId: entry.project_id, version: entry.version, approve: false, comment },
             {
               onSuccess: () => {
                 setRejecting(false);
                 toast.success(t('moderation.rejected'));
               },
-              onError: (err) => toast.error(errorMessage(err)),
+              onError: (err) => toast.error(reviewError(err, t('moderation.stale'))),
             },
           );
+        }}
+      />
+      <ConfirmDialog
+        open={removing}
+        onOpenChange={setRemoving}
+        title={t('moderation.takeDownDialog.title', { title: entry.title })}
+        description={t('moderation.takeDownDialog.text')}
+        confirmLabel={t('moderation.takeDown')}
+        tone="danger"
+        loading={takeDown.isPending}
+        onConfirm={() => {
+          takeDown.mutate(false, {
+            onSuccess: () => {
+              setRemoving(false);
+              toast.success(t('moderation.takenDown'));
+            },
+            onError: (err) => toast.error(errorMessage(err)),
+          });
         }}
       />
     </article>

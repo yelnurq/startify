@@ -237,8 +237,11 @@
     "state": {
       "draft": "The page is not on the showcase.",
       "in_review": "The page is already visible inside the university. The innovation office reviews it before it is published for everyone.",
-      "published": "The page is on the showcase — changes show up as soon as you save.",
-      "publishedReview": "Changes to a public page are reviewed by the innovation office first.",
+      "in_reviewHidden": "The page is waiting for the innovation office and is visible to no one until approved.",
+      "published": "The page is on the university's showcase — changes show up as soon as you save.",
+      "publishedPublic": "The page is open to everyone. Changing its texts, address, video, tags or cover sends it back to review: until approved it is visible inside the university only.",
+      "heldTitle": "Taken off the showcase by a moderator",
+      "held": "The page can be published again only after the innovation office reviews it: send it for review.",
       "rejectedTitle": "Rejected by the reviewer",
       "rejected": "The page is visible inside the university only. Address the comments and send it again.",
       "comment": "Reviewer's comment",
@@ -252,7 +255,14 @@
       "published": "The page is published",
       "submitted": "The page is sent for review",
       "unpublished": "The page is taken off the showcase",
-      "stale": "The page was changed in another tab — the latest version is loaded"
+      "stale": "The page was changed in another tab — the latest version is loaded",
+      "merged": "The page was changed in another tab — the changes were merged and your edits saved"
+    },
+    "conflict": {
+      "title": "You and someone else changed these fields",
+      "text": "The form keeps your version of: {{fields}}. Save it or take the version from the server.",
+      "theirs": "Take the server version",
+      "mine": "Keep mine"
     },
     "unpublish": {
       "title": "Take the page off the showcase?",
@@ -341,6 +351,14 @@
     "openProject": "Open in the project",
     "approved": "The page is published",
     "rejected": "The page is rejected",
+    "stale": "The team changed the page while you were reviewing it — open the latest version",
+    "held": "A moderator took the page down: it returns to the showcase only once approved.",
+    "takeDown": "Take off the showcase",
+    "takenDown": "The page is off the showcase",
+    "takeDownDialog": {
+      "title": "Take the page “{{title}}” off the showcase?",
+      "text": "The page leaves the catalogue for students and for everyone. The team can bring it back only through review."
+    },
     "rejectDialog": {
       "title": "Reject the page “{{title}}”?",
       "text": "The team will see the comment and can fix the page.",

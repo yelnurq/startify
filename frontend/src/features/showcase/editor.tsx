@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { ExternalLink, ImagePlus, Inbox, Mail, Trash2, Wand2 } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
@@ -43,7 +43,7 @@ import {
   type ShowcaseVisibility,
 } from './api';
 import { ShowcaseCardView } from './card';
-import { LIMITS, NEEDS, slugify, type ShowcaseNeed } from './logic';
+import { LIMITS, mergeForm, NEEDS, slugify, type ShowcaseNeed } from './logic';
 import { useShowcasePreview } from './preview-store';
 
 const appRoute = getRouteApi('/app');
@@ -55,18 +55,36 @@ const COVER_TYPES = 'image/jpeg,image/png,image/webp';
 type SectionField = 'problem' | 'solution' | 'market' | 'traction' | 'ask';
 const SECTION_FIELDS: SectionField[] = ['problem', 'solution', 'market', 'traction', 'ask'];
 
-interface Draft {
+/** The form, flat: every key is a field the editor merges on its own. */
+type Draft = Record<SectionField, string> & {
   slug: string;
   title: string;
   tagline: string;
   video_url: string;
-  sections: Record<SectionField, string>;
   needs: ShowcaseNeed[];
   tags: string[];
   visibility: ShowcaseVisibility;
   show_score: boolean;
   contact_enabled: boolean;
-}
+};
+
+/** The label key of a draft field, to name it in a conflict. */
+const FIELD_LABELS: Record<keyof Draft, string> = {
+  slug: 'editor.fields.slug',
+  title: 'editor.fields.title',
+  tagline: 'editor.fields.tagline',
+  video_url: 'editor.fields.video',
+  problem: 'editor.fields.problem',
+  solution: 'editor.fields.solution',
+  market: 'editor.fields.market',
+  traction: 'editor.fields.traction',
+  ask: 'editor.fields.ask',
+  needs: 'editor.fields.needs',
+  tags: 'editor.fields.tags',
+  visibility: 'editor.fields.visibility',
+  show_score: 'editor.fields.showScore',
+  contact_enabled: 'editor.fields.contactEnabled',
+};
 
 function draftOf(entry: ShowcaseEntry): Draft {
   return {
@@ -74,13 +92,11 @@ function draftOf(entry: ShowcaseEntry): Draft {
     title: entry.title,
     tagline: entry.tagline,
     video_url: entry.video_url ?? '',
-    sections: {
-      problem: entry.sections.problem ?? '',
-      solution: entry.sections.solution ?? '',
-      market: entry.sections.market ?? '',
-      traction: entry.sections.traction ?? '',
-      ask: entry.sections.ask ?? '',
-    },
+    problem: entry.sections.problem ?? '',
+    solution: entry.sections.solution ?? '',
+    market: entry.sections.market ?? '',
+    traction: entry.sections.traction ?? '',
+    ask: entry.sections.ask ?? '',
     needs: [...entry.needs],
     tags: [...entry.tags],
     visibility: entry.visibility,
@@ -92,7 +108,7 @@ function draftOf(entry: ShowcaseEntry): Draft {
 function bodyOf(draft: Draft): ShowcaseEntryUpdate {
   const sections: ShowcaseEntryUpdate['sections'] = {};
   for (const key of SECTION_FIELDS) {
-    const value = draft.sections[key].trim();
+    const value = draft[key].trim();
     if (value) sections[key] = value;
   }
   return {
@@ -141,7 +157,7 @@ export function ShowcaseEditor({ project }: { project: Project }) {
       project={project}
       entry={entry.data.data}
       etag={entry.data.etag}
-      refetch={async () => (await entry.refetch()).data?.data}
+      refetch={async () => (await entry.refetch()).data}
     />
   );
 }
@@ -150,7 +166,13 @@ interface EditorFormProps {
   project: Project;
   entry: ShowcaseEntry;
   etag: string | undefined;
-  refetch: () => Promise<ShowcaseEntry | undefined>;
+  refetch: () => Promise<{ data: ShowcaseEntry; etag: string | undefined } | undefined>;
+}
+
+/** Fields someone else changed differently while this editor was open. */
+interface Conflict {
+  fields: (keyof Draft)[];
+  theirs: Draft;
 }
 
 function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
@@ -158,7 +180,10 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
   const { session } = appRoute.useRouteContext();
   const editable = canEdit(project);
   const [draft, setDraft] = useState<Draft>(() => draftOf(entry));
-  const [baseline, setBaseline] = useState(() => JSON.stringify(bodyOf(draftOf(entry))));
+  // The version on the server the draft started from (the base of a merge).
+  const [base, setBase] = useState<Draft>(() => draftOf(entry));
+  const baseline = JSON.stringify(bodyOf(base));
+  const [conflict, setConflict] = useState<Conflict | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   const save = useSaveShowcaseEntry(project.id);
@@ -213,7 +238,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
     clearError(key);
   };
   const setSection = (key: SectionField, value: string) => {
-    setDraft((d) => ({ ...d, sections: { ...d.sections, [key]: value } }));
+    setDraft((d) => ({ ...d, [key]: value }));
     clearError(`sections.${key}`);
   };
   function clearError(field: string) {
@@ -240,29 +265,52 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
     return true;
   };
 
+  /**
+   * Someone saved the page meanwhile (412): their changes are merged into the
+   * draft field by field. Without overlapping edits the merged page is saved
+   * at once; overlapping fields keep this editor's value until the person
+   * chooses (D-036, as in the step editor).
+   */
+  const mergeNewer = async (): Promise<boolean> => {
+    const fresh = await refetch();
+    if (!fresh) {
+      toast.error(t('editor.actions.stale'));
+      return false;
+    }
+    const theirs = draftOf(fresh.data);
+    const { merged, conflicts } = mergeForm(base, draft, theirs);
+    setDraft(merged);
+    setBase(theirs);
+    if (conflicts.length > 0) {
+      setConflict({ fields: conflicts, theirs });
+      return false;
+    }
+    await save.mutateAsync({ body: bodyOf(merged), etag: fresh.etag });
+    setBase(merged);
+    toast.success(t('editor.actions.merged'));
+    return true;
+  };
+
   /** Saves the page if needed; resolves false when it could not be saved. */
   const persist = async (): Promise<boolean> => {
     if (!dirty && entry.saved) return true;
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) return false;
-    const body = bodyOf(draft);
+    const saving = draft;
     try {
-      await save.mutateAsync({ body, etag });
-      setBaseline(JSON.stringify(body));
+      await save.mutateAsync({ body: bodyOf(saving), etag });
+      setBase(saving);
+      setConflict(null);
       return true;
     } catch (err) {
-      if (err instanceof ApiError && err.status === 412) {
-        const fresh = await refetch();
-        if (fresh) {
-          setDraft(draftOf(fresh));
-          setBaseline(JSON.stringify(bodyOf(draftOf(fresh))));
-        }
-        toast.error(t('editor.actions.stale'));
-      } else if (!showErrors(err)) {
-        toast.error(errorMessage(err));
+      try {
+        if (err instanceof ApiError && err.status === 412) return await mergeNewer();
+        throw err;
+      } catch (failed) {
+        if (!showErrors(failed)) toast.error(errorMessage(failed));
+        return false;
       }
-      return false;
     }
   };
 
@@ -273,7 +321,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
   const onPublish = async () => {
     if (!(await persist())) return;
     try {
-      const result = await publish.mutateAsync(true);
+      const { data: result } = await publish.mutateAsync(true);
       toast.success(
         result.status === 'in_review'
           ? t('editor.actions.submitted')
@@ -348,7 +396,7 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
           <div className="flex flex-wrap gap-2">
             {canPublish && (
               <Button type="button" loading={publish.isPending} onClick={() => void onPublish()}>
-                {draft.visibility === 'public'
+                {draft.visibility === 'public' || entry.held
                   ? t('editor.actions.submit')
                   : t('editor.actions.publish')}
               </Button>
@@ -534,11 +582,11 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
             required={key === 'problem' || key === 'solution'}
             hint={t(`editor.fields.${key}Hint`)}
             error={fieldError(`sections.${key}`)}
-            counter={{ value: draft.sections[key].length, max: LIMITS[key] }}
+            counter={{ value: draft[key].length, max: LIMITS[key] }}
           >
             <Textarea
               rows={key === 'problem' || key === 'solution' ? 5 : 4}
-              value={draft.sections[key]}
+              value={draft[key]}
               disabled={!editable}
               onChange={(e) => {
                 setSection(key, e.target.value);
@@ -656,6 +704,50 @@ function EditorForm({ project, entry, etag, refetch }: EditorFormProps) {
         />
       </Group>
 
+      {conflict && (
+        <Callout
+          tone="warning"
+          title={t('editor.conflict.title')}
+          action={
+            <span className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const theirs = conflict.theirs;
+                  setDraft((d) => {
+                    const next = { ...d };
+                    for (const field of conflict.fields)
+                      Object.assign(next, { [field]: theirs[field] });
+                    return next;
+                  });
+                  setConflict(null);
+                }}
+              >
+                {t('editor.conflict.theirs')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setConflict(null);
+                }}
+              >
+                {t('editor.conflict.mine')}
+              </Button>
+            </span>
+          }
+        >
+          {t('editor.conflict.text', {
+            fields: conflict.fields
+              .map((field) => t(FIELD_LABELS[field] as 'editor.fields.title'))
+              .join(', '),
+          })}
+        </Callout>
+      )}
+
       {editable && (
         <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border surface-glass px-4 py-3 lg:-mx-10 lg:px-10">
           <Button type="submit" loading={save.isPending} disabled={busy || (!dirty && entry.saved)}>
@@ -738,18 +830,26 @@ function StatusCallout({ entry }: { entry: ShowcaseEntry }) {
     ) : undefined;
   switch (entry.status) {
     case 'draft':
+      if (entry.held) {
+        return (
+          <Callout tone="warning" title={t('editor.state.heldTitle')}>
+            {t('editor.state.held')}
+          </Callout>
+        );
+      }
       return entry.saved ? <Callout tone="info">{t('editor.state.draft')}</Callout> : null;
     case 'in_review':
+      // A page a moderator took down waits for review hidden from everyone.
       return (
         <Callout tone="warning" action={link}>
-          {t('editor.state.in_review')}
+          {entry.published_at ? t('editor.state.in_review') : t('editor.state.in_reviewHidden')}
         </Callout>
       );
     case 'published':
       return (
         <Callout tone="success" action={link}>
           {entry.visibility === 'public'
-            ? `${t('editor.state.published')} ${t('editor.state.publishedReview')}`
+            ? t('editor.state.publishedPublic')
             : t('editor.state.published')}
         </Callout>
       );
@@ -772,9 +872,10 @@ function StatusCallout({ entry }: { entry: ShowcaseEntry }) {
 
 /** Side panel of the editor: the live card and the requests passed on to the team. */
 export function ShowcaseAside({ projectId }: { projectId: string }) {
-  const { t } = useTranslation('showcase');
+  const { t } = useTranslation(['showcase', 'common']);
   const card = useShowcasePreview((s) => s.card);
-  const contacts = useQuery(projectContactsQuery(projectId));
+  const contacts = useInfiniteQuery(projectContactsQuery(projectId));
+  const items = contacts.data?.pages.flatMap((page) => page.items) ?? [];
   const { dateTime } = useFormatters();
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
@@ -794,9 +895,9 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
         <h2 id="contacts-title" className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Inbox className="size-4 text-fg-subtle" aria-hidden />
           {t('editor.contacts.title')}
-          {contacts.data && contacts.data.length > 0 && (
+          {items.length > 0 && (
             <Badge size="sm" tone="primary">
-              {contacts.data.length}
+              {items.length}
             </Badge>
           )}
         </h2>
@@ -804,7 +905,7 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
           <SkeletonText lines={3} />
         ) : contacts.isError ? (
           <Callout tone="danger">{errorMessage(contacts.error)}</Callout>
-        ) : contacts.data.length === 0 ? (
+        ) : items.length === 0 ? (
           <EmptyState
             size="sm"
             illustration="inbox"
@@ -813,7 +914,7 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
           />
         ) : (
           <ul className="flex flex-col gap-3">
-            {contacts.data.map((c) => (
+            {items.map((c) => (
               <li
                 key={c.id}
                 className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3"
@@ -840,6 +941,17 @@ export function ShowcaseAside({ projectId }: { projectId: string }) {
               </li>
             ))}
           </ul>
+        )}
+        {contacts.hasNextPage && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="self-start"
+            loading={contacts.isFetchingNextPage}
+            onClick={() => void contacts.fetchNextPage()}
+          >
+            {t('common:actions.loadMore')}
+          </Button>
         )}
       </section>
       <Link to="/showcase" className="text-sm text-primary-text hover:underline">

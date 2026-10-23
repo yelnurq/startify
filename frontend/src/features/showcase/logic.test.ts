@@ -6,6 +6,7 @@ import {
   isValidSlug,
   isWebLink,
   listQuery,
+  mergeForm,
   monogram,
   parseShowcaseSearch,
   presentSections,
@@ -198,5 +199,32 @@ describe('cards and pages', () => {
     expect(excerpt('Фермеры теряют до трети урожая, потому что болезни замечают поздно', 40)).toBe(
       'Фермеры теряют до трети урожая, потому…',
     );
+  });
+});
+
+describe('merging the page editor with a newer version', () => {
+  const base = { title: 'AgroScan', tagline: 'Фото листа', tags: ['ai'], show_score: false };
+
+  it('takes the server changes and keeps the local ones', () => {
+    const mine = { ...base, tagline: 'Диагноз за 10 секунд' };
+    const theirs = { ...base, title: 'AgroScan Pro', tags: ['ai', 'agro'] };
+    expect(mergeForm(base, mine, theirs)).toEqual({
+      merged: {
+        title: 'AgroScan Pro',
+        tagline: 'Диагноз за 10 секунд',
+        tags: ['ai', 'agro'],
+        show_score: false,
+      },
+      conflicts: [],
+    });
+  });
+
+  it('keeps the local value of a field both changed and reports it', () => {
+    const mine = { ...base, tagline: 'Моя версия', show_score: true };
+    const theirs = { ...base, tagline: 'Их версия', show_score: true };
+    expect(mergeForm(base, mine, theirs)).toEqual({
+      merged: { ...base, tagline: 'Моя версия', show_score: true },
+      conflicts: ['tagline'],
+    });
   });
 });
