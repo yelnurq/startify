@@ -57,10 +57,12 @@
 
 ### Жизненный цикл запроса
 
-1. `RequestID` (X-Request-ID, в логах), `ClientIP` (X-Forwarded-For только от доверенных прокси),
-   `Recoverer` (panic → 500 problem), OpenTelemetry-спан с именем маршрута, метрика длительности
-   по шаблону маршрута, access-лог, security-заголовки.
-2. Для `/api/v1`: таймаут контекста (кроме SSE), лимит тела (больше для multipart-загрузок),
+1. `RequestID` (X-Request-ID, в логах), `ClientIP` (последняя запись X-Forwarded-For, только от
+   доверенного прокси — одного хопа Nginx), `Recoverer` (panic → 500 problem), OpenTelemetry-спан
+   с именем маршрута, метрика длительности по шаблону маршрута (метод — из фиксированного набора),
+   access-лог без query-строки, security-заголовки.
+2. Для `/api/v1`: таймаут контекста (кроме SSE-маршрутов), лимит тела (больше для маршрутов
+   загрузки); оба набора маршрутов читаются из `openapi.yaml`, а не из заголовков запроса,
    определение вуза по `Host` (точный домен → `<slug>.<base>` → вуз по умолчанию; область RLS
    ставится в контекст), CSRF (`Sec-Fetch-Site`, `Origin`, double submit), аутентификация по
    cookie `qadam_at` (JWT + проверка отзыва и версии ролей в Valkey), Idempotency-Key для POST
@@ -85,7 +87,8 @@
 - PostgreSQL 17: UUIDv7, `citext`, `pg_trgm`, `pgvector`.
 - Каждая таблица с `tenant_id` — под RLS. `db.Tx` выставляет `app.tenant_id`/`app.system`
   транзакционно-локально; приложение подключается ролью `qadam_app`, на которую RLS действует
-  всегда. Подробности — `docs/DECISIONS.md` (D-006).
+  всегда. API, worker и seed при старте отказываются работать под суперпользователем, ролью с
+  BYPASSRLS или владельцем таблиц. Подробности — `docs/DECISIONS.md` (D-006).
 - Миграции — goose (SQL, встроены в бинарник); очередь River хранит задачи в той же БД, поэтому
   задача ставится в одной транзакции с бизнес-изменением.
 
@@ -204,6 +207,25 @@
 ## Развёртывание
 
 Docker Compose поднимает весь стек одной командой (`make dev`): postgres, valkey, minio,
-gotenberg, clamav, mailpit, одноразовый `migrate`, api, worker, web. Один образ бэкенда содержит
-все бинарники (`/app/api`, `/app/worker`, `/app/migrate`). Prod-конфигурация, TLS (Caddy),
-бэкапы и мониторинг — фаза 12 (`docs/OPERATIONS.md`).
+одноразовые `minio-init` и `migrate`, gotenberg, clamav, api, worker, web, а в разработке ещё
+mailpit. Один образ бэкенда содержит все бинарники (`/app/api`, `/app/worker`, `/app/migrate`).
+
+- `deploy/docker-compose.yml` — базовый файл: наружу опубликован только web (Nginx, `WEB_PORT`),
+  API и служебные сервисы доступны только во внутренней сети compose. Valkey — с паролем
+  (`VALKEY_PASSWORD`). Корневые ключи MinIO видят только `minio` и `minio-init`; последний при
+  каждом старте создаёт бакет и пользователя приложения (`S3_ACCESS_KEY`) с правом читать и
+  писать только объекты этого бакета (`deploy/minio/init.sh`).
+- `deploy/docker-compose.dev.yml` — только для машины разработчика: порты API, PostgreSQL,
+  Valkey, MinIO, Gotenberg и ClamAV на `127.0.0.1` (`DEV_BIND`) и Mailpit, куда уходят все письма.
+  В продакшне конфигурация отказывается стартовать с `QADAM_SMTP_HOST=mailpit`, без
+  `QADAM_SMTP_FROM`, без пароля Valkey и с паролями из `.env.example`.
+- IP клиента. Nginx записывает в `X-Forwarded-For` адрес, который видит сам (`$remote_addr`), а не
+  дописывает присланный клиентом; API доверяет одному хопу и берёт последнюю запись заголовка.
+  Если перед контейнером web стоит TLS-прокси (фаза 12), Nginx должен сначала восстановить адрес
+  клиента модулем realip: `set_real_ip_from <адрес прокси>;` и `real_ip_header X-Forwarded-For;`
+  в блоке `server` — иначе все клиенты будут выглядеть одним адресом прокси и делить лимиты.
+- Журнал доступа Nginx пишет путь без query-строки и без `Referer`: в ссылках из писем — одноразовые
+  токены, в ответе SSO — коды. В журнал ошибок Nginx при недоступном API строка запроса попадает
+  целиком; это касается только кода SSO, одноразового и короткоживущего.
+
+Prod-конфигурация, TLS (Caddy), бэкапы и мониторинг — фаза 12 (`docs/OPERATIONS.md`).
