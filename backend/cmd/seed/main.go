@@ -1,6 +1,12 @@
 // Command seed fills the database with the demonstration data: the KazUTB
 // structure with its seal and campus photo, demo accounts of every role,
 // requests for teammates and student projects. It is idempotent and refuses to run in production.
+//
+//	seed            # the demo data
+//	seed clean-e2e  # remove what end-to-end tests left (development only)
+//
+// It connects as the worker's role (QADAM_DATABASE_WORKER_URL): universities
+// are created in the system scope.
 package main
 
 import (
@@ -41,6 +47,20 @@ func run() error {
 		return err
 	}
 	defer database.Close()
+
+	if len(os.Args) > 1 {
+		if os.Args[1] != "clean-e2e" {
+			return fmt.Errorf("unknown command %q (want none for the demo data, or clean-e2e)", os.Args[1])
+		}
+		c, err := seed.CleanE2E(ctx, database)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Removed what end-to-end tests left: %d accounts, %d projects, %d requests for teammates, "+
+			"%d contact requests, %d knowledge documents, %d imports; %d files go with the next purge.\n",
+			c.Accounts, c.Projects, c.Requests, c.Contacts, c.Documents, c.Imports, c.Files)
+		return nil
+	}
 
 	if err := seed.Demo(ctx, database); err != nil {
 		return err

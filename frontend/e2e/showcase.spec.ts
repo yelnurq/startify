@@ -177,10 +177,11 @@ test.describe('public showcase', () => {
     );
 
     await dialog.getByLabel('Ваше имя').fill('Айдос Сеитов');
-    // A sender writes to a project a few times a day: every run is a new sender.
+    // A sender writes to a project a few times a day: every run is a new
+    // sender, an e2e.* one, whose requests are removed after the run.
     await dialog
       .getByLabel('Электронная почта')
-      .fill(`aidos.${Date.now().toString(36)}@agrofund.kz`);
+      .fill(`e2e.aidos.${Date.now().toString(36)}@agrofund.kz`);
     await dialog.getByLabel('Организация').fill('AgroFund');
     await dialog.getByRole('combobox', { name: 'Тема обращения' }).click();
     await page.getByRole('option', { name: 'Пилот' }).click();
