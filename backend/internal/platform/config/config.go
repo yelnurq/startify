@@ -77,9 +77,14 @@ type AI struct {
 	OpenAIAPIKey         string `koanf:"openai_api_key"`
 	OpenAIModel          string `koanf:"openai_model"`
 	OpenAIEmbeddingModel string `koanf:"openai_embedding_model"`
-	// OpenAILocal marks a server inside the university network: data sent to
-	// it is not redacted and users see no external-provider warning.
-	OpenAILocal bool `koanf:"openai_local"`
+	// OpenAILocal says whether the server is inside the university network
+	// (data sent to it is not redacted and users see no external-provider
+	// warning): "true", "false", or "auto" — local only for a loopback or
+	// private address or a single-label name such as a Docker service.
+	OpenAILocal string `koanf:"openai_local"`
+	// EmbeddingMinSimilarity is the cosine similarity below which a passage
+	// of the knowledge base is not related to a question.
+	EmbeddingMinSimilarity float64 `koanf:"embedding_min_similarity"`
 
 	// Timezone sets when daily limits reset.
 	Timezone       string        `koanf:"timezone"`
@@ -240,7 +245,8 @@ func defaults() map[string]any {
 		"ai.default":                    "mock",
 		"ai.routes":                     "",
 		"ai.anthropic_server_fallbacks": true,
-		"ai.openai_local":               true,
+		"ai.openai_local":               "auto",
+		"ai.embedding_min_similarity":   0.3,
 		"ai.timezone":                   "Asia/Almaty",
 		"ai.request_timeout":            "120s",
 	}
@@ -466,6 +472,12 @@ func (c *Config) Validate() error {
 			fail("QADAM_AI_OPENAI_BASE_URL must be an http(s) URL, got %q", c.AI.OpenAIBaseURL)
 		}
 	}
+	if !slices.Contains([]string{"auto", "true", "false"}, c.AI.OpenAILocal) {
+		fail("QADAM_AI_OPENAI_LOCAL must be auto, true or false, got %q", c.AI.OpenAILocal)
+	}
+	if c.AI.EmbeddingMinSimilarity < 0 || c.AI.EmbeddingMinSimilarity >= 1 {
+		fail("QADAM_AI_EMBEDDING_MIN_SIMILARITY must be within [0, 1)")
+	}
 	if _, err := time.LoadLocation(c.AI.Timezone); err != nil {
 		fail("QADAM_AI_TIMEZONE: unknown time zone %q", c.AI.Timezone)
 	}
@@ -477,6 +489,40 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid configuration:\n%w", errors.Join(errs...))
 	}
 	return nil
+}
+
+// OpenAIIsLocal reports whether the OpenAI-compatible server is inside the
+// university network. Unless the operator says so, only an address that
+// cannot be on the internet counts: by default data is masked (С-10).
+func (a AI) OpenAIIsLocal() bool {
+	switch a.OpenAILocal {
+	case "true":
+		return true
+	case "auto":
+		return LocalEndpoint(a.OpenAIBaseURL)
+	default:
+		return false
+	}
+}
+
+// LocalEndpoint reports whether a URL obviously points inside the network:
+// localhost, a loopback, private or link-local address, or a single-label
+// host name such as a Docker Compose service ("ollama").
+func LocalEndpoint(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+	if host == "" {
+		return false
+	}
+	if addr, err := netip.ParseAddr(host); err == nil {
+		addr = addr.Unmap()
+		return addr.IsLoopback() || addr.IsPrivate() || addr.IsLinkLocalUnicast()
+	}
+	return host == "localhost" || strings.HasSuffix(host, ".localhost") || host == "host.docker.internal" ||
+		!strings.Contains(host, ".")
 }
 
 // IsProduction reports whether the process runs in production.

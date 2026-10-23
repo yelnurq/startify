@@ -23,7 +23,7 @@ func ConfiguredProviders(cfg config.AI, mockDelay time.Duration) []llm.Provider 
 	if cfg.OpenAIBaseURL != "" {
 		providers = append(providers, openai.New(openai.Options{
 			BaseURL: cfg.OpenAIBaseURL, APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIModel,
-			EmbeddingModel: cfg.OpenAIEmbeddingModel, Local: cfg.OpenAILocal, Timeout: cfg.RequestTimeout,
+			EmbeddingModel: cfg.OpenAIEmbeddingModel, Local: cfg.OpenAIIsLocal(), Timeout: cfg.RequestTimeout,
 		}))
 	}
 	return providers

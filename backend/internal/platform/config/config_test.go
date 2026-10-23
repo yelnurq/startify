@@ -138,7 +138,8 @@ func TestAIConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.AI.Default != "mock" || cfg.AI.Timezone != "Asia/Almaty" || !cfg.AI.AnthropicServerFallbacks || !cfg.AI.OpenAILocal {
+	if cfg.AI.Default != "mock" || cfg.AI.Timezone != "Asia/Almaty" || !cfg.AI.AnthropicServerFallbacks || cfg.AI.OpenAILocal != "auto" ||
+		cfg.AI.EmbeddingMinSimilarity != 0.3 {
 		t.Fatalf("defaults %+v", cfg.AI)
 	}
 	cfg, err = FromEnviron(append(validEnviron(),
@@ -154,10 +155,46 @@ func TestAIConfig(t *testing.T) {
 		"QADAM_AI_OPENAI_BASE_URL=ollama:11434": "must be an http(s) URL",
 		"QADAM_AI_TIMEZONE=Mars/Olympus":        "unknown time zone",
 		"QADAM_AI_REQUEST_TIMEOUT=1s":           "QADAM_AI_REQUEST_TIMEOUT",
+		"QADAM_AI_OPENAI_LOCAL=yes":             "QADAM_AI_OPENAI_LOCAL must be auto, true or false",
+		"QADAM_AI_EMBEDDING_MIN_SIMILARITY=1":   "QADAM_AI_EMBEDDING_MIN_SIMILARITY",
 	} {
 		if _, err := FromEnviron(append(validEnviron(), env)); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%s: %v", env, err)
 		}
+	}
+}
+
+// An OpenAI-compatible server is external unless its address cannot be on
+// the internet or the operator says otherwise: personal data must not leave
+// the university unmasked because a flag was forgotten (С-10).
+func TestOpenAIIsLocal(t *testing.T) {
+	for raw, want := range map[string]bool{
+		"https://api.openai.com/v1":          false,
+		"https://llm.kaztbu.edu.kz/v1":       false,
+		"http://203.0.113.7:8000/v1":         false,
+		"":                                   false,
+		"http://ollama:11434/v1":             true,
+		"http://localhost:1234/v1":           true,
+		"http://lm.localhost/v1":             true,
+		"http://127.0.0.1:8000/v1":           true,
+		"http://[::1]:8000/v1":               true,
+		"http://10.20.0.5:8000/v1":           true,
+		"http://192.168.1.10/v1":             true,
+		"http://host.docker.internal:11434/": true,
+	} {
+		if got := LocalEndpoint(raw); got != want {
+			t.Errorf("LocalEndpoint(%q) = %v, want %v", raw, got, want)
+		}
+		if got := (AI{OpenAILocal: "auto", OpenAIBaseURL: raw}).OpenAIIsLocal(); got != want {
+			t.Errorf("auto %q = %v, want %v", raw, got, want)
+		}
+	}
+	if !(AI{OpenAILocal: "true", OpenAIBaseURL: "https://api.openai.com/v1"}).OpenAIIsLocal() {
+		t.Error("true must be trusted")
+	}
+	// A proxy inside the network may forward to the internet: false wins.
+	if (AI{OpenAILocal: "false", OpenAIBaseURL: "http://litellm:4000"}).OpenAIIsLocal() {
+		t.Error("false must win over the address")
 	}
 }
 
