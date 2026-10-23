@@ -79,13 +79,17 @@ func (s *Service) StudyGroups(ctx context.Context, params apigen.ListStudyGroups
 		v := strings.TrimSpace(*params.Q)
 		prefix = &v
 	}
+	limit, err := pagination.Limit(params.Limit)
+	if err != nil {
+		return nil, err
+	}
 	var out []apigen.StudyGroup
-	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
 		rows, err := s.q(ctx).ListStudyGroups(ctx, orgdb.ListStudyGroupsParams{
 			FacultyID:    params.FacultyId,
 			DepartmentID: params.DepartmentId,
 			Prefix:       prefix,
-			RowLimit:     int32(pagination.Limit(params.Limit)), //nolint:gosec // bounded by MaxLimit
+			RowLimit:     int32(limit), //nolint:gosec // bounded by MaxLimit
 		})
 		if err != nil {
 			return err

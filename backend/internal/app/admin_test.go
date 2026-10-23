@@ -50,6 +50,13 @@ func TestMemberAdministration(t *testing.T) {
 	if len(second.Items) != 1 || second.Items[0].User.Id == page.Items[0].User.Id {
 		t.Fatalf("second page: %+v", second)
 	}
+	// A page size outside the contract is refused, not quietly changed.
+	for _, limit := range []string{"0", "101"} {
+		p := expectProblem(t, admin.do(http.MethodGet, "/api/v1/admin/members?limit="+limit, nil), http.StatusBadRequest, "request.invalid_limit")
+		if p.Params["max"] != float64(100) {
+			t.Fatalf("limit=%s: %+v", limit, p)
+		}
+	}
 	rec = admin.do(http.MethodGet, "/api/v1/admin/members?q=%D0%B5%D1%80%D0%B1%D0%BE%D0%BB", nil)
 	if items := decode[apigen.MemberPage](t, rec).Items; len(items) != 1 || string(items[0].Email) != "yerbol@qadam.test" {
 		t.Fatalf("search: %+v", items)

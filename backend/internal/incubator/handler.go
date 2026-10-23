@@ -6,6 +6,7 @@ import (
 	"github.com/yelnurq/startify/backend/internal/apigen"
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 	"github.com/yelnurq/startify/backend/internal/platform/authz"
+	"github.com/yelnurq/startify/backend/internal/platform/pagination"
 )
 
 // Handler serves the incubator operations of the API.
@@ -180,9 +181,9 @@ func (h *Handler) UpdateProjectPresence(ctx context.Context, req apigen.UpdatePr
 
 // ListProjectActivity implements apigen.StrictServerInterface.
 func (h *Handler) ListProjectActivity(ctx context.Context, req apigen.ListProjectActivityRequestObject) (apigen.ListProjectActivityResponseObject, error) {
-	limit := 30
-	if req.Params.Limit != nil {
-		limit = *req.Params.Limit
+	limit, err := pagination.LimitOr(req.Params.Limit, 30, pagination.MaxLimit)
+	if err != nil {
+		return nil, err
 	}
 	list, err := h.svc.Activity(ctx, req.ProjectId, limit)
 	if err != nil {

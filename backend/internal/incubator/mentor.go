@@ -96,9 +96,9 @@ func (s *Service) Conversation(ctx context.Context, projectID uuid.UUID, key str
 	if _, err := s.step(key); err != nil {
 		return apigen.MentorConversation{}, err
 	}
-	limit := 30
-	if params.Limit != nil {
-		limit = min(max(*params.Limit, 1), 100)
+	limit, err := pagination.LimitOr(params.Limit, 30, pagination.MaxLimit)
+	if err != nil {
+		return apigen.MentorConversation{}, err
 	}
 	var before *uuid.UUID
 	if params.Cursor != nil {

@@ -587,7 +587,10 @@ func (s *Service) Members(ctx context.Context, params apigen.ListMembersParams) 
 	if _, err := authz.RequireRole(ctx, authz.RoleTenantAdmin, authz.RoleInnovationManager); err != nil {
 		return apigen.MemberPage{}, err
 	}
-	limit := pagination.Limit(params.Limit)
+	limit, err := pagination.Limit(params.Limit)
+	if err != nil {
+		return apigen.MemberPage{}, err
+	}
 	args := userdb.ListMembersParams{FacultyID: params.FacultyId, RowLimit: int32(limit + 1)} //nolint:gosec // bounded by MaxLimit
 	if params.Q != nil {
 		if q := strings.TrimSpace(*params.Q); q != "" {
@@ -611,7 +614,7 @@ func (s *Service) Members(ctx context.Context, params apigen.ListMembersParams) 
 	}
 
 	page := apigen.MemberPage{Items: []apigen.Member{}}
-	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
 		rows, err := s.q(ctx).ListMembers(ctx, args)
 		if err != nil {
 			return err
@@ -792,11 +795,11 @@ func (s *Service) People(ctx context.Context, params apigen.SearchPeopleParams) 
 	if _, err := authz.Require(ctx); err != nil {
 		return nil, err
 	}
-	limit := 20
-	if params.Limit != nil {
-		limit = min(max(*params.Limit, 1), 50)
+	limit, err := pagination.LimitOr(params.Limit, 20, 50)
+	if err != nil {
+		return nil, err
 	}
-	args := userdb.SearchPeopleParams{RowLimit: int32(limit)}
+	args := userdb.SearchPeopleParams{RowLimit: int32(limit)} //nolint:gosec // at most 50
 	if params.Q != nil {
 		if q := strings.TrimSpace(*params.Q); q != "" {
 			q = likeEscaper.Replace(q)
@@ -811,7 +814,7 @@ func (s *Service) People(ctx context.Context, params apigen.SearchPeopleParams) 
 		args.Role = &r
 	}
 	out := []apigen.Person{}
-	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
 		rows, err := s.q(ctx).SearchPeople(ctx, args)
 		if err != nil {
 			return err

@@ -194,7 +194,10 @@ func (s *Service) List(ctx context.Context, params apigen.ListKnowledgeDocuments
 	if _, err := authz.RequireRole(ctx, managers...); err != nil {
 		return apigen.KnowledgeDocumentPage{}, err
 	}
-	limit := pagination.Limit(params.Limit)
+	limit, err := pagination.Limit(params.Limit)
+	if err != nil {
+		return apigen.KnowledgeDocumentPage{}, err
+	}
 	args := knowledgedb.ListDocumentsParams{RowLimit: int32(limit + 1)} //nolint:gosec // bounded by MaxLimit
 	if params.Cursor != nil {
 		var before uuid.UUID
@@ -204,7 +207,7 @@ func (s *Service) List(ctx context.Context, params apigen.ListKnowledgeDocuments
 		args.BeforeID = &before
 	}
 	page := apigen.KnowledgeDocumentPage{Items: []apigen.KnowledgeDocument{}}
-	err := s.db.ReadTx(ctx, func(ctx context.Context) error {
+	err = s.db.ReadTx(ctx, func(ctx context.Context) error {
 		rows, err := s.q(ctx).ListDocuments(ctx, args)
 		if err != nil {
 			return err
@@ -579,7 +582,11 @@ func (h *Handler) SearchKnowledge(ctx context.Context, req apigen.SearchKnowledg
 	if _, err := authz.RequireRole(ctx, managers...); err != nil {
 		return nil, err
 	}
-	hits, err := h.svc.Search(ctx, req.Params.Q, pagination.Limit(req.Params.Limit))
+	limit, err := pagination.Limit(req.Params.Limit)
+	if err != nil {
+		return nil, err
+	}
+	hits, err := h.svc.Search(ctx, req.Params.Q, limit)
 	if err != nil {
 		return nil, err
 	}

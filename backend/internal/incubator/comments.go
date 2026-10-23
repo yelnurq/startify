@@ -69,11 +69,11 @@ func (s *Service) Comments(ctx context.Context, projectID uuid.UUID, params apig
 	if err != nil {
 		return apigen.CommentPage{}, err
 	}
-	limit := 50
-	if params.Limit != nil {
-		limit = min(max(*params.Limit, 1), 100)
+	limit, err := pagination.LimitOr(params.Limit, 50, pagination.MaxLimit)
+	if err != nil {
+		return apigen.CommentPage{}, err
 	}
-	args := incubatordb.ListCommentsParams{ProjectID: projectID, StepKey: params.StepKey, RowLimit: int32(limit + 1)}
+	args := incubatordb.ListCommentsParams{ProjectID: projectID, StepKey: params.StepKey, RowLimit: int32(limit + 1)} //nolint:gosec // bounded by MaxLimit
 	if params.Cursor != nil {
 		var c commentCursor
 		if err := pagination.Decode(*params.Cursor, &c); err != nil {

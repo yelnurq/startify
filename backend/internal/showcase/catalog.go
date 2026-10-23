@@ -144,7 +144,10 @@ func (s *Service) List(ctx context.Context, params apigen.ListShowcaseParams) (a
 	if err != nil {
 		return apigen.ShowcasePage{}, err
 	}
-	limit := pagination.Limit(params.Limit)
+	limit, err := pagination.Limit(params.Limit)
+	if err != nil {
+		return apigen.ShowcasePage{}, err
+	}
 	args := showcasedb.ListLiveParams{
 		Scope: scope, FacultyID: params.Faculty, Tag: lower(params.Tag), RowLimit: int32(limit + 1), //nolint:gosec // bounded by MaxLimit
 	}

@@ -624,11 +624,11 @@ func (s *Service) Revisions(ctx context.Context, projectID uuid.UUID, key string
 		}
 		args.FieldKey = params.Field
 	}
-	limit := 20
-	if params.Limit != nil {
-		limit = min(max(*params.Limit, 1), 100)
+	limit, err := pagination.Limit(params.Limit)
+	if err != nil {
+		return apigen.RevisionPage{}, err
 	}
-	args.RowLimit = int32(limit + 1)
+	args.RowLimit = int32(limit + 1) //nolint:gosec // bounded by MaxLimit
 	if params.Cursor != nil {
 		var c revisionCursor
 		if err := pagination.Decode(*params.Cursor, &c); err != nil {

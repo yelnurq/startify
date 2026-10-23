@@ -18,6 +18,12 @@ describe('errorMessage', () => {
     expect(errorMessage(problem('ai.limit_reached', 429, { resets_at: '00:00' }))).toBe(
       'Лимит AI на сегодня исчерпан, он сбросится в 00:00.',
     );
+    expect(errorMessage(problem('request.invalid_limit', 400, { min: 1, max: 100 }))).toBe(
+      'Число записей на странице должно быть от 1 до 100.',
+    );
+    expect(errorMessage(problem('import.too_many_columns', 422, { max: 50 }))).toBe(
+      'Слишком много столбцов: не более 50.',
+    );
   });
 
   it('picks the variant named by the scope parameter', () => {

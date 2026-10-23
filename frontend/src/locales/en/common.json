@@ -98,6 +98,7 @@
     "request": {
       "malformed": "The server could not read the request.",
       "invalid_parameter": "The request contains an invalid parameter.",
+      "invalid_limit": "The number of items per page must be between {{min}} and {{max}}.",
       "too_large": "The amount of data is too large.",
       "timeout": "The server did not respond in time. Please try again."
     },

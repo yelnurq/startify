@@ -4,6 +4,7 @@ package pagination
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/yelnurq/startify/backend/internal/platform/apperr"
 )
@@ -14,12 +15,21 @@ const (
 	MaxLimit     = 100
 )
 
-// Limit normalises a requested page size.
-func Limit(requested *int) int {
-	if requested == nil || *requested < 1 {
-		return DefaultLimit
+// Limit returns the requested page size, or DefaultLimit when none was
+// asked for. A size outside [1, MaxLimit] is refused, as openapi.yaml
+// declares, rather than quietly changed.
+func Limit(requested *int) (int, error) { return LimitOr(requested, DefaultLimit, MaxLimit) }
+
+// LimitOr is Limit with an operation's own default and maximum.
+func LimitOr(requested *int, fallback, maxLimit int) (int, error) {
+	if requested == nil {
+		return fallback, nil
 	}
-	return min(*requested, MaxLimit)
+	if *requested < 1 || *requested > maxLimit {
+		return 0, apperr.BadRequest("request.invalid_limit", fmt.Sprintf("limit must be between 1 and %d", maxLimit)).
+			WithParams(map[string]any{"min": 1, "max": maxLimit})
+	}
+	return *requested, nil
 }
 
 // Encode turns the sort key of the last item into an opaque cursor.
