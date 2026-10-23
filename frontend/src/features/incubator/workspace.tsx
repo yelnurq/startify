@@ -55,7 +55,8 @@ export function Workspace({ projectId, stepKey, view, evaluationId }: WorkspaceP
   const template = useQuery(templateQuery);
   const project = useQuery(projectQuery(projectId));
   const steps = useQuery(stepsQuery(projectId));
-  const presence = usePresence(projectId, stepKey);
+  // Presence only for a project that opened: a missing one is not polled.
+  const presence = usePresence(projectId, stepKey, project.isSuccess);
   const [save, setSave] = useState<{ status: SaveStatus; savedAt: number | undefined }>({
     status: 'idle',
     savedAt: undefined,

@@ -69,44 +69,58 @@ export function useStepEditor(projectId: string, stepKey: string, initial: Tagge
 
 const PRESENCE_INTERVAL = 15_000;
 
+/** The project is gone or closed to this member: reporting again cannot succeed. */
+function isFinal(error: unknown): boolean {
+  return error instanceof ApiError && error.status >= 400 && error.status < 500;
+}
+
 /**
  * Reports presence every 15 seconds while the page is visible and returns
- * who else is in the project and the current step versions.
+ * who else is in the project and the current step versions. Only for a
+ * project that opened (`enabled`); a refusal (404, 403) stops the reports.
  */
-export function usePresence(projectId: string, stepKey: string | undefined) {
+export function usePresence(projectId: string, stepKey: string | undefined, enabled = true) {
   const [presence, setPresence] = useState<Presence | null>(null);
   const step = useRef(stepKey);
+  const refused = useRef(false);
   useEffect(() => {
     step.current = stepKey;
   }, [stepKey]);
 
   useEffect(() => {
+    if (!enabled) return;
     let stopped = false;
-    const report = () => {
-      if (document.visibilityState !== 'visible') return;
-      reportPresence(projectId, step.current)
-        .then((value) => {
-          if (!stopped) setPresence(value);
-        })
-        .catch(() => undefined);
-    };
-    report();
-    const timer = setInterval(report, PRESENCE_INTERVAL);
-    document.addEventListener('visibilitychange', report);
-    return () => {
+    refused.current = false;
+    const stop = () => {
       stopped = true;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', report);
     };
-  }, [projectId]);
+    const report = () => {
+      if (stopped || document.visibilityState !== 'visible') return;
+      reportPresence(projectId, step.current)
+        .then((value) => {
+          if (!stopped) setPresence(value);
+        })
+        .catch((error: unknown) => {
+          if (!isFinal(error)) return;
+          refused.current = true;
+          stop();
+        });
+    };
+    const timer = setInterval(report, PRESENCE_INTERVAL);
+    document.addEventListener('visibilitychange', report);
+    report();
+    return stop;
+  }, [projectId, enabled]);
 
   // A new step is announced at once.
   useEffect(() => {
-    if (!stepKey) return;
+    if (!enabled || !stepKey || refused.current) return;
     reportPresence(projectId, stepKey)
       .then(setPresence)
       .catch(() => undefined);
-  }, [projectId, stepKey]);
+  }, [projectId, stepKey, enabled]);
 
   return presence;
 }
