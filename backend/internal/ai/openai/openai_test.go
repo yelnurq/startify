@@ -1,0 +1,252 @@
+package openai
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/yelnurq/startify/backend/internal/ai/llm"
+)
+
+type recorded struct {
+	path string
+	auth string
+	body map[string]any
+}
+
+func server(t *testing.T, handle func(w http.ResponseWriter, rec recorded)) (*Provider, *[]recorded) {
+	t.Helper()
+	var calls []recorded
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		rec := recorded{path: r.URL.Path, auth: r.Header.Get("Authorization"), body: body}
+		calls = append(calls, rec)
+		handle(w, rec)
+	}))
+	t.Cleanup(srv.Close)
+	p := New(Options{
+		BaseURL: srv.URL + "/v1/", APIKey: "local-key", Model: "qwen3:14b", EmbeddingModel: "bge-m3", Local: true,
+		RetryDelay: time.Millisecond,
+	})
+	return p, &calls
+}
+
+func TestCompleteWithSchema(t *testing.T) {
+	rejected := false
+	p, calls := server(t, func(w http.ResponseWriter, rec recorded) {
+		// The first request carries response_format, which this server rejects.
+		if rec.body["response_format"] != nil && !rejected {
+			rejected = true
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":{"message":"response_format is not supported"}}`))
+			return
+		}
+		_, _ = fmt.Fprint(w, `{"model":"qwen3:14b","choices":[{"message":{"content":"{\"ok\":true}"},"finish_reason":"stop"}],
+			"usage":{"prompt_tokens":120,"completion_tokens":8,"prompt_tokens_details":{"cached_tokens":64}}}`)
+	})
+	res, err := p.Complete(context.Background(), llm.CompletionRequest{
+		Model: "qwen3:14b", System: "Answer in JSON", MaxTokens: 300,
+		Messages:   []llm.Message{{Role: llm.RoleUser, Content: "Проверка"}},
+		JSONSchema: &llm.Schema{Name: "check", JSON: map[string]any{"type": "object", "properties": map[string]any{"ok": map[string]any{"type": "boolean"}}}},
+		Metadata:   llm.RequestMeta{TenantID: uuid.New(), UserID: uuid.New()},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Text != `{"ok":true}` || res.Usage.InputTokens != 120 || res.Usage.CacheReadTokens != 64 || res.StopReason != llm.StopEnd {
+		t.Fatalf("result %+v", res)
+	}
+	if len(*calls) != 2 || (*calls)[1].body["response_format"] != nil {
+		t.Fatalf("expected a retry without response_format: %+v", *calls)
+	}
+	first := (*calls)[0]
+	msgs := first.body["messages"].([]any)
+	if first.path != "/v1/chat/completions" || first.auth != "Bearer local-key" || len(msgs) != 2 ||
+		msgs[0].(map[string]any)["role"] != "system" || first.body["user"] == "" {
+		t.Fatalf("request %+v", first)
+	}
+	format := first.body["response_format"].(map[string]any)["json_schema"].(map[string]any)
+	if format["name"] != "check" || format["schema"].(map[string]any)["additionalProperties"] != false {
+		t.Fatalf("format %+v", format)
+	}
+}
+
+func TestStream(t *testing.T) {
+	p, _ := server(t, func(w http.ResponseWriter, rec recorded) {
+		if rec.body["stream"] != true || rec.body["stream_options"] == nil {
+			t.Errorf("not a streaming request: %+v", rec.body)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		for _, chunk := range []string{
+			`{"model":"qwen3:14b","choices":[{"delta":{"role":"assistant","content":""}}]}`,
+			`{"choices":[{"delta":{"content":"Сәлем, "}}]}`,
+			`{"choices":[{"delta":{"content":"әлем!"},"finish_reason":"stop"}]}`,
+			`{"choices":[],"usage":{"prompt_tokens":9,"completion_tokens":4}}`,
+		} {
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", chunk)
+		}
+		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+	})
+	events, err := p.Stream(context.Background(), llm.CompletionRequest{Model: "qwen3:14b", Messages: []llm.Message{{Role: llm.RoleUser, Content: "hi"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text strings.Builder
+	var done *llm.CompletionResponse
+	for ev := range events {
+		if ev.Err != nil {
+			t.Fatal(ev.Err)
+		}
+		text.WriteString(ev.Delta)
+		if ev.Done != nil {
+			done = ev.Done
+		}
+	}
+	if text.String() != "Сәлем, әлем!" || done == nil || done.Usage.OutputTokens != 4 || done.Text != text.String() {
+		t.Fatalf("got %q %+v", text.String(), done)
+	}
+}
+
+func TestErrorsAndRefusals(t *testing.T) {
+	status := http.StatusTooManyRequests
+	p, _ := server(t, func(w http.ResponseWriter, _ recorded) {
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			return
+		}
+		_, _ = fmt.Fprint(w, `{"choices":[{"message":{"content":"","refusal":"I can't help with that."},"finish_reason":"stop"}]}`)
+	})
+	req := llm.CompletionRequest{Model: "m", Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}}
+	if _, err := p.Complete(context.Background(), req); !errors.Is(err, llm.ErrUnavailable) {
+		t.Fatalf("429: %v", err)
+	}
+	status = http.StatusNotFound
+	if _, err := p.Complete(context.Background(), req); !errors.Is(err, llm.ErrBadRequest) {
+		t.Fatalf("404: %v", err)
+	}
+	status = http.StatusOK
+	if _, err := p.Complete(context.Background(), req); !errors.Is(err, llm.ErrRefused) {
+		t.Fatalf("refusal: %v", err)
+	}
+	unreachable := New(Options{BaseURL: "http://127.0.0.1:1/v1", Model: "m", RetryDelay: time.Millisecond})
+	if _, err := unreachable.Complete(context.Background(), req); !errors.Is(err, llm.ErrUnavailable) {
+		t.Fatalf("unreachable: %v", err)
+	}
+}
+
+// An overloaded server is asked again after a pause before the gateway gives
+// up on it; a rejected request or a long Retry-After is not repeated (Н-23).
+func TestRetriesBeforeTheAnswer(t *testing.T) {
+	failures, status, wait := 2, http.StatusServiceUnavailable, ""
+	p, calls := server(t, func(w http.ResponseWriter, _ recorded) {
+		if failures > 0 {
+			failures--
+			if wait != "" {
+				w.Header().Set("Retry-After", wait)
+			}
+			w.WriteHeader(status)
+			return
+		}
+		_, _ = fmt.Fprint(w, `{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}`)
+	})
+	req := llm.CompletionRequest{Model: "m", Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}}
+	res, err := p.Complete(context.Background(), req)
+	if err != nil || res.Text != "ok" || len(*calls) != 3 {
+		t.Fatalf("503 twice: %v %d calls", err, len(*calls))
+	}
+
+	*calls, failures, status = nil, 1, http.StatusUnprocessableEntity
+	if _, err := p.Complete(context.Background(), req); !errors.Is(err, llm.ErrBadRequest) || len(*calls) != 1 {
+		t.Fatalf("422 must not be retried: %v %d calls", err, len(*calls))
+	}
+
+	*calls, failures, status, wait = nil, 1, http.StatusTooManyRequests, "0"
+	if _, err := p.Complete(context.Background(), req); err != nil || len(*calls) != 2 {
+		t.Fatalf("429 with Retry-After 0: %v %d calls", err, len(*calls))
+	}
+	*calls, failures, wait = nil, 1, "3600"
+	if _, err := p.Complete(context.Background(), req); !errors.Is(err, llm.ErrUnavailable) || len(*calls) != 1 {
+		t.Fatalf("a long Retry-After is left to the next provider: %v %d calls", err, len(*calls))
+	}
+	if d := retryAfter(http.Header{"Retry-After": {"Wed, 21 Oct 2026 07:28:30 GMT"}}, time.Date(2026, 10, 21, 7, 28, 0, 0, time.UTC)); d != 30*time.Second {
+		t.Fatalf("HTTP date: %s", d)
+	}
+}
+
+// slowStream sends chunks with a pause before each; it stops when the client goes away.
+func slowStream(pauses ...time.Duration) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		for i, d := range pauses {
+			select {
+			case <-time.After(d):
+			case <-r.Context().Done():
+				return
+			}
+			_, _ = fmt.Fprintf(w, "data: {\"choices\":[{\"delta\":{\"content\":\"%d \"}}]}\n\n", i)
+			w.(http.Flusher).Flush()
+		}
+		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
+	}
+}
+
+// The timeout bounds pauses, not the whole answer: a slow local model that
+// keeps streaming is not cut, a stream that goes silent is.
+func TestStreamTimeoutIsAnIdleTimeout(t *testing.T) {
+	collect := func(p *Provider) (string, error) {
+		events, err := p.Stream(context.Background(), llm.CompletionRequest{Model: "m", Messages: []llm.Message{{Role: llm.RoleUser, Content: "x"}}})
+		if err != nil {
+			return "", err
+		}
+		var text strings.Builder
+		for ev := range events {
+			if ev.Err != nil {
+				return text.String(), ev.Err
+			}
+			text.WriteString(ev.Delta)
+		}
+		return text.String(), nil
+	}
+	steady := httptest.NewServer(slowStream(60*time.Millisecond, 60*time.Millisecond, 60*time.Millisecond, 60*time.Millisecond, 60*time.Millisecond))
+	t.Cleanup(steady.Close)
+	text, err := collect(New(Options{BaseURL: steady.URL, Model: "m", Timeout: 150 * time.Millisecond}))
+	if err != nil || text != "0 1 2 3 4 " {
+		t.Fatalf("a stream longer than the timeout must finish: %q %v", text, err)
+	}
+
+	stalled := httptest.NewServer(slowStream(10*time.Millisecond, 2*time.Second))
+	t.Cleanup(stalled.Close)
+	started := time.Now()
+	text, err = collect(New(Options{BaseURL: stalled.URL, Model: "m", Timeout: 150 * time.Millisecond}))
+	if !errors.Is(err, llm.ErrUnavailable) || text != "0 " || time.Since(started) > time.Second {
+		t.Fatalf("a silent stream must stop: %q %v after %s", text, err, time.Since(started))
+	}
+}
+
+func TestEmbed(t *testing.T) {
+	p, calls := server(t, func(w http.ResponseWriter, _ recorded) {
+		// Out of order on purpose: the index field decides.
+		_, _ = fmt.Fprint(w, `{"model":"bge-m3:latest","data":[{"index":1,"embedding":[0,1]},{"index":0,"embedding":[1,0]}]}`)
+	})
+	vectors, model, err := p.Embed(context.Background(), []string{"a", "b"})
+	if err != nil || model != "bge-m3" || vectors[0][0] != 1 || vectors[1][1] != 1 {
+		t.Fatalf("%v %s %v", err, model, vectors)
+	}
+	if (*calls)[0].path != "/v1/embeddings" || (*calls)[0].body["model"] != "bge-m3" {
+		t.Fatalf("%+v", (*calls)[0])
+	}
+	if _, _, err := New(Options{BaseURL: "http://x", Model: "m"}).Embed(context.Background(), []string{"a"}); !errors.Is(err, llm.ErrNotSupported) {
+		t.Fatalf("no embedding model: %v", err)
+	}
+}

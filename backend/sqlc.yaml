@@ -1,0 +1,231 @@
+# Type-safe query code is generated per module from db/queries/<module>.
+# Regenerate with `make gen`. Each module gets its own package so that it only
+# sees its own queries.
+version: "2"
+overrides:
+  go:
+    overrides:
+      - db_type: uuid
+        go_type: github.com/google/uuid.UUID
+      - db_type: uuid
+        nullable: true
+        go_type:
+          import: github.com/google/uuid
+          type: UUID
+          pointer: true
+      - db_type: timestamptz
+        go_type: time.Time
+      - db_type: timestamptz
+        nullable: true
+        go_type:
+          type: time.Time
+          pointer: true
+      - db_type: date
+        go_type: time.Time
+      - db_type: date
+        nullable: true
+        go_type:
+          type: time.Time
+          pointer: true
+      - db_type: jsonb
+        go_type: encoding/json.RawMessage
+      - db_type: jsonb
+        nullable: true
+        go_type: encoding/json.RawMessage
+      - db_type: citext
+        go_type: string
+      - db_type: citext
+        nullable: true
+        go_type:
+          type: string
+          pointer: true
+      - db_type: inet
+        go_type:
+          import: net/netip
+          type: Addr
+      - db_type: inet
+        nullable: true
+        go_type:
+          import: net/netip
+          type: Addr
+          pointer: true
+      # Embeddings travel as pgvector text literals ("[0.1,0.2]").
+      - db_type: vector
+        go_type: string
+sql:
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/platform
+    gen:
+      go:
+        package: platformdb
+        out: internal/platform/platformdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/tenant
+    gen:
+      go:
+        package: tenantdb
+        out: internal/tenant/tenantdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/auth
+    gen:
+      go:
+        package: authdb
+        out: internal/auth/authdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/user
+    gen:
+      go:
+        package: userdb
+        out: internal/user/userdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/org
+    gen:
+      go:
+        package: orgdb
+        out: internal/org/orgdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/files
+    gen:
+      go:
+        package: filesdb
+        out: internal/files/filesdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/audit
+    gen:
+      go:
+        package: auditdb
+        out: internal/audit/auditdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/imports
+    gen:
+      go:
+        package: importsdb
+        out: internal/imports/importsdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/team
+    gen:
+      go:
+        package: teamdb
+        out: internal/team/teamdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/ai
+    gen:
+      go:
+        package: aidb
+        out: internal/ai/aidb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/knowledge
+    gen:
+      go:
+        package: knowledgedb
+        out: internal/knowledge/knowledgedb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/project
+    gen:
+      go:
+        package: projectdb
+        out: internal/project/projectdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/incubator
+    gen:
+      go:
+        package: incubatordb
+        out: internal/incubator/incubatordb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/evaluation
+    gen:
+      go:
+        package: evaluationdb
+        out: internal/evaluation/evaluationdb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/showcase
+    gen:
+      go:
+        package: showcasedb
+        out: internal/showcase/showcasedb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: db/migrations
+    queries: db/queries/directory
+    gen:
+      go:
+        package: directorydb
+        out: internal/directory/directorydb
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true

@@ -1,0 +1,106 @@
+{{- /* The first screen of public pages, drawn before the web client loads.
+It repeats the markup and Tailwind classes of the client's components
+(PublicLayout, Logo, Kicker, the landing and catalogue heroes, the project
+hero) so that the swap to the application is not visible; every class must
+also appear in the client's sources, or the stylesheet has no rule for it. */ -}}
+<div id="boot" lang="{{.Lang}}" class="flex min-h-dvh flex-col bg-bg">
+      <header class="sticky top-0 z-40 border-b border-border bg-surface">
+        <div class="mx-auto flex h-16 max-w-page items-center gap-3 px-4 sm:gap-8 sm:px-6 lg:h-20">
+          <a href="/" class="min-w-0 shrink-0">
+            <span class="inline-flex items-center gap-3">
+{{- if .Logo}}
+              <img src="{{.Logo}}" alt="" width="64" height="64" class="size-10 shrink-0 rounded-full object-contain sm:size-12" />
+{{- else}}
+              <svg viewBox="0 0 32 32" class="size-8 shrink-0 sm:size-10" aria-hidden="true">
+                <defs>
+                  <linearGradient id="boot-mark" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="var(--color-primary-700)" />
+                    <stop offset="1" stop-color="var(--color-ink-800)" />
+                  </linearGradient>
+                </defs>
+                <rect width="32" height="32" rx="8" fill="url(#boot-mark)" />
+                <path d="M7.5 23.5h5.2v-5h5.2v-5h5.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="23.4" cy="8.6" r="2.7" fill="var(--color-gold-400)" />
+              </svg>
+{{- end}}
+              <span class="flex min-w-0 flex-col">
+                <span class="font-display text-xl leading-tight font-extrabold text-ink">Qadam</span>
+                <span class="hidden max-w-64 text-3xs leading-snug font-bold tracking-label uppercase sm:line-clamp-2 text-fg-muted">{{.University}}</span>
+              </span>
+            </span>
+          </a>
+        </div>
+      </header>
+      <main class="flex-1">
+{{- if eq .Kind "landing"}}
+        <section class="relative isolate overflow-hidden bg-deep-900">
+{{- if .Cover}}
+          <img src="{{.Cover}}" alt="" width="1200" height="461" fetchpriority="high" class="absolute inset-0 -z-10 size-full object-cover" />
+{{- end}}
+          <div aria-hidden="true" class="absolute inset-0 -z-10 bg-linear-to-r from-ink-800/95 via-deep-900/80 to-deep-900/30"></div>
+          <div class="mx-auto flex max-w-page flex-col gap-12 px-4 pt-16 pb-8 sm:px-6 lg:pt-28 lg:pb-10">
+            <div class="flex max-w-3xl flex-col items-start gap-6">
+              <p class="flex items-center gap-3 text-xs font-bold tracking-kicker uppercase before:h-px before:w-7 before:shrink-0 before:bg-current text-primary-300">{{.Kicker}}</p>
+              <h1 class="font-display text-5xl font-extrabold text-white sm:text-6xl lg:text-7xl">{{.Title}} <em class="text-primary-300">{{.Accent}}</em></h1>
+              <p class="max-w-2xl text-lg leading-relaxed text-white/85">{{.Text}}</p>
+              <div class="flex flex-wrap gap-3">
+                <a href="/register" class="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-control font-extrabold tracking-caps whitespace-nowrap uppercase select-none border border-primary bg-primary text-primary-fg hover:border-primary-hover hover:bg-primary-hover h-12 px-6 text-xs [&_svg]:size-4.5 [&_svg]:shrink-0">{{.Primary}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
+                <a href="/showcase" class="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-control font-extrabold tracking-caps whitespace-nowrap uppercase select-none border border-white/40 text-white hover:bg-white/10 h-12 px-6 text-xs">{{.Secondary}}</a>
+              </div>
+            </div>
+            <ol aria-label="{{.RouteLabel}}" class="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-white/15 bg-white/15 sm:grid-cols-3 lg:grid-cols-6">
+{{- range .Route}}
+              <li class="flex flex-col gap-1 bg-ink-950/55 p-4 backdrop-blur-sm"><span class="font-figures text-xs font-bold tracking-label text-primary-300">{{.Number}}</span><span class="font-semibold text-white">{{.Name}}</span><span class="text-xs leading-snug text-white/75">{{.Hint}}</span></li>
+{{- end}}
+            </ol>
+          </div>
+        </section>
+{{- else if eq .Kind "catalog"}}
+        <section class="border-b border-border bg-surface">
+          <div class="mx-auto grid max-w-page grid-cols-1 items-end gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:py-16">
+            <div class="flex flex-col gap-5">
+              <p class="flex items-center gap-3 text-xs font-bold tracking-kicker uppercase before:h-px before:w-7 before:shrink-0 before:bg-current text-primary-text">{{.Kicker}}</p>
+              <h1 class="max-w-4xl font-display text-4xl font-extrabold text-balance text-ink sm:text-6xl">{{.Title}}</h1>
+              <p class="max-w-2xl text-lg leading-relaxed text-fg-muted">{{.Text}}</p>
+            </div>
+          </div>
+        </section>
+{{- else if eq .Kind "project"}}
+        <article>
+          <div class="mx-auto flex max-w-page flex-col gap-5 px-4 pt-6 sm:px-6">
+            <nav aria-label="{{.Crumbs}}" class="min-w-0">
+              <ol class="flex min-w-0 items-center gap-1.5 text-sm">
+                <li class="flex min-w-0 items-center gap-1.5">
+                  <span class="min-w-0 text-fg-subtle transition-colors hover:text-fg [&_a]:block"><a href="/showcase">{{.Kicker}}</a></span>
+                  <svg viewBox="0 0 24 24" class="size-3.5 shrink-0 text-fg-faint" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                </li>
+                <li class="flex min-w-0 items-center gap-1.5"><span aria-current="page" class="min-w-0 font-medium text-fg">{{.Title}}</span></li>
+              </ol>
+            </nav>
+            <header class="relative isolate overflow-hidden rounded-3xl bg-primary-950 shadow-lg">
+              <div class="aspect-square sm:aspect-video lg:aspect-[21/9]">
+{{- if .Cover}}
+                <img src="{{.Cover}}" alt="" width="1600" height="900" fetchpriority="high" decoding="sync" class="size-full object-cover" />
+{{- else}}
+                <div aria-hidden="true" class="relative grid size-full place-items-center overflow-hidden bg-linear-to-br {{.Gradient}}">
+                  <div class="absolute inset-0 ornament opacity-[0.06] [--qd-brand:#fff]"></div>
+                </div>
+{{- end}}
+              </div>
+              <div aria-hidden="true" class="absolute inset-0 bg-linear-to-t from-neutral-950/90 via-neutral-950/45 to-neutral-950/5"></div>
+              <div class="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-5 sm:p-8 lg:p-10">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border font-medium whitespace-nowrap border-primary-border bg-primary-soft text-primary-soft-fg h-6 px-2.5 text-xs">{{.Industry}}</span>
+                  <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border font-medium whitespace-nowrap border-border bg-surface-raised text-fg-muted h-6 px-2.5 text-xs">{{.Stage}}</span>
+                </div>
+                <h1 class="max-w-4xl font-display text-3xl leading-tight font-extrabold text-balance text-white sm:text-5xl">{{.Title}}</h1>
+{{- if .Text}}
+                <p class="max-w-3xl text-base leading-relaxed text-white/90 sm:text-xl">{{.Text}}</p>
+{{- end}}
+              </div>
+            </header>
+          </div>
+        </article>
+{{- end}}
+      </main>
+    </div>

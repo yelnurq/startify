@@ -1,0 +1,210 @@
+@layer base {
+  html {
+    background-color: var(--qd-bg);
+    color: var(--qd-fg);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-gutter: stable;
+    /* In-page links glide; reduced motion turns it off below. */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  /* Headings are set in Literata, as on the university's site. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-primary-400) 32%, transparent);
+  }
+
+  /* One focus style for every interactive element; only for keyboard focus. */
+  :focus-visible {
+    outline: 2px solid var(--qd-ring);
+    outline-offset: 2px;
+  }
+
+  /* Focus parked on the content or a page heading (skip link, page change) is
+     not a control: no ring around the whole page. */
+  main[tabindex='-1']:focus,
+  [data-route-focus]:focus {
+    outline: none;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Set for one frame while the theme switches (see theme.ts). */
+  .theme-switching,
+  .theme-switching * {
+    transition: none !important;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--qd-border-strong) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Display typography for hero and page titles (Literata). */
+@utility font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Large figures (counters, scores) stay in the text face, as on the
+   university's site: bold, tabular and slightly tightened. */
+@utility font-figures {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Small capitals with wide tracking: buttons, field labels, table headers. */
+@utility caps {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+/* The university's dark panel: deep teal fading into the navy ink. */
+@utility panel-deep {
+  background-color: var(--color-deep-900);
+  background-image: linear-gradient(135deg, var(--color-deep-900), var(--color-deep-800));
+  color: #ffffff;
+}
+
+/* The hero of the university's site without its photo: navy ink fading into
+   deep teal (from-ink/95 via-deep/85 to-deep/55 over deep). */
+@utility panel-ink {
+  background-color: var(--color-deep-900);
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink-800) 95%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 85%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 55%, transparent)
+  );
+  color: #ffffff;
+}
+
+/* Call-to-action banner of the site: ink, deep teal, then the accent. */
+@utility panel-accent {
+  background-color: var(--color-deep-900);
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink-800) 95%, transparent),
+    color-mix(in srgb, var(--color-deep-900) 90%, transparent),
+    color-mix(in srgb, var(--color-primary-700) 70%, transparent)
+  );
+  color: #ffffff;
+}
+
+/* Frosted surface for sticky bars and overlays over content. */
+@utility surface-glass {
+  background-color: color-mix(in oklch, var(--qd-surface) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+
+/* Barely visible national ornament (қошқар мүйіз), coloured by the brand token. */
+@utility ornament {
+  background-color: var(--qd-brand);
+  mask-image: url('./assets/ornament.svg');
+  mask-size: 96px 96px;
+  mask-repeat: repeat;
+}
+
+/* The ornament fading out from the top edge: for hero sections. */
+@utility ornament-fade {
+  background-color: var(--qd-brand);
+  mask-image:
+    url('./assets/ornament.svg'),
+    radial-gradient(ellipse 75% 85% at 50% 0%, #000 25%, transparent 75%);
+  mask-size:
+    96px 96px,
+    100% 100%;
+  mask-repeat: repeat, no-repeat;
+  mask-composite: intersect;
+}
+
+/* Animated placeholder gradient used by skeletons. */
+@utility shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--qd-surface-sunken) 0%,
+    var(--qd-surface-raised) 40%,
+    var(--qd-surface-sunken) 80%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Palette of the illustration set; every illustration adapts to the theme. */
+@layer components {
+  .illustration {
+    --il-ink: var(--color-neutral-700);
+    --il-line: var(--color-neutral-300);
+    --il-paper: #ffffff;
+    --il-tint: var(--color-primary-100);
+    --il-tint-soft: var(--color-primary-50);
+    --il-brand: var(--color-primary-500);
+    --il-brand-deep: var(--color-primary-700);
+    --il-gold: var(--color-gold-400);
+    --il-gold-soft: var(--color-gold-100);
+    --il-soft: var(--color-neutral-100);
+    --il-success: var(--color-success-500);
+  }
+
+  [data-theme='dark'] .illustration {
+    --il-ink: var(--color-neutral-300);
+    --il-line: var(--color-neutral-700);
+    --il-paper: #11272f;
+    --il-tint: color-mix(in oklch, var(--color-primary-500) 20%, #0c1f27);
+    --il-tint-soft: color-mix(in oklch, var(--color-primary-500) 10%, #0c1f27);
+    --il-brand: var(--color-primary-400);
+    --il-brand-deep: var(--color-primary-300);
+    --il-gold-soft: color-mix(in oklch, var(--color-gold-400) 22%, #0c1f27);
+    --il-soft: #1b343d;
+    --il-success: var(--color-success-400);
+  }
+}
+
+/* The server draws the first screen of public pages (#boot) before the app
+   loads; the app renders hidden behind it and removes it once the page is
+   ready (src/app/boot.ts). A first screen in another language than the
+   app's (html[data-locale], public/theme-init.js) is not shown at all.
+   Outside the layers, so that it wins over the utilities on #boot. */
+html[data-locale='kk'] #boot[lang='kk'] ~ #root,
+html[data-locale='ru'] #boot[lang='ru'] ~ #root,
+html[data-locale='en'] #boot[lang='en'] ~ #root,
+html[data-locale='kk'] #boot:not([lang='kk']),
+html[data-locale='ru'] #boot:not([lang='ru']),
+html[data-locale='en'] #boot:not([lang='en']) {
+  display: none;
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+{{template "style" .}}
+<style>
+  @page { size: A4; margin: 0; }
+  .page { width: 210mm; min-height: 297mm; padding: 16mm 16mm 12mm; display: flex; flex-direction: column; gap: 8mm; }
+  .head { display: flex; flex-direction: column; gap: 3mm; padding-bottom: 6mm; border-bottom: 2px solid var(--accent); }
+  h1 { font-size: 28pt; line-height: 1.1; font-weight: 700; letter-spacing: -.01em; }
+  .lead { font-size: 13pt; color: var(--muted); max-width: 160mm; }
+  .chip { align-self: flex-start; font-size: 8.5pt; padding: 1mm 3mm; border-radius: 99px; background: var(--soft); color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm 8mm; }
+  .card { break-inside: avoid; }
+  .card h2 { font-size: 9pt; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.5mm; }
+  .card p { font-size: 10.5pt; }
+  .card.wide { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="head">
+    <div class="eyebrow">{{.Brand.University}} · {{.L.one_pager}}</div>
+    <h1>{{.Title}}</h1>
+    {{if .Tagline}}<p class="lead">{{.Tagline}}</p>{{end}}
+    <span class="chip">{{.L.industry}}: {{.Industry}}</span>
+  </header>
+  <section class="grid">
+    {{range $i, $s := .Sections}}<article class="card{{if eq $i 0}} wide{{end}}"><h2>{{$s.Title}}</h2><p>{{$s.Text}}</p></article>
+    {{end}}
+  </section>
+  <footer class="foot">{{.Generated}}</footer>
+</main>
+</body>
+</html>

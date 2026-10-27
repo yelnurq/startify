@@ -1,0 +1,173 @@
+{
+  "providers": {
+    "mock": "Demo model",
+    "anthropic": "Anthropic Claude",
+    "openai": "OpenAI-compatible server"
+  },
+  "features": {
+    "mentor": "AI mentor",
+    "mentorText": "Conversation with the student at every project step: questions, hints, references to university regulations.",
+    "evaluation": "Project evaluation",
+    "evaluationText": "Rubric-based scoring with reasoning and recommendations; the answer strictly follows a schema.",
+    "generation": "Material generation",
+    "generationText": "Pitch decks, one-pagers, texts of grant and competition applications.",
+    "summary": "Summaries",
+    "summaryText": "Summaries of discussions and changes for supervisors and managers.",
+    "embedding": "Knowledge base search",
+    "embeddingText": "Vectors for searching the knowledge base. Changing the model triggers re-indexing."
+  },
+  "notice": {
+    "externalTitle": "Data goes to an external AI provider",
+    "localTitle": "AI runs inside the university",
+    "externalText": "Texts for AI are sent to a provider outside the university. IINs, phone numbers and email addresses are replaced with placeholders before sending and restored in the answer.",
+    "limitLabel": "Daily AI limit",
+    "limit": "{{used}} of {{limit}} tokens used today. The limit renews at {{time}}."
+  },
+  "settings": {
+    "title": "AI settings",
+    "subtitle": "Which models serve each feature, whether data may leave the university, and how much AI is available per day.",
+    "usageLink": "AI usage",
+    "saved": "AI settings saved",
+    "unsaved": "You have unsaved changes",
+    "staleTitle": "Another administrator changed the settings",
+    "staleText": "Load the current version and make your changes again — otherwise you might overwrite theirs.",
+    "reload": "Load the current version"
+  },
+  "routes": {
+    "title": "Models by feature",
+    "subtitle": "A chain of providers: if the first is unavailable or declines, the request goes to the next one. Without a chain of its own, the server setting applies.",
+    "inherited": "Default",
+    "custom": "Custom chain",
+    "customize": "Customise",
+    "useDefault": "Back to default",
+    "chain": "Provider chain: {{feature}}",
+    "addFallback": "Add fallback",
+    "noneUsable": "No model is left for this feature: with “Local models only”, external providers are switched off. Add a local model or the feature will be unavailable.",
+    "primary": "Primary",
+    "fallback": "Fallback {{n}}",
+    "external": "external",
+    "local": "local",
+    "provider": "Provider — {{position}}",
+    "providerOption": "{{name}} ({{kind}})",
+    "model": "Model — {{position}}",
+    "modelDefault": "Default: {{model}}",
+    "moveUp": "Move up the chain",
+    "moveDown": "Move down the chain",
+    "remove": "Remove from the chain"
+  },
+  "check": {
+    "run": "Check",
+    "stop": "Stop",
+    "status": {
+      "running": "The model is answering…",
+      "done": "The connection works",
+      "failed": "The check failed",
+      "stopped": "The check was stopped"
+    },
+    "provider": "Provider:",
+    "model": "Model:",
+    "prompt": "Prompt:",
+    "tokens": "Tokens:",
+    "tokensValue": "{{input}} in, {{output}} out"
+  },
+  "policy": {
+    "title": "Usage policy",
+    "subtitle": "The rules apply to every AI feature of the university.",
+    "localOnly": "Local models only",
+    "localOnlyHint": "Data never leaves the university infrastructure: external providers are removed from every chain.",
+    "mentorMode": "AI mentor mode",
+    "modes": {
+      "coach": "Coach",
+      "coachText": "Asks questions and gives hints but does not write for the student. Recommended for study projects.",
+      "coauthor": "Co-author",
+      "coauthorText": "May propose a ready wording for the student to edit. Suits preparing applications."
+    },
+    "dailyUserTokens": "Daily limit per member",
+    "dailyTenantTokens": "Daily limit for the university",
+    "tokens": "tokens",
+    "unlimited": "0 means no limit",
+    "tokensHint": "{{value}} tokens a day, 0 means no limit. Renews at midnight."
+  },
+  "usage": {
+    "title": "AI usage",
+    "subtitle": "Requests, tokens and cost by feature, model and day. Cost follows the provider's price list; local models are free.",
+    "period": "Period",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "empty": "AI has not been used yet",
+    "emptyText": "Statistics appear here once students work with the AI mentor or an administrator checks the connection.",
+    "requests": "Requests",
+    "inputTokens": "Input tokens",
+    "outputTokens": "Output tokens",
+    "cost": "Cost",
+    "costHint": "in US dollars, estimated from the price list",
+    "byFeature": "By feature",
+    "byModel": "By model",
+    "byDay": "By day",
+    "columns": {
+      "feature": "Feature",
+      "requests": "Requests",
+      "tokens": "Tokens",
+      "failures": "Failures",
+      "cost": "Cost",
+      "model": "Model",
+      "day": "Day"
+    }
+  },
+  "knowledge": {
+    "title": "Knowledge base",
+    "subtitle": "University regulations, rules and guides. The AI mentor answers from them and cites the source.",
+    "add": "Add document",
+    "empty": "The knowledge base is empty",
+    "emptyText": "Add competition regulations, grant rules or a guide — the AI mentor will rely on them and cite the source.",
+    "table": "Knowledge base documents",
+    "columns": {
+      "title": "Document",
+      "status": "Status",
+      "chunks": "Passages",
+      "characters": "Characters",
+      "added": "Added",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Indexing",
+      "ready": "Ready",
+      "failed": "Failed"
+    },
+    "indexFailed": "The document could not be indexed. Try uploading it again.",
+    "download": "Download “{{title}}”",
+    "remove": "Delete “{{title}}”",
+    "removeTitle": "Delete “{{title}}”?",
+    "removeText": "The AI mentor will stop relying on this document. This cannot be undone.",
+    "removed": "Document deleted",
+    "addTitle": "New document",
+    "addText": "Paste text or upload a file. We split the document into passages and index it — usually within a few seconds.",
+    "added": "Document added and being indexed",
+    "search": {
+      "title": "Test the search",
+      "subtitle": "Ask the way a student would — you will see the passages the AI mentor receives.",
+      "label": "Question to the knowledge base",
+      "placeholder": "For example: what is the application deadline?",
+      "empty": "Nothing found. Try wording it differently.",
+      "score": "Relevance {{value}}"
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "For example: Startup Cup regulations",
+      "source": "Text source",
+      "text": "Text",
+      "file": "File",
+      "textLabel": "Document text",
+      "textPlaceholder": "Paste the text. Section headings help the mentor cite the source precisely.",
+      "drop": "Drop a file here or click to choose",
+      "fileRules": "PDF, DOCX, TXT or MD up to 20 MB. Scans without a text layer are not supported.",
+      "chooseFile": "Choose a file",
+      "wrongType": "A PDF, DOCX, TXT or MD file is required.",
+      "tooLarge": "The file is larger than 20 MB.",
+      "textRequired": "Paste the document text",
+      "textTooLong": "The text is too long: 4 MB at most. Upload it as a file or split it.",
+      "fileRequired": "Choose a file",
+      "submit": "Add"
+    }
+  }
+}

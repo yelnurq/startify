@@ -1,0 +1,105 @@
+{
+  "steps": {
+    "language": "Language",
+    "study": "Studies",
+    "interests": "Interests",
+    "idea": "Idea"
+  },
+  "progress": "Step {{current}} of {{total}} · {{step}}",
+  "finish": "Finish",
+  "language": {
+    "title": "Hello, {{name}}! Let’s get acquainted",
+    "subtitle": "Four short steps, and Qadam will suggest teams, competitions and tips for you. Let’s start with the interface language.",
+    "legend": "Interface language",
+    "samples": {
+      "kk": "Сәлем! Бастайық.",
+      "ru": "Привет! Начнём.",
+      "en": "Hello! Let’s begin."
+    }
+  },
+  "study": {
+    "title": "Where do you study?",
+    "subtitle": "This way we can show you competitions and teammates from your faculty.",
+    "titleStaff": "Where do you work?",
+    "subtitleStaff": "Choose your faculty and department so that students can find you.",
+    "faculty": "Faculty",
+    "department": "Department",
+    "choose": "Choose from the list",
+    "level": "Level of study",
+    "course": "Year",
+    "levelFirst": "Choose the level first",
+    "group": "Group",
+    "groupSearch": "Find a group",
+    "groupPlaceholder": "For example, ВТиПО-23-1",
+    "groupResults": "Groups found",
+    "groupEmpty": "No group found — you can skip this and add the group later.",
+    "groupRemove": "Remove group {{group}}",
+    "noStructure": "The university has not uploaded its faculties yet. You can skip this step — the data will appear later."
+  },
+  "interests": {
+    "title": "What are you interested in?",
+    "subtitle": "Pick areas and skills — we will suggest projects and teams based on them.",
+    "interests": "Areas",
+    "interestsPlaceholder": "Your own area",
+    "skills": "Skills",
+    "skillsPlaceholder": "Your own skill, e.g. Python",
+    "required": "Choose at least one area"
+  },
+  "idea": {
+    "title": "Do you already have an idea?",
+    "subtitle": "It is fine if not: many people start with a team.",
+    "legend": "Do you have a project idea",
+    "yes": "Yes, I have an idea",
+    "yesText": "I will describe it in one sentence",
+    "no": "Not yet",
+    "noText": "I want to join a team or find an idea",
+    "oneLiner": "Your idea in one sentence",
+    "hint": "Who faces the problem, what it is and what you offer.",
+    "placeholder": "For example: an app helps farmers in the Turkistan region sell their harvest directly to shops",
+    "teamHint": "On the “Looking for a team” board students post projects that need people. Have a look after onboarding."
+  },
+  "suggestions": {
+    "interests": {
+      "ai": "Artificial intelligence",
+      "edtech": "EdTech",
+      "agritech": "AgriTech",
+      "fintech": "FinTech",
+      "medtech": "MedTech",
+      "ecology": "Ecology",
+      "logistics": "Logistics",
+      "govtech": "Public services and GovTech",
+      "foodtech": "Food technology",
+      "fashion": "Fashion and light industry",
+      "energy": "Energy",
+      "robotics": "Robotics",
+      "games": "Games",
+      "social": "Social impact",
+      "media": "Media",
+      "tourism": "Tourism"
+    },
+    "skills": {
+      "frontend": "Frontend development",
+      "backend": "Backend development",
+      "mobile": "Mobile development",
+      "ml": "Machine learning",
+      "data": "Data analysis",
+      "uiux": "UI/UX design",
+      "graphic": "Graphic design",
+      "marketing": "Marketing",
+      "smm": "SMM",
+      "sales": "Sales",
+      "finance": "Finance",
+      "law": "Law",
+      "pitching": "Public speaking",
+      "research": "Research",
+      "hardware": "Electronics",
+      "video": "Video editing",
+      "copywriting": "Copywriting",
+      "pm": "Project management"
+    }
+  },
+  "done": {
+    "title": "Your profile is ready!",
+    "text": "Welcome to Qadam."
+  }
+}

@@ -1,0 +1,6124 @@
+openapi: 3.1.0
+info:
+  title: Qadam API
+  version: 0.6.0
+  summary: AI-платформа инновационной и проектной деятельности университета.
+  description: |
+    Qadam ведёт студента от идеи к структурированному проекту, публичной витрине,
+    Demo Day и выходу на рынок, а руководству вуза даёт измеримые результаты.
+
+    ## Conventions
+    - Every path is served under `/api/v1`. The tenant (university) is resolved from the
+      host name: `kazutb.qadam.kz` or a custom domain of the university.
+    - Authentication uses an httpOnly session cookie (`qadam_at`) refreshed with
+      `POST /auth/refresh`. State-changing requests must echo the `qadam_csrf` cookie in the
+      `X-CSRF-Token` header.
+    - Errors use RFC 9457 Problem Details (`application/problem+json`) with a stable,
+      localisable `code` (for example `auth.invalid_credentials`).
+    - Collections use cursor pagination: pass `cursor` from `next_cursor` of the previous page.
+    - Creating requests accept an `Idempotency-Key` header; a repeated key replays the
+      original response (`Idempotent-Replayed: true`).
+    - Optimistic locking: shared editable resources return an `ETag`; an update sent with
+      `If-Match` fails with 412 `precondition.failed` when the resource changed meanwhile.
+  contact:
+    name: Qadam
+    url: https://qadam.kz
+servers:
+  - url: /api/v1
+security:
+  - cookieAuth: []
+tags:
+  - name: system
+    description: Platform metadata and service information.
+  - name: tenant
+    description: The university the request is addressed to.
+  - name: auth
+    description: Registration, sign-in (password, e-mail code, SSO), sessions.
+  - name: me
+    description: The signed-in user, onboarding and profile.
+  - name: profiles
+    description: Public profiles.
+  - name: files
+    description: Uploaded files.
+  - name: structure
+    description: Faculties, departments and study groups of the university.
+  - name: team
+    description: The "looking for teammates" board.
+  - name: admin
+    description: University administration (tenant administrators).
+  - name: directory
+    description: Sign-in through the university directory (Active Directory or LDAP) - settings and checks.
+  - name: ai
+    description: Language models - status, university settings, usage, connection check.
+  - name: knowledge
+    description: The university knowledge base the AI mentor cites.
+  - name: projects
+    description: Projects, their teams, activity and presence.
+  - name: incubator
+    description: Steps of the incubator, history, comments, the AI mentor and pitch materials.
+  - name: evaluation
+    description: AI evaluation of projects by the university's rubric, expert corrections, reports.
+  - name: showcase
+    description: The public showcase of projects, its moderation and contact requests.
+paths:
+  /meta:
+    get:
+      operationId: getMeta
+      tags: [system]
+      summary: Platform metadata
+      description: Public build and localisation metadata used by the web client on start-up.
+      security: []
+      responses:
+        "200":
+          description: Platform metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meta"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /tenant:
+    get:
+      operationId: getCurrentTenant
+      tags: [tenant]
+      summary: The university of this host
+      description: Public branding, sign-up rules and SSO providers, needed before sign-in.
+      security: []
+      responses:
+        "200":
+          description: The tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/session:
+    get:
+      operationId: getSession
+      tags: [auth]
+      summary: Current session
+      description: The signed-in user and their membership in this university, or 401 `auth.unauthenticated`.
+      responses:
+        "200":
+          description: Active session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register with e-mail and password
+      description: |
+        Creates the account and a student membership and e-mails a verification link; no session
+        starts until the link is opened (`POST /auth/email/verify`). Registering again with the
+        address of an account whose e-mail is not verified yet replaces its password, ends its
+        sessions and sends a new link: whoever controls the mailbox gets the account. An account with
+        a verified e-mail joins this university with its right password (and is signed in); the
+        attempts count towards the same per-address limit as `POST /auth/login`.
+        Errors: `auth.email_taken` (409), `auth.signup_disabled` and `auth.email_domain_not_allowed` (403),
+        `auth.consent_required`, `auth.password_weak` (422), `auth.too_many_attempts` (429).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: An existing account with a verified e-mail joined this university and is signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "202":
+          description: Registered; the verification link is on its way and no session is started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationSent"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with e-mail and password
+      description: |
+        Errors: `auth.invalid_credentials` (401), `auth.email_unverified` (403, the password is right but
+        the e-mail is not verified yet: no session starts, `POST /auth/email/resend` sends the link again),
+        `auth.not_a_member`, `auth.account_suspended` (403), `auth.too_many_attempts` (429).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/otp/request:
+    post:
+      operationId: requestLoginCode
+      tags: [auth]
+      summary: E-mail a one-time sign-in code
+      description: Always answers 202 so that the response does not reveal whether the address is registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "202":
+          description: If the address is registered, a code is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/otp/verify:
+    post:
+      operationId: verifyLoginCode
+      tags: [auth]
+      summary: Sign in with the e-mailed code
+      description: "Errors: `auth.code_invalid` (401), `auth.too_many_attempts` (429)."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCodeRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/refresh:
+    post:
+      operationId: refreshSession
+      tags: [auth]
+      summary: Rotate the session tokens
+      description: |
+        Uses the refresh cookie. Every refresh rotates the refresh token; presenting an already
+        rotated token revokes the whole session (`auth.session_revoked`).
+      security: []
+      responses:
+        "204":
+          description: New session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out of this session
+      security: []
+      responses:
+        "204":
+          description: Signed out; session cookies are cleared.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/sessions:
+    get:
+      operationId: listSessions
+      tags: [auth]
+      summary: Active sessions of the user
+      responses:
+        "200":
+          description: Sessions, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SessionInfo"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: revokeAllSessions
+      tags: [auth]
+      summary: Sign out everywhere
+      description: Revokes every other session of the user, in every university of the account; this one stays.
+      responses:
+        "204":
+          description: The other sessions are revoked.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      tags: [auth]
+      summary: Revoke one session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session revoked.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/email/verify:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Confirm the e-mail address with the token from the letter
+      description: |
+        Confirms the address and, since opening the link proves control of the mailbox, signs in
+        (the link of a new registration leads straight to onboarding). Errors: `auth.token_invalid` (400);
+        `auth.account_suspended`, `auth.not_a_member` (403) when the address is confirmed but the
+        account may not enter this university; `auth.too_many_attempts` (429).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: Address confirmed and signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/email/resend:
+    post:
+      operationId: resendVerificationEmail
+      tags: [auth]
+      summary: Send the verification letter again
+      description: |
+        Signed-in members get a new letter for their own address (the body is ignored). Visitors send
+        the address: a letter goes to it only if it belongs to a member of this university whose e-mail
+        is not verified yet, and the answer is always 202, so it does not reveal whether the address is
+        registered. Errors: `validation.failed` (422, a visitor without an address), `auth.too_many_attempts` (429).
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "202":
+          description: If a letter is due, it is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: E-mail a password reset link
+      description: Always answers 202 so that the response does not reveal whether the address is registered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRequest"
+      responses:
+        "202":
+          description: If the address is registered, a link is on its way.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Set a new password with the token from the letter
+      description: Revokes every session of the user. Errors `auth.token_invalid`, `auth.password_weak`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "204":
+          description: Password changed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/password:
+    put:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change the password
+      description: |
+        Other sessions are revoked, in every university of the account. An account without a password
+        (created by single sign-on) sets its first one with an empty `current_password` and a sign-in
+        `code` e-mailed by `POST /auth/otp/request`: a session alone must not become a lasting password.
+        Errors: `auth.password_incorrect`, `auth.code_invalid`, `auth.password_weak` (422),
+        `auth.reauth_required` (403, the code is missing), `auth.too_many_attempts` (429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeRequest"
+      responses:
+        "204":
+          description: Password changed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/oidc/{providerId}/start:
+    get:
+      operationId: startOidc
+      tags: [auth]
+      summary: Start single sign-on with the university identity provider
+      security: []
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: redirect
+          in: query
+          required: false
+          description: Path inside the application to return to after sign-in.
+          schema:
+            type: string
+            maxLength: 512
+      responses:
+        "302":
+          description: Redirect to the identity provider.
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/oidc/{providerId}/callback:
+    get:
+      operationId: completeOidc
+      tags: [auth]
+      summary: Return from the identity provider
+      description: |
+        Signs in the account of the identity: a first sign-in links an existing account with the same
+        verified address only when it is a member of this university or the address is on one of the
+        university's e-mail domains (linking an account whose e-mail was never verified removes its
+        password and ends its sessions), otherwise creates one. Failures redirect to
+        `/login?error=<code>`: `auth.oidc_failed`, `auth.sso_link_denied`, `auth.not_a_member`,
+        `auth.account_suspended`.
+      security: []
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: error
+          in: query
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect into the application, signed in (or to the sign-in page with an error).
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /auth/directory/login:
+    post:
+      operationId: directoryLogin
+      tags: [auth]
+      summary: Sign in with the account of the university directory
+      description: |
+        Login and password of the university's Active Directory or another LDAP directory, when the
+        university enabled it (`directory_login.enabled` of `GET /tenant`). An empty or blank password
+        is refused before the directory is contacted. The account is found by its directory identity;
+        a first sign-in links an existing account with the same address under the rules of single
+        sign-on (a member of this university or an address on its e-mail domains), otherwise creates
+        one when the university allows it. Errors: `auth.invalid_credentials` (401: unknown login,
+        wrong password or a login that matches several entries), `directory.disabled` (404),
+        `directory.not_allowed`, `directory.email_missing`, `directory.password_expired`,
+        `directory.account_disabled`, `auth.sso_link_denied`, `auth.not_a_member`,
+        `auth.account_suspended` (403), 422 (empty login or password), `auth.too_many_attempts` (429),
+        `directory.unavailable` (503).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryLoginRequest"
+      responses:
+        "200":
+          description: Signed in; session cookies are set.
+          headers:
+            Set-Cookie:
+              $ref: "#/components/headers/SessionCookies"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: The signed-in user with membership and profile
+      responses:
+        "200":
+          description: The user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateMe
+      tags: [me]
+      summary: Update name and interface language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeUpdate"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/onboarding:
+    put:
+      operationId: completeOnboarding
+      tags: [me]
+      summary: Finish onboarding
+      description: Stores language, place of study, interests and skills; marks the membership as onboarded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingRequest"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/profile:
+    put:
+      operationId: updateProfile
+      tags: [me]
+      summary: Update the profile
+      description: "Errors: `profile.slug_taken` (409)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/avatar:
+    put:
+      operationId: uploadAvatar
+      tags: [me]
+      summary: Upload a profile photo
+      description: |
+        JPEG, PNG or WebP up to 5 MB and 16 megapixels. The image is checked for malware,
+        re-encoded (metadata such as GPS position is removed) and scaled to 512 px. A member
+        uploads at most 30 images an hour. Errors: `files.too_large` (413),
+        `files.unsupported_type`, `files.image_too_large`, `files.infected` (422),
+        `rate_limited` (429), `files.scanner_unavailable` (503).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteAvatar
+      tags: [me]
+      summary: Remove the profile photo
+      responses:
+        "204":
+          description: Photo removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /profiles/{slug}:
+    get:
+      operationId: getPublicProfile
+      tags: [profiles]
+      summary: Public profile
+      description: Available when the owner made the profile public; otherwise 404 `profile.not_found`.
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProfile"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /files/{fileId}/content:
+    get:
+      operationId: getFileContent
+      tags: [files]
+      summary: Download a file
+      description: Public files (avatars, covers) are available to everyone, others only to permitted users.
+      security: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The file content.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /faculties:
+    get:
+      operationId: listFaculties
+      tags: [structure]
+      summary: Faculties with their departments
+      description: For members of the university (onboarding and administration); visitors get 401.
+      responses:
+        "200":
+          description: Faculties sorted by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Faculty"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /study-groups:
+    get:
+      operationId: listStudyGroups
+      tags: [structure]
+      summary: Study groups
+      description: For members of the university (onboarding and administration); visitors get 401.
+      parameters:
+        - name: faculty_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: department_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: q
+          in: query
+          description: Prefix of the group code, e.g. `ВТиПО-23`.
+          schema:
+            type: string
+            maxLength: 40
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Matching groups.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StudyGroup"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests:
+    get:
+      operationId: listTeamRequests
+      tags: [team]
+      summary: Open requests for teammates
+      parameters:
+        - name: q
+          in: query
+          description: Full-text search in title, description and skills.
+          schema:
+            type: string
+            maxLength: 120
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/TeamRole"
+        - name: skill
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+        - name: mine
+          in: query
+          description: Only requests of the signed-in user, including closed ones.
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequestPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createTeamRequest
+      tags: [team]
+      summary: Publish a request for teammates
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamRequestCreate"
+      responses:
+        "201":
+          description: The request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests/{requestId}:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    get:
+      operationId: getTeamRequest
+      tags: [team]
+      summary: One request
+      responses:
+        "200":
+          description: The request.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateTeamRequest
+      tags: [team]
+      summary: Edit or close a request
+      description: Only the author (or a moderator) may change a request.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamRequestUpdate"
+      responses:
+        "200":
+          description: The updated request.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /team-requests/{requestId}/responses:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    get:
+      operationId: listTeamResponses
+      tags: [team]
+      summary: Replies to a request
+      description: The author (and moderators) see every reply with the responder's e-mail; others see only their own.
+      responses:
+        "200":
+          description: Replies, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TeamResponse"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: respondToTeamRequest
+      tags: [team]
+      summary: Reply to a request
+      description: "Errors: `team.own_request`, `team.already_responded` (409), `team.closed`."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamResponseCreate"
+      responses:
+        "201":
+          description: The reply.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/members:
+    get:
+      operationId: listMembers
+      tags: [admin]
+      summary: Members of the university
+      description: Requires the `tenant_admin` or `innovation_manager` role.
+      parameters:
+        - name: q
+          in: query
+          description: Search by name or e-mail.
+          schema:
+            type: string
+            maxLength: 120
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: faculty_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of members sorted by name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/members/{userId}:
+    patch:
+      operationId: updateMember
+      tags: [admin]
+      summary: Change roles or status of a member
+      description: Requires `tenant_admin`. An administrator cannot remove their own administrator role.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: The updated member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports:
+    post:
+      operationId: createImport
+      tags: [admin]
+      summary: Upload a CSV or XLSX file for import
+      description: |
+        Parses and validates the file and returns a preview; nothing is written until the
+        import is committed. Requires `tenant_admin`. Errors: `import.invalid_file`,
+        `import.unknown_columns`, `files.too_large`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind:
+                  $ref: "#/components/schemas/ImportKind"
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: The import preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports/{importId}:
+    get:
+      operationId: getImport
+      tags: [admin]
+      summary: An import and its preview
+      parameters:
+        - $ref: "#/components/parameters/ImportId"
+      responses:
+        "200":
+          description: The import.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/imports/{importId}/commit:
+    post:
+      operationId: commitImport
+      tags: [admin]
+      summary: Apply a previewed import
+      description: |
+        Valid rows are written; invalid rows are skipped. New students receive an invitation
+        letter. Codes of faculties, departments and groups match without regard to case. A file
+        grants only the roles `student`, `supervisor`, `mentor` and `jury`. Errors:
+        `import.already_committed` (409), `import.too_many_invitations` (429: the university's daily
+        allowance of invitation letters would be exceeded; nothing is applied).
+      parameters:
+        - $ref: "#/components/parameters/ImportId"
+      responses:
+        "200":
+          description: The outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /ai/status:
+    get:
+      operationId: getAiStatus
+      tags: [ai]
+      summary: AI availability for the signed-in member
+      description: |
+        Whether AI features send data to a provider outside the university (the interface
+        must warn), and the member's daily allowance.
+      responses:
+        "200":
+          description: Status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiStatus"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/settings:
+    get:
+      operationId: getAiSettings
+      tags: [ai]
+      summary: AI settings of the university
+      description: Requires `tenant_admin`.
+      responses:
+        "200":
+          description: Settings with the configured providers and default routes.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAiSettings
+      tags: [ai]
+      summary: Change the AI settings of the university
+      description: |
+        Requires `tenant_admin`. Routes may name configured providers only; with
+        `local_only` every route must stay inside the university network.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSettingsUpdate"
+      responses:
+        "200":
+          description: The saved settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/check:
+    post:
+      operationId: checkAiConnection
+      tags: [ai]
+      summary: Stream a short answer to check a feature's model
+      description: |
+        Requires `tenant_admin`. Server-sent events: `delta` (`{"text": "..."}`) for each
+        piece of the answer, then `done` (AiCheckResult) or `error` (Problem). Closing the
+        connection stops the model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiCheckRequest"
+      responses:
+        "200":
+          description: An event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/ai/usage:
+    get:
+      operationId: getAiUsage
+      tags: [ai]
+      summary: Tokens and estimated cost of AI calls
+      description: Requires `tenant_admin` or `leadership`.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        "200":
+          description: Usage report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiUsageReport"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory:
+    get:
+      operationId: getDirectorySettings
+      tags: [directory]
+      summary: Directory sign-in settings of the university
+      description: |
+        Requires `tenant_admin`. Before the first save the defaults of Active Directory are
+        returned (`configured: false`). The bind password is never returned: `has_bind_password`
+        tells whether one is stored.
+      responses:
+        "200":
+          description: The settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorySettings"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateDirectorySettings
+      tags: [directory]
+      summary: Save the directory sign-in settings
+      description: |
+        Requires `tenant_admin`. Addresses must be `ldaps://` or `ldap://` (plain `ldap://` without
+        StartTLS only outside production), DNs and the filter must parse, the filter must contain
+        `{username}`. An empty or absent `bind_password` keeps the stored one. Turning sign-in on,
+        or changing the connection while it is on, needs `test_proof` from a successful
+        `POST /admin/directory/test` of the same connection (`directory.test_required`, 422).
+        Audited without secrets.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectorySettingsUpdate"
+      responses:
+        "200":
+          description: The saved settings.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectorySettings"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory/test:
+    post:
+      operationId: testDirectoryConnection
+      tags: [directory]
+      summary: Check the connection to the directory
+      description: |
+        Requires `tenant_admin`. Uses the settings of the form (not saved yet) with the stored bind
+        password unless a new one is given. Steps are reported separately: connection, TLS, bind of
+        the service account, search in the base DN, the directory server (RootDSE). A successful check
+        returns `proof` for `test_proof` of the update. At most 30 checks a minute
+        (`directory.too_many_tests`, 429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectorySettingsUpdate"
+      responses:
+        "200":
+          description: The result of every step.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectoryConnectionTest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/directory/test-user:
+    post:
+      operationId: testDirectoryUser
+      tags: [directory]
+      summary: Look a user up in the directory without a password
+      description: |
+        Requires `tenant_admin`. Finds the user with the settings of the form and shows what Qadam
+        would make of the entry: DN, login, e-mail, name, identifier, groups, roles, and whether
+        sign-in would be allowed. Shares the limit of `POST /admin/directory/test`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryUserTestRequest"
+      responses:
+        "200":
+          description: What was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectoryUserTest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge:
+    get:
+      operationId: listKnowledgeDocuments
+      tags: [knowledge]
+      summary: Documents of the knowledge base
+      description: Requires `tenant_admin` or `innovation_manager`.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of documents, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocumentPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createKnowledgeDocument
+      tags: [knowledge]
+      summary: Add a document
+      description: |
+        Requires `tenant_admin` or `innovation_manager`. Send a file (PDF, DOCX, TXT or
+        Markdown) or pasted text. The document is split into passages and indexed in the
+        background; its status turns `ready` when the mentor can cite it.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                text:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: The document, waiting to be indexed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocument"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge/search:
+    get:
+      operationId: searchKnowledge
+      tags: [knowledge]
+      summary: Passages that best match a question
+      description: Requires `tenant_admin` or `innovation_manager`. The mentor uses the same search.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 500
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Matching passages, best first.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/KnowledgeHit"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/knowledge/{documentId}:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getKnowledgeDocument
+      tags: [knowledge]
+      summary: One document
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDocument"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteKnowledgeDocument
+      tags: [knowledge]
+      summary: Remove a document and its passages
+      responses:
+        "204":
+          description: Removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /people:
+    get:
+      operationId: searchPeople
+      tags: [profiles]
+      summary: Find members of the university
+      description: |
+        Members by name for adding to a team or mentioning in a comment. Returns
+        active members only, at most `limit`. The directory is for the university's own people:
+        a member who is only a `partner` gets 403 `rbac.forbidden`.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Matching members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /incubator/template:
+    get:
+      operationId: getIncubatorTemplate
+      tags: [incubator]
+      summary: Stages, steps and fields of the incubator
+      description: Texts come in all three languages; the client picks the current one.
+      responses:
+        "200":
+          description: The template.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncubatorTemplate"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: Projects
+      description: |
+        `scope=mine` (default) lists the projects the member takes part in. `scope=all` lists
+        every project of the university and requires `innovation_manager`, `tenant_admin`
+        or `leadership`.
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [mine, all]
+            default: mine
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Projects, the most recently changed first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Start a project
+      description: |
+        The creator becomes the owner. When the university has an intellectual property
+        policy, `ip_policy_version` must name its current version (`project.ip_policy_required`).
+        A member starts at most 10 projects an hour (429 `rate_limited`).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: The project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: One project
+      responses:
+        "200":
+          description: The project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Edit the project card
+      description: Team members (owner, member) may edit.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: The updated project.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: archiveProject
+      tags: [projects]
+      summary: Archive the project
+      description: The owner or an `innovation_manager` may archive; archived projects are read-only.
+      responses:
+        "204":
+          description: Archived.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/members:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: addProjectMember
+      tags: [projects]
+      summary: Add a member or a supervisor
+      description: |
+        The owner adds members of the university. A supervisor must have the `supervisor`
+        role and may also be assigned by an `innovation_manager`. A team has at most 12
+        people (owner and members, `project.team_full`) and up to 3 supervisors
+        (`project.supervisors_full`); supervisors do not count against the team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberAdd"
+      responses:
+        "201":
+          description: The member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/UserId"
+    patch:
+      operationId: updateProjectMember
+      tags: [projects]
+      summary: Change a member's title or hand over ownership
+      description: |
+        Members edit their own title; the owner edits anyone's and may make another member
+        the owner (`role: owner`), becoming a member. When the owner has left the university
+        or is blocked there, an `innovation_manager` or `tenant_admin` hands the project over
+        (`project.owner_active` while the owner is still active).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberUpdate"
+      responses:
+        "200":
+          description: The member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: removeProjectMember
+      tags: [projects]
+      summary: Remove a member or leave the project
+      description: |
+        The owner, an `innovation_manager` or a `tenant_admin` removes others; anyone but the
+        owner may leave. Archived projects keep their team (`project.archived`).
+      responses:
+        "204":
+          description: Removed.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/activity:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectActivity
+      tags: [projects]
+      summary: Recent changes, comments and completed steps
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Activity, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/presence:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: updateProjectPresence
+      tags: [projects]
+      summary: Report being in the project and see who else is
+      description: |
+        Clients call it every 15 seconds while the project is open. The answer lists the
+        members seen in the last 45 seconds and the current version of every step, so a
+        client notices changes made by others.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresenceUpdate"
+      responses:
+        "200":
+          description: Who is here.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Presence"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectSteps
+      tags: [incubator]
+      summary: The state of every step and the progress of the project
+      responses:
+        "200":
+          description: Steps in template order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StepList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: getProjectStep
+      tags: [incubator]
+      summary: The answers of a step
+      responses:
+        "200":
+          description: The step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateProjectStep
+      tags: [incubator]
+      summary: Save answers
+      description: |
+        Saves the given fields (others keep their values). `If-Match` is required
+        (428 `precondition.required`); a stale version fails with 412 `precondition.failed`,
+        and the client merges its edits into the current version. Drafts are saved as typed:
+        only types, lengths and options are checked here, the minimum is checked on completion.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepUpdate"
+      responses:
+        "200":
+          description: The saved step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/check:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: checkProjectStep
+      tags: [incubator]
+      summary: Ask the AI what to strengthen
+      description: Reviews the step against its criteria; the review is kept with the step.
+      responses:
+        "200":
+          description: The step with the review.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/complete:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: completeProjectStep
+      tags: [incubator]
+      summary: Mark the step done
+      description: |
+        Fails with 422 `incubator.step_incomplete` (field errors list what is missing) unless
+        the minimum requirements are met. A completed step stays editable; when an edit
+        breaks the minimum it returns to `in_progress`. Changing the answers of an approved
+        step drops the approval: the step is `completed` again while it meets the minimum,
+        `in_progress` otherwise.
+      responses:
+        "200":
+          description: The completed step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/approve:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    post:
+      operationId: approveProjectStep
+      tags: [incubator]
+      summary: Approve the step as a supervisor
+      description: |
+        The project's supervisor or an `innovation_manager` who is not in the team approves a
+        step, also one that does not meet the minimum, with a comment. `If-Match` names the
+        version the approver reviewed (412 `precondition.failed` when the team has changed the
+        step since); the approval lasts until the answers change.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepApprove"
+      responses:
+        "200":
+          description: The approved step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/revisions:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: listStepRevisions
+      tags: [incubator]
+      summary: History of the step's fields
+      description: The history of fields the project withholds from the member (`Step.withheld`) is left out.
+      parameters:
+        - name: field
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Revisions, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevisionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/revisions/{revisionId}/restore:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+      - $ref: "#/components/parameters/RevisionId"
+    post:
+      operationId: restoreStepRevision
+      tags: [incubator]
+      summary: Put an earlier value back
+      description: The restored value becomes a new revision; nothing is lost.
+      parameters:
+        - $ref: "#/components/parameters/IfMatchRequired"
+      responses:
+        "200":
+          description: The step.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/steps/{stepKey}/mentor:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/StepKey"
+    get:
+      operationId: getMentorConversation
+      tags: [incubator]
+      summary: The conversation with the AI mentor about the step
+      description: |
+        Messages oldest first; `cursor` loads earlier ones. Withheld (`withheld`, no messages)
+        from members outside the team and its supervisors when the project hides sensitive
+        details.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Messages and the mentor's options.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorConversation"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: sendMentorMessage
+      tags: [incubator]
+      summary: Ask the mentor and stream the answer
+      description: |
+        Team members ask; the answer streams as server-sent events: `message` (the saved
+        question, MentorMessage), `delta` (`{"text": "..."}`) for each piece, then `done`
+        (the saved answer, MentorMessage) or `error` (Problem). Closing the connection stops
+        the model; the partial answer is kept as `cancelled`.
+
+        A suggested wording for a field is wrapped in
+        `<suggestion field="<field key>">…</suggestion>`; the client shows it with an
+        "Apply to the field" button.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorMessageCreate"
+      responses:
+        "200":
+          description: An event stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/comments:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectComments
+      tags: [incubator]
+      summary: Comments
+      parameters:
+        - name: step_key
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Comments, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProjectComment
+      tags: [incubator]
+      summary: Comment on a step or a field
+      description: |
+        The team, the supervisor and innovation managers may comment and @mention each other
+        while the project is open; leadership and administrators read (`rbac.forbidden`). A
+        member writes at most 120 comments an hour (429 `rate_limited`).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreate"
+      responses:
+        "201":
+          description: The comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/comments/{commentId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/CommentId"
+    patch:
+      operationId: updateProjectComment
+      tags: [incubator]
+      summary: Edit or resolve a comment
+      description: The author edits the text; anyone who can comment resolves or reopens a thread.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdate"
+      responses:
+        "200":
+          description: The comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteProjectComment
+      tags: [incubator]
+      summary: Delete a comment
+      description: |
+        The author, or an `innovation_manager` or `tenant_admin` moderating, deletes a comment
+        with its replies while the project is open (`project.archived`).
+      responses:
+        "204":
+          description: Deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/materials:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectMaterials
+      tags: [incubator]
+      summary: Generated one-pagers, pitch decks and startup passports
+      description: |
+        Materials generated from sensitive details are left out (and cannot be downloaded) for
+        members outside the team and its supervisors while the project hides them.
+      responses:
+        "200":
+          description: Materials, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createProjectMaterial
+      tags: [incubator]
+      summary: Generate a material from the project data
+      description: |
+        Generation runs in the background (AI texts, then PDF or PPTX); poll the list until
+        the status is `ready`. Pitch decks come as PDF or PPTX with 10 to 12 slides in the
+        classic order (a slide the project has no data for says what to add), the others as PDF.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialCreate"
+      responses:
+        "202":
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/materials/{materialId}/content:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/MaterialId"
+    get:
+      operationId: getProjectMaterialContent
+      tags: [incubator]
+      summary: Download a material
+      responses:
+        "200":
+          description: The file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listEvaluations
+      tags: [evaluation]
+      summary: Evaluation history of a project
+      responses:
+        "200":
+          description: Evaluations, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: requestEvaluation
+      tags: [evaluation]
+      summary: Ask the AI to evaluate the project
+      description: |
+        The team, the supervisor or an innovation manager requests an evaluation; it runs in
+        the background with the university's rubric. Poll the evaluation until `status` is
+        `ready` or `failed`. Limited to a few per project a day (`evaluation.too_many_requests`).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    get:
+      operationId: getEvaluation
+      tags: [evaluation]
+      summary: One evaluation with the comparison to the previous one
+      responses:
+        "200":
+          description: The evaluation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}/overrides:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    post:
+      operationId: overrideEvaluationScore
+      tags: [evaluation]
+      summary: Correct a criterion score as an expert
+      description: |
+        The project's supervisor or an innovation manager changes the score of a criterion with
+        a mandatory comment. The AI score stays visible next to it and the change is recorded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreOverride"
+      responses:
+        "200":
+          description: The evaluation with the new total.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/evaluations/{evaluationId}/report:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/EvaluationId"
+    get:
+      operationId: getEvaluationReport
+      tags: [evaluation]
+      summary: The evaluation report as PDF
+      parameters:
+        - name: locale
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Locale"
+      responses:
+        "200":
+          description: The report.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/rubric:
+    get:
+      operationId: getRubric
+      tags: [evaluation]
+      summary: The evaluation rubric of the university
+      description: Requires `tenant_admin` or `innovation_manager`.
+      responses:
+        "200":
+          description: Criteria with weights.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rubric"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateRubric
+      tags: [evaluation]
+      summary: Change the weights of the rubric
+      description: Weights are whole numbers adding up to 100. New evaluations use them.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RubricUpdate"
+      responses:
+        "200":
+          description: The rubric.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rubric"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getShowcaseEntry
+      tags: [showcase]
+      summary: The project's showcase page as the team edits it
+      description: |
+        Before the first save the page is prefilled from the incubator answers (`version` 0).
+        The prefill never uses the fields marked `sensitive` in the template (unit economics,
+        the novelty and the unfair advantage of the solution), whatever `hide_sensitive` says;
+        a video link is prefilled only from YouTube or Vimeo.
+      responses:
+        "200":
+          description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateShowcaseEntry
+      tags: [showcase]
+      summary: Save the showcase page
+      description: |
+        The team edits the page. A page published for the university shows the changes at
+        once. Moving a page to `public` visibility, and changing what a published public page
+        shows (address, title, tagline, sections, video, tags, needs; the cover through its own
+        operations), sends it to review (`in_review`): until an innovation manager approves the
+        new version it is visible inside the university only. A page a moderator took off the
+        showcase (`held`) is published again only through review. An address another project
+        has taken is a field error (`slug` `taken`).
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShowcaseEntryUpdate"
+      responses:
+        "200":
+          description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/cover:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    put:
+      operationId: setShowcaseCover
+      tags: [showcase]
+      summary: Upload the cover image
+      description: |
+        JPEG, PNG or WebP up to 10 MiB and 16 megapixels; stored as a 1600×900 JPEG without
+        metadata. A member uploads at most 30 images an hour (429 `rate_limited`). A new cover
+        of a published public page sends it to review.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The page with the cover.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteShowcaseCover
+      tags: [showcase]
+      summary: Remove the cover image
+      description: Removing the cover of a published public page sends it to review.
+      responses:
+        "200":
+          description: The page without a cover.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/publish:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: publishShowcaseEntry
+      tags: [showcase]
+      summary: Publish the page
+      description: |
+        `university` pages are published at once; `public` pages go to an innovation manager
+        for review. A page a moderator took off the showcase (`held`) goes to review whatever
+        its visibility and stays hidden until approved. The page must be saved and have a
+        problem and a solution (`showcase.incomplete`).
+      responses:
+        "200":
+          description: The page with its new status.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/showcase/unpublish:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: unpublishShowcaseEntry
+      tags: [showcase]
+      summary: Take the page off the showcase
+      description: |
+        The team, or an `innovation_manager` or `tenant_admin` who is not in the team, takes
+        the page off. A moderator's take-down holds the page (`held`): the team can publish
+        it again only through review.
+      responses:
+        "200":
+          description: The page, back to draft.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{projectId}/contacts:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listProjectContacts
+      tags: [showcase]
+      summary: Contact requests addressed to the project
+      description: The team sees forwarded requests; innovation managers see all.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequestList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/showcase:
+    get:
+      operationId: listShowcaseReviews
+      tags: [showcase]
+      summary: Showcase pages for moderation
+      description: Requires `innovation_manager` or `tenant_admin`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseStatus"
+      responses:
+        "200":
+          description: Pages, the oldest submission first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseReviewList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/showcase/{projectId}/review:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: reviewShowcaseEntry
+      tags: [showcase]
+      summary: Approve or reject a public page
+      description: |
+        Requires `innovation_manager` or `tenant_admin`. An approval names the version the
+        moderator reviewed in `If-Match` (`"<version>"`; 428 without it, 412
+        `precondition.failed` when the team has changed the page since) and publishes exactly
+        that version; approving a page a moderator took down (`held`) publishes it again. A
+        moderator in the project's team or among its supervisors cannot approve its page
+        (`showcase.own_page`). A published public page can be rejected later too: it stays
+        visible inside the university.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShowcaseReview"
+      responses:
+        "200":
+          description: The page.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/contacts:
+    get:
+      operationId: listContactRequests
+      tags: [showcase]
+      summary: Contact requests of the university
+      description: Requires `innovation_manager` or `tenant_admin`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContactStatus"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequestList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /admin/contacts/{contactId}/moderate:
+    parameters:
+      - name: contactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: moderateContactRequest
+      tags: [showcase]
+      summary: Forward a request to the team or reject it
+      description: |
+        A request is not forwarded once the team has stopped accepting requests
+        (`showcase.contact_disabled`); it can still be rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactModeration"
+      responses:
+        "200":
+          description: The request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactRequest"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase:
+    get:
+      operationId: listShowcase
+      tags: [showcase]
+      summary: The showcase of published projects
+      description: |
+        Public. `scope=university` (default) lists the pages of the university of the address
+        (members also see `university` pages); `scope=national` lists public pages of every
+        university. Full-text search works in Kazakh, Russian and English.
+      security: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [university, national]
+            default: university
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: industry
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Industry"
+        - name: stage
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseStage"
+        - name: faculty
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: need
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Pages, the most recently published first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcasePage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/facets:
+    get:
+      operationId: getShowcaseFacets
+      tags: [showcase]
+      summary: Counts for the showcase filters
+      security: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [university, national]
+            default: university
+      responses:
+        "200":
+          description: Facets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseFacets"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/highlights:
+    get:
+      operationId: getShowcaseHighlights
+      tags: [showcase]
+      summary: Live numbers and featured projects for the landing page
+      security: []
+      responses:
+        "200":
+          description: Highlights of the university of the address.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseHighlights"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    get:
+      operationId: getShowcaseProject
+      tags: [showcase]
+      summary: A public project page
+      description: Public pages are open to everyone; university pages to members only.
+      security: []
+      responses:
+        "200":
+          description: The page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowcaseProject"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}/contact:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    post:
+      operationId: contactShowcaseProject
+      tags: [showcase]
+      summary: Ask the team to get in touch
+      description: |
+        Public and rate-limited: 5 requests an hour from an address, 3 a day from an e-mail
+        to a project, 100 a day to a project (429 `showcase.too_many_requests`). Depending on
+        the university's setting the request goes to an innovation manager first or straight
+        to the team; the team's addresses are never shown. Invalid fields, the e-mail
+        included, are 422 field errors.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactCreate"
+      responses:
+        "202":
+          description: Accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactAccepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /showcase/entries/{slug}/og.png:
+    parameters:
+      - $ref: "#/components/parameters/ShowcaseSlug"
+    get:
+      operationId: getShowcaseImage
+      tags: [showcase]
+      summary: The link preview image of a page (1200×630)
+      security: []
+      responses:
+        "200":
+          description: The image.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: qadam_at
+      description: |
+        Short-lived access token set by sign-in. State-changing requests also need the
+        `X-CSRF-Token` header equal to the `qadam_csrf` cookie.
+  headers:
+    ETag:
+      description: Version of the resource; send it back in `If-Match` to update safely.
+      schema:
+        type: string
+    SessionCookies:
+      description: "`qadam_at` (access), `qadam_rt` (refresh) and `qadam_csrf` (CSRF token)."
+      schema:
+        type: string
+  parameters:
+    ShowcaseSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 60
+    EvaluationId:
+      name: evaluationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IfMatchRequired:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag of the version being edited; the update fails with 412 if it is stale.
+      schema:
+        type: string
+        maxLength: 128
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StepKey:
+      name: stepKey
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 64
+    RevisionId:
+      name: revisionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MaterialId:
+      name: materialId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: ETag of the version being edited; the update fails with 412 if it is stale.
+      schema:
+        type: string
+        maxLength: 128
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Client-generated unique key that makes a creating request safe to retry.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 255
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor from `next_cursor` of the previous page.
+      schema:
+        type: string
+        maxLength: 512
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Problem:
+      description: Error described in RFC 9457 Problem Details format.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    AiFeature:
+      type: string
+      enum: [mentor, evaluation, generation, summary, embedding]
+    MentorMode:
+      type: string
+      enum: [coach, coauthor]
+      description: "`coach` asks and hints; `coauthor` may propose whole texts."
+    AiStatus:
+      type: object
+      additionalProperties: false
+      required: [external, daily_limit, used_today, resets_at, mentor_mode]
+      properties:
+        external:
+          type: boolean
+          description: >-
+            AI features send data to a provider outside the university, including the embeddings
+            of questions searched in the knowledge base.
+        daily_limit:
+          type: integer
+          description: Tokens a member may use per day; 0 means no limit.
+        used_today:
+          type: integer
+          description: Tokens counted against the daily limit today; embeddings are accounted but not counted.
+        resets_at:
+          type: string
+          format: date-time
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiRoute:
+      type: object
+      additionalProperties: false
+      required: [provider]
+      properties:
+        provider:
+          type: string
+          examples: [anthropic]
+        model:
+          type: [string, "null"]
+          maxLength: 100
+          examples: [claude-sonnet-5-5]
+    AiRoutes:
+      type: object
+      description: Providers of each feature in the order they are tried.
+      additionalProperties:
+        type: array
+        maxItems: 5
+        items:
+          $ref: "#/components/schemas/AiRoute"
+    AiProvider:
+      type: object
+      additionalProperties: false
+      required: [name, local, models]
+      properties:
+        name:
+          type: string
+        local:
+          type: boolean
+          description: Runs inside the university network; data is not redacted.
+        models:
+          type: object
+          description: Default model per feature.
+          additionalProperties:
+            type: string
+    AiSettings:
+      type: object
+      additionalProperties: false
+      required: [routes, default_routes, providers, local_only, daily_user_tokens, daily_tenant_tokens, mentor_mode]
+      properties:
+        routes:
+          $ref: "#/components/schemas/AiRoutes"
+        default_routes:
+          $ref: "#/components/schemas/AiRoutes"
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiProvider"
+        local_only:
+          type: boolean
+        daily_user_tokens:
+          type: integer
+        daily_tenant_tokens:
+          type: integer
+          format: int64
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiSettingsUpdate:
+      type: object
+      additionalProperties: false
+      required: [routes, local_only, daily_user_tokens, daily_tenant_tokens, mentor_mode]
+      properties:
+        routes:
+          $ref: "#/components/schemas/AiRoutes"
+        local_only:
+          type: boolean
+        daily_user_tokens:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        daily_tenant_tokens:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        mentor_mode:
+          $ref: "#/components/schemas/MentorMode"
+    AiCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [feature]
+      properties:
+        feature:
+          $ref: "#/components/schemas/AiFeature"
+        locale:
+          $ref: "#/components/schemas/Locale"
+    AiCheckResult:
+      type: object
+      additionalProperties: false
+      required: [provider, model, prompt_version, input_tokens, output_tokens]
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        prompt_version:
+          type: string
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+    AiUsageTotals:
+      type: object
+      additionalProperties: false
+      required: [requests, input_tokens, output_tokens, cost_usd]
+      properties:
+        requests:
+          type: integer
+        input_tokens:
+          type: integer
+          format: int64
+        output_tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageByFeature:
+      type: object
+      additionalProperties: false
+      required: [feature, requests, input_tokens, output_tokens, cost_usd, failures]
+      properties:
+        feature:
+          $ref: "#/components/schemas/AiFeature"
+        requests:
+          type: integer
+        input_tokens:
+          type: integer
+          format: int64
+        output_tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+        failures:
+          type: integer
+    AiUsageByDay:
+      type: object
+      additionalProperties: false
+      required: [day, requests, tokens, cost_usd]
+      properties:
+        day:
+          type: string
+          format: date
+        requests:
+          type: integer
+        tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageByModel:
+      type: object
+      additionalProperties: false
+      required: [provider, model, requests, tokens, cost_usd]
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        requests:
+          type: integer
+        tokens:
+          type: integer
+          format: int64
+        cost_usd:
+          type: number
+          format: double
+    AiUsageReport:
+      type: object
+      additionalProperties: false
+      required: [since, totals, by_feature, by_day, by_model]
+      properties:
+        since:
+          type: string
+          format: date-time
+        totals:
+          $ref: "#/components/schemas/AiUsageTotals"
+        by_feature:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByFeature"
+        by_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByDay"
+        by_model:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageByModel"
+    KnowledgeStatus:
+      type: string
+      enum: [pending, ready, failed]
+    KnowledgeDocument:
+      type: object
+      additionalProperties: false
+      required: [id, title, status, chunk_count, characters, error, file_url, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/KnowledgeStatus"
+        chunk_count:
+          type: integer
+        characters:
+          type: integer
+          description: Length of the extracted text.
+        error:
+          type: [string, "null"]
+        file_url:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    KnowledgeDocumentPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/KnowledgeDocument"
+        next_cursor:
+          type: [string, "null"]
+    KnowledgeHit:
+      type: object
+      additionalProperties: false
+      required: [document_id, title, heading, excerpt, score]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        heading:
+          type: [string, "null"]
+        excerpt:
+          type: string
+        score:
+          type: number
+          format: double
+          description: Relevance from 0 to 1.
+    Locale:
+      type: string
+      description: Interface and content language.
+      enum: [kk, ru, en]
+    LocalizedText:
+      type: object
+      description: The same text in Kazakh, Russian and English; at least one is present.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        kk:
+          type: string
+        ru:
+          type: string
+        en:
+          type: string
+    Meta:
+      type: object
+      additionalProperties: false
+      required: [product, version, commit, built_at, locales, default_locale, server_time]
+      properties:
+        product:
+          type: string
+          examples: [Qadam]
+        version:
+          type: string
+          examples: [0.1.0]
+        commit:
+          type: string
+          description: Short git commit of the running build, `dev` for local builds.
+        built_at:
+          type: string
+          description: Build timestamp (RFC 3339) or `unknown` for local builds.
+        locales:
+          type: array
+          items:
+            $ref: "#/components/schemas/Locale"
+        default_locale:
+          $ref: "#/components/schemas/Locale"
+        server_time:
+          type: string
+          format: date-time
+
+    Role:
+      type: string
+      description: |
+        Role of a member in the university: `student`; `supervisor` (scientific supervisor);
+        `mentor`; `jury` (competition expert); `innovation_manager` (commercialisation / AI centre);
+        `tenant_admin`; `leadership` (rector, vice-rectors, deans; read-only dashboards);
+        `partner` (investor, industry partner, accelerator).
+      enum: [student, supervisor, mentor, jury, innovation_manager, tenant_admin, leadership, partner]
+    StudyLevel:
+      type: string
+      enum: [bachelor, master, doctorate]
+    MembershipStatus:
+      type: string
+      enum: [active, invited, suspended]
+
+    SsoProvider:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    DirectoryLogin:
+      type: object
+      additionalProperties: false
+      description: Sign-in with the account of the university directory (`POST /auth/directory/login`).
+      required: [enabled, label, username_hint]
+      properties:
+        enabled:
+          type: boolean
+        label:
+          description: Name of the sign-in option ("Учётная запись КазУТБ"); null - the default name.
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        username_hint:
+          description: Hint under the login field ("Логин как в Outlook - ivanov.a").
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+    DirectoryLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          maxLength: 256
+          description: The login in the directory; Active Directory also accepts `user@domain` and `DOMAIN\user`.
+        password:
+          type: string
+          maxLength: 256
+    DirectoryPreset:
+      type: string
+      enum: [active_directory, openldap, freeipa, custom]
+      description: The kind of directory; its defaults fill the filter and the attributes.
+    DirectoryRoleMapping:
+      type: object
+      additionalProperties: false
+      required: [group_dn, role]
+      properties:
+        group_dn:
+          type: string
+          maxLength: 1024
+        role:
+          $ref: "#/components/schemas/Role"
+    DirectoryConfig:
+      type: object
+      description: The settings of directory sign-in an administrator edits.
+      required:
+        - enabled
+        - preset
+        - url
+        - start_tls
+        - ca_cert_pem
+        - timeout_seconds
+        - bind_dn
+        - user_base_dn
+        - user_filter
+        - login_attr
+        - email_attr
+        - email_fallback_attr
+        - name_attr
+        - given_name_attr
+        - surname_attr
+        - id_attr
+        - groups_attr
+        - nested_groups
+        - role_mappings
+        - default_role
+        - required_group_dn
+        - auto_provision
+        - sync_roles
+        - login_label
+        - username_hint
+      properties:
+        enabled:
+          type: boolean
+        preset:
+          $ref: "#/components/schemas/DirectoryPreset"
+        url:
+          type: string
+          maxLength: 1000
+          description: One or more `ldaps://host:636` or `ldap://host:389` addresses separated by spaces, tried in order.
+          examples: ["ldaps://dc01.kazutb.local:636 ldaps://dc02.kazutb.local:636"]
+        start_tls:
+          type: boolean
+          description: Upgrade `ldap://` connections with StartTLS.
+        ca_cert_pem:
+          type: [string, "null"]
+          maxLength: 65536
+          description: Certificate (PEM) of the university's certification authority, when it is not a public one.
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          maximum: 60
+        bind_dn:
+          type: string
+          maxLength: 1024
+          examples: ["CN=qadam-svc,OU=Service Accounts,DC=kazutb,DC=local"]
+        user_base_dn:
+          type: string
+          maxLength: 1024
+          examples: ["OU=Students,DC=kazutb,DC=local"]
+        user_filter:
+          type: string
+          maxLength: 1024
+          description: LDAP filter with the `{username}` placeholder (the login is escaped).
+        login_attr:
+          type: string
+          maxLength: 64
+        email_attr:
+          type: string
+          maxLength: 64
+        email_fallback_attr:
+          type: [string, "null"]
+          maxLength: 64
+          description: Read when the e-mail attribute is empty (`userPrincipalName` in Active Directory).
+        name_attr:
+          type: string
+          maxLength: 64
+        given_name_attr:
+          type: [string, "null"]
+          maxLength: 64
+        surname_attr:
+          type: [string, "null"]
+          maxLength: 64
+        id_attr:
+          type: string
+          maxLength: 64
+          description: Permanent identifier of an entry (`objectGUID`, `entryUUID`, `ipaUniqueID`); the DN when the entry has none.
+        groups_attr:
+          type: string
+          maxLength: 64
+        nested_groups:
+          type: boolean
+        role_mappings:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/DirectoryRoleMapping"
+        default_role:
+          $ref: "#/components/schemas/Role"
+        required_group_dn:
+          type: [string, "null"]
+          maxLength: 1024
+          description: Only members of this group (nested ones too, when enabled) may sign in.
+        auto_provision:
+          type: boolean
+          description: Create accounts and memberships on the first sign-in.
+        sync_roles:
+          type: boolean
+          description: On every sign-in replace the roles named in `role_mappings`; other roles stay.
+        login_label:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        username_hint:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+    DirectorySettings:
+      allOf:
+        - $ref: "#/components/schemas/DirectoryConfig"
+        - type: object
+          required: [has_bind_password, configured, plain_ldap_allowed, presets]
+          properties:
+            has_bind_password:
+              type: boolean
+              description: A bind password is stored (it is never returned).
+            configured:
+              type: boolean
+              description: The settings were saved at least once.
+            plain_ldap_allowed:
+              type: boolean
+              description: This installation accepts `ldap://` without StartTLS (never in production).
+            presets:
+              type: array
+              description: Defaults of every kind of directory, for switching the kind in the form.
+              items:
+                $ref: "#/components/schemas/DirectoryPresetDefaults"
+    DirectoryPresetDefaults:
+      type: object
+      additionalProperties: false
+      required:
+        - preset
+        - user_filter
+        - login_attr
+        - email_attr
+        - email_fallback_attr
+        - name_attr
+        - given_name_attr
+        - surname_attr
+        - id_attr
+        - groups_attr
+        - nested_groups
+        - base_dn_example
+      properties:
+        preset:
+          $ref: "#/components/schemas/DirectoryPreset"
+        user_filter:
+          type: string
+        login_attr:
+          type: string
+        email_attr:
+          type: string
+        email_fallback_attr:
+          type: [string, "null"]
+        name_attr:
+          type: string
+        given_name_attr:
+          type: [string, "null"]
+        surname_attr:
+          type: [string, "null"]
+        id_attr:
+          type: string
+        groups_attr:
+          type: string
+        nested_groups:
+          type: boolean
+        base_dn_example:
+          type: string
+    DirectorySettingsUpdate:
+      allOf:
+        - $ref: "#/components/schemas/DirectoryConfig"
+        - type: object
+          properties:
+            bind_password:
+              type: string
+              maxLength: 256
+              writeOnly: true
+              description: A new bind password; empty or absent keeps the stored one.
+            test_proof:
+              type: string
+              maxLength: 256
+              description: "`proof` of a successful connection test of these settings."
+    DirectoryTestStep:
+      type: object
+      additionalProperties: false
+      required: [step, status, code, detail]
+      properties:
+        step:
+          type: string
+          enum: [connect, tls, bind, search, server]
+        status:
+          type: string
+          enum: [ok, warning, failed, skipped]
+        code:
+          type: [string, "null"]
+          description: |
+            Reason for the administrator (translated by the client): `dns`, `refused`, `timeout`,
+            `unreachable`, `tls_unknown_authority`, `tls_hostname`, `tls_expired`, `tls_expiring`,
+            `tls_handshake`, `start_tls_failed`, `plain`, `plain_not_allowed`, `invalid_credentials`,
+            `bind_password_missing`, `no_such_object`, `insufficient_access`, `no_entries`,
+            `unwilling_to_perform`, `strong_auth_required`, `protocol`, `unknown`.
+        detail:
+          type: [string, "null"]
+          description: Technical detail for the administrator (the server's message); never a secret.
+        server:
+          type: [string, "null"]
+          description: The address the step used.
+        certificate:
+          anyOf:
+            - $ref: "#/components/schemas/DirectoryCertificate"
+            - type: "null"
+        count:
+          type: [integer, "null"]
+          description: Entries the search found (counted up to 1).
+        vendor:
+          type: [string, "null"]
+        naming_contexts:
+          type: array
+          items:
+            type: string
+    DirectoryCertificate:
+      type: object
+      additionalProperties: false
+      required: [subject, issuer, not_after, dns_names]
+      properties:
+        subject:
+          type: string
+        issuer:
+          type: string
+        not_after:
+          type: string
+          format: date-time
+        dns_names:
+          type: array
+          items:
+            type: string
+    DirectoryConnectionTest:
+      type: object
+      additionalProperties: false
+      required: [ok, steps, proof]
+      properties:
+        ok:
+          type: boolean
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/DirectoryTestStep"
+        proof:
+          type: [string, "null"]
+          description: Present when every step passed; send it back as `test_proof` to turn sign-in on.
+    DirectoryUserTestRequest:
+      type: object
+      additionalProperties: false
+      required: [settings, username]
+      properties:
+        settings:
+          $ref: "#/components/schemas/DirectorySettingsUpdate"
+        username:
+          type: string
+          maxLength: 256
+    DirectoryUserTest:
+      type: object
+      additionalProperties: false
+      required: [found, code, steps, user]
+      properties:
+        found:
+          type: boolean
+        code:
+          type: [string, "null"]
+          description: "Why nothing was found: `not_found`, `ambiguous` (several entries match), `connection` (see `steps`)."
+        steps:
+          type: array
+          description: The connection steps; shown when the connection failed.
+          items:
+            $ref: "#/components/schemas/DirectoryTestStep"
+        user:
+          anyOf:
+            - $ref: "#/components/schemas/DirectoryUserInfo"
+            - type: "null"
+    DirectoryUserInfo:
+      type: object
+      additionalProperties: false
+      required: [dn, login, email, full_name, subject, groups, roles, sign_in]
+      properties:
+        dn:
+          type: string
+        login:
+          type: string
+        email:
+          type: [string, "null"]
+        full_name:
+          type: string
+        subject:
+          type: string
+          description: The permanent identifier the account is linked by.
+        groups:
+          type: array
+          items:
+            type: string
+        roles:
+          type: array
+          description: Roles Qadam would give a new member (and set on every sign-in with `sync_roles`).
+          items:
+            $ref: "#/components/schemas/Role"
+        sign_in:
+          $ref: "#/components/schemas/DirectorySignInCheck"
+    DirectorySignInCheck:
+      type: object
+      additionalProperties: false
+      required: [allowed, outcome, reasons]
+      properties:
+        allowed:
+          type: boolean
+        outcome:
+          type: string
+          enum: [existing, link, create, denied]
+          description: "`existing` - already linked; `link` - an account with the e-mail is linked; `create` - a new account."
+        reasons:
+          type: array
+          description: |
+            Refusals (`required_group`, `email_missing`, `link_denied`, `auto_provision_off`,
+            `suspended`) and notes (`email_unverified` - a new account gets an unconfirmed address,
+            `default_role` - no group is mapped, `joins` - the account becomes a member).
+          items:
+            type: string
+            enum: [required_group, email_missing, link_denied, auto_provision_off, suspended, email_unverified, default_role, joins]
+    Tenant:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - slug
+        - name
+        - short_name
+        - default_locale
+        - primary_color
+        - logo_url
+        - cover_url
+        - self_signup
+        - email_domains
+        - sso_providers
+        - directory_login
+        - consent
+        - ip_policy
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          examples: [kazutb]
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+        default_locale:
+          $ref: "#/components/schemas/Locale"
+        primary_color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        logo_url:
+          type: [string, "null"]
+          description: The university's seal.
+        cover_url:
+          type: [string, "null"]
+          description: A photo of the university for the hero of its public pages.
+        self_signup:
+          type: boolean
+          description: Whether students may register on their own.
+        email_domains:
+          type: array
+          description: Allowed e-mail domains for self sign-up; empty means any.
+          items:
+            type: string
+        sso_providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SsoProvider"
+        directory_login:
+          $ref: "#/components/schemas/DirectoryLogin"
+        consent:
+          $ref: "#/components/schemas/ConsentPolicy"
+        ip_policy:
+          anyOf:
+            - $ref: "#/components/schemas/IpPolicy"
+            - type: "null"
+    ConsentPolicy:
+      type: object
+      description: Personal data processing consent shown at sign-up (Law of the RK "On personal data").
+      additionalProperties: false
+      required: [version, text]
+      properties:
+        version:
+          type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+    TenantBrief:
+      type: object
+      additionalProperties: false
+      required: [id, slug, name, short_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, email, email_verified, full_name, locale, avatar_url, is_super_admin, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        email_verified:
+          type: boolean
+        full_name:
+          type: string
+        locale:
+          $ref: "#/components/schemas/Locale"
+        avatar_url:
+          type: [string, "null"]
+        is_super_admin:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    FacultyRef:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    StudyGroupRef:
+      type: object
+      additionalProperties: false
+      required: [id, code]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+    Membership:
+      type: object
+      additionalProperties: false
+      required: [tenant_id, roles, status, faculty, department, group, study_level, course, onboarded]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/MembershipStatus"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        department:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        group:
+          anyOf:
+            - $ref: "#/components/schemas/StudyGroupRef"
+            - type: "null"
+        study_level:
+          anyOf:
+            - $ref: "#/components/schemas/StudyLevel"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+        onboarded:
+          type: boolean
+    Session:
+      type: object
+      additionalProperties: false
+      required: [user, membership, tenant]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        membership:
+          $ref: "#/components/schemas/Membership"
+        tenant:
+          $ref: "#/components/schemas/TenantBrief"
+    SessionInfo:
+      type: object
+      additionalProperties: false
+      required: [id, user_agent, ip, created_at, last_used_at, current]
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_agent:
+          type: [string, "null"]
+        ip:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        current:
+          type: boolean
+
+    VerificationSent:
+      type: object
+      additionalProperties: false
+      required: [verification_sent]
+      properties:
+        verification_sent:
+          type: boolean
+          const: true
+          description: The verification link was e-mailed; the session starts when it is opened.
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, full_name, locale, consent_version]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 10
+          maxLength: 128
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        locale:
+          $ref: "#/components/schemas/Locale"
+        consent_version:
+          type: string
+          description: Version of the personal data consent the user accepted (from `Tenant.consent`).
+          maxLength: 32
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          maxLength: 128
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    LoginCodeRequest:
+      type: object
+      additionalProperties: false
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    TokenRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          maxLength: 128
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          maxLength: 128
+        password:
+          type: string
+          minLength: 10
+          maxLength: 128
+    PasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          maxLength: 128
+        new_password:
+          type: string
+          minLength: 10
+          maxLength: 128
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+          description: A sign-in code from the e-mail; required instead of the current password to set a first password.
+
+    ProfileLinks:
+      type: object
+      additionalProperties: false
+      properties:
+        website:
+          type: [string, "null"]
+          maxLength: 300
+        github:
+          type: [string, "null"]
+          maxLength: 300
+        linkedin:
+          type: [string, "null"]
+          maxLength: 300
+        telegram:
+          type: [string, "null"]
+          maxLength: 64
+    Profile:
+      type: object
+      additionalProperties: false
+      required: [headline, bio, skills, interests, links, public_slug, is_public, looking_for_team]
+      properties:
+        headline:
+          type: [string, "null"]
+          maxLength: 140
+        bio:
+          type: [string, "null"]
+          maxLength: 2000
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        public_slug:
+          type: string
+        is_public:
+          type: boolean
+        looking_for_team:
+          type: boolean
+    Me:
+      type: object
+      additionalProperties: false
+      required: [user, membership, profile]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        membership:
+          $ref: "#/components/schemas/Membership"
+        profile:
+          $ref: "#/components/schemas/Profile"
+    MeUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        locale:
+          $ref: "#/components/schemas/Locale"
+    OnboardingRequest:
+      type: object
+      additionalProperties: false
+      required: [locale, interests, skills, has_idea]
+      properties:
+        locale:
+          $ref: "#/components/schemas/Locale"
+        faculty_id:
+          type: [string, "null"]
+          format: uuid
+        department_id:
+          type: [string, "null"]
+          format: uuid
+        group_id:
+          type: [string, "null"]
+          format: uuid
+        study_level:
+          anyOf:
+            - $ref: "#/components/schemas/StudyLevel"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+        interests:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        skills:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        has_idea:
+          type: boolean
+        idea:
+          type: [string, "null"]
+          maxLength: 500
+          description: One sentence about the idea, if the student already has one.
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      required: [headline, bio, skills, interests, links, public_slug, is_public, looking_for_team]
+      properties:
+        headline:
+          type: [string, "null"]
+          maxLength: 140
+        bio:
+          type: [string, "null"]
+          maxLength: 2000
+        skills:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        interests:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        public_slug:
+          type: string
+          pattern: "^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$"
+        is_public:
+          type: boolean
+        looking_for_team:
+          type: boolean
+    PublicProfile:
+      type: object
+      additionalProperties: false
+      required:
+        - full_name
+        - avatar_url
+        - headline
+        - bio
+        - skills
+        - interests
+        - links
+        - faculty
+        - tenant
+        - looking_for_team
+      properties:
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        headline:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        links:
+          $ref: "#/components/schemas/ProfileLinks"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        tenant:
+          $ref: "#/components/schemas/TenantBrief"
+        looking_for_team:
+          type: boolean
+
+    Department:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+    Faculty:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, departments]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        departments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Department"
+    StudyGroup:
+      type: object
+      additionalProperties: false
+      required: [id, code, faculty_id, department_id, study_level, admission_year]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        faculty_id:
+          type: string
+          format: uuid
+        department_id:
+          type: [string, "null"]
+          format: uuid
+        study_level:
+          $ref: "#/components/schemas/StudyLevel"
+        admission_year:
+          type: [integer, "null"]
+
+    MemberBrief:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, avatar_url, faculty]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+    TeamRole:
+      type: string
+      enum: [developer, designer, data_scientist, marketer, business, hardware, domain_expert, other]
+    TeamRequestStatus:
+      type: string
+      enum: [open, closed]
+    TeamRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - author
+        - title
+        - description
+        - roles_needed
+        - skills
+        - status
+        - responses_count
+        - is_mine
+        - has_responded
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: "#/components/schemas/MemberBrief"
+        title:
+          type: string
+        description:
+          type: string
+        roles_needed:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/TeamRequestStatus"
+        responses_count:
+          type: integer
+        is_mine:
+          type: boolean
+        has_responded:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TeamRequestPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamRequest"
+        next_cursor:
+          type: [string, "null"]
+    TeamRequestCreate:
+      type: object
+      additionalProperties: false
+      required: [title, description, roles_needed, skills]
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        roles_needed:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          maxItems: 15
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+    TeamRequestUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        roles_needed:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/TeamRole"
+        skills:
+          type: array
+          maxItems: 15
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        status:
+          $ref: "#/components/schemas/TeamRequestStatus"
+    TeamResponse:
+      type: object
+      additionalProperties: false
+      required: [id, author, message, email, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: "#/components/schemas/MemberBrief"
+        message:
+          type: string
+        email:
+          type: [string, "null"]
+          description: Contact e-mail of the respondent, visible to the request author only.
+        created_at:
+          type: string
+          format: date-time
+    TeamResponseCreate:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 10
+          maxLength: 1000
+
+    Member:
+      type: object
+      additionalProperties: false
+      required:
+        - user
+        - email
+        - roles
+        - status
+        - group
+        - course
+        - joined_at
+        - last_active_at
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/MembershipStatus"
+        group:
+          anyOf:
+            - $ref: "#/components/schemas/StudyGroupRef"
+            - type: "null"
+        course:
+          type: [integer, "null"]
+        joined_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: [string, "null"]
+          format: date-time
+    MemberPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        next_cursor:
+          type: [string, "null"]
+    MemberUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        roles:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Role"
+        status:
+          type: string
+          enum: [active, suspended]
+
+    ImportKind:
+      type: string
+      description: |
+        `structure` — faculties, departments and study groups;
+        `students` — students with their faculty, group and course.
+      enum: [structure, students]
+    ImportStatus:
+      type: string
+      enum: [preview, committed]
+    ImportRowAction:
+      type: string
+      enum: [create, update, skip]
+    ImportRow:
+      type: object
+      additionalProperties: false
+      required: [line, values, action, errors]
+      properties:
+        line:
+          type: integer
+          description: Line number in the file (1 is the header).
+        values:
+          type: object
+          additionalProperties:
+            type: string
+        action:
+          $ref: "#/components/schemas/ImportRowAction"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+    ImportSummary:
+      type: object
+      additionalProperties: false
+      required: [total, valid, invalid, to_create, to_update]
+      properties:
+        total:
+          type: integer
+        valid:
+          type: integer
+        invalid:
+          type: integer
+        to_create:
+          type: integer
+        to_update:
+          type: integer
+    ImportJob:
+      type: object
+      additionalProperties: false
+      required: [id, kind, status, file_name, columns, summary, rows, created_at, committed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/ImportKind"
+        status:
+          $ref: "#/components/schemas/ImportStatus"
+        file_name:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        summary:
+          $ref: "#/components/schemas/ImportSummary"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRow"
+        created_at:
+          type: string
+          format: date-time
+        committed_at:
+          type: [string, "null"]
+          format: date-time
+    ImportResult:
+      type: object
+      additionalProperties: false
+      required: [created, updated, skipped, invited]
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+        skipped:
+          type: integer
+        invited:
+          type: integer
+
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+          description: JSON pointer-like path of the invalid field, e.g. `steps.problem.statement`.
+        code:
+          type: string
+          description: Stable validation code, e.g. `required`, `too_short`.
+        message:
+          type: string
+          description: English, developer-facing explanation.
+        params:
+          type: object
+          additionalProperties: true
+          description: Values for interpolation into the localised message.
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details extended with a localisable `code`.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: Stable machine-readable error code used for localisation.
+          examples: [auth.invalid_credentials]
+        request_id:
+          type: string
+        params:
+          type: object
+          additionalProperties: true
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+
+    Person:
+      type: object
+      additionalProperties: false
+      required: [id, full_name, avatar_url, faculty, roles, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        slug:
+          type: [string, "null"]
+          description: Address of the public profile, when it is public.
+    PersonList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Person"
+    IpPolicy:
+      type: object
+      description: Intellectual property policy a team accepts when it starts a project.
+      additionalProperties: false
+      required: [version, text]
+      properties:
+        version:
+          type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+
+    FieldType:
+      type: string
+      enum: [text, textarea, number, select, list, table, url]
+    FieldUnit:
+      type: string
+      enum: [kzt, count]
+    TemplateOption:
+      type: object
+      additionalProperties: false
+      required: [value, label]
+      properties:
+        value:
+          type: string
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+    TemplateField:
+      type: object
+      additionalProperties: false
+      required: [key, type, required, label]
+      properties:
+        key:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        required:
+          type: boolean
+          description: Needed to complete the step (with min_length or min_items).
+        sensitive:
+          type: boolean
+          description: |
+            A sensitive detail (unit economics, the novelty and the unfair advantage of the
+            solution): withheld from everyone outside the team and its supervisors when the
+            project hides sensitive details (`Project.hide_sensitive`), and never shown on the
+            showcase. Absent for other fields.
+        min_length:
+          type: integer
+        max_length:
+          type: integer
+        min_items:
+          type: integer
+        max_items:
+          type: integer
+        unit:
+          $ref: "#/components/schemas/FieldUnit"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        hint:
+          $ref: "#/components/schemas/LocalizedText"
+        placeholder:
+          $ref: "#/components/schemas/LocalizedText"
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateOption"
+        columns:
+          type: array
+          description: Columns of a table.
+          items:
+            $ref: "#/components/schemas/TemplateField"
+    TemplateCriterion:
+      type: object
+      additionalProperties: false
+      required: [fields, text]
+      properties:
+        fields:
+          type: array
+          items:
+            type: string
+        text:
+          $ref: "#/components/schemas/LocalizedText"
+    TemplateStep:
+      type: object
+      additionalProperties: false
+      required: [key, number, stage, title, goal, method, criteria, fields]
+      properties:
+        key:
+          type: string
+          examples: [problem]
+        number:
+          type: integer
+          minimum: 1
+        stage:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        goal:
+          $ref: "#/components/schemas/LocalizedText"
+        method:
+          $ref: "#/components/schemas/LocalizedText"
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateCriterion"
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateField"
+    TemplateStage:
+      type: object
+      additionalProperties: false
+      required: [key, title, steps]
+      properties:
+        key:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateStep"
+    IncubatorTemplate:
+      type: object
+      additionalProperties: false
+      required: [version, stages]
+      properties:
+        version:
+          type: integer
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateStage"
+
+    Industry:
+      type: string
+      enum:
+        - agritech
+        - edtech
+        - fintech
+        - healthtech
+        - logistics
+        - cleantech
+        - govtech
+        - foodtech
+        - fashion
+        - ecommerce
+        - manufacturing
+        - energy
+        - tourism
+        - social
+        - other
+    ProjectRole:
+      type: string
+      enum: [owner, member, supervisor]
+    ProjectAccess:
+      type: string
+      description: |
+        How the signed-in member relates to the project: a team role, or `manager` for
+        innovation managers, administrators and leadership who see every project.
+      enum: [owner, member, supervisor, manager]
+    StepStatus:
+      type: string
+      enum: [not_started, in_progress, completed, approved]
+    Badge:
+      type: string
+      description: Milestones of the project.
+      enum: [idea_stage, market_stage, product_stage, launch_stage, first_review, materials_ready, team_of_three]
+    StageProgress:
+      type: object
+      additionalProperties: false
+      required: [key, completed, total]
+      properties:
+        key:
+          type: string
+        completed:
+          type: integer
+        total:
+          type: integer
+    ProjectProgress:
+      type: object
+      additionalProperties: false
+      required: [completed_steps, total_steps, percent, current_step, stages, streak_days, badges]
+      properties:
+        completed_steps:
+          type: integer
+        total_steps:
+          type: integer
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        current_step:
+          type: string
+          description: The first step that is not done yet (the last one when all are).
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/StageProgress"
+        streak_days:
+          type: integer
+          description: Consecutive days, up to today or yesterday, with changes by the team.
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/Badge"
+    ProjectMember:
+      type: object
+      additionalProperties: false
+      required: [user, role, title, joined_at]
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        title:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+    Project:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - title
+        - tagline
+        - industry
+        - visibility
+        - hide_sensitive
+        - faculty
+        - members
+        - access
+        - archived
+        - progress
+        - evaluation
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        visibility:
+          type: string
+          enum: [private, university, public]
+        hide_sensitive:
+          type: boolean
+          description: |
+            Hide sensitive details from everyone outside the team (owner, members) and its
+            supervisors, that is from leadership, innovation managers and administrators who
+            are not in the project: the fields marked `sensitive` in the template and their
+            history (`Step.withheld`), the AI review of their steps, mentor conversations, and
+            generated materials that contain them. The showcase never uses these fields. AI
+            evaluation reports are not filtered.
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/FacultyRef"
+            - type: "null"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMember"
+        access:
+          $ref: "#/components/schemas/ProjectAccess"
+        archived:
+          type: boolean
+        progress:
+          $ref: "#/components/schemas/ProjectProgress"
+        evaluation:
+          anyOf:
+            - $ref: "#/components/schemas/EvaluationBrief"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProjectSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title, tagline, industry, team, access, archived, completed_steps, total_steps, current_step, evaluation, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberBrief"
+        access:
+          $ref: "#/components/schemas/ProjectAccess"
+        archived:
+          type: boolean
+        completed_steps:
+          type: integer
+        total_steps:
+          type: integer
+        current_step:
+          type: string
+        evaluation:
+          anyOf:
+            - $ref: "#/components/schemas/EvaluationBrief"
+            - type: "null"
+        updated_at:
+          type: string
+          format: date-time
+    ProjectPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectSummary"
+        next_cursor:
+          type: [string, "null"]
+    ProjectCreate:
+      type: object
+      additionalProperties: false
+      required: [title, industry]
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        industry:
+          $ref: "#/components/schemas/Industry"
+        ip_policy_version:
+          type: string
+          maxLength: 64
+    ProjectUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        industry:
+          $ref: "#/components/schemas/Industry"
+        hide_sensitive:
+          type: boolean
+    ProjectMemberAdd:
+      type: object
+      additionalProperties: false
+      required: [user_id, role]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [member, supervisor]
+        title:
+          type: string
+          maxLength: 60
+    ProjectMemberUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 60
+        role:
+          type: string
+          enum: [owner]
+          description: Hand the project over to this member.
+
+    ActivityKind:
+      type: string
+      enum: [edit, comment, step_completed, step_approved, member_joined]
+    Activity:
+      type: object
+      additionalProperties: false
+      required: [kind, actor, step_key, field_key, at]
+      properties:
+        kind:
+          $ref: "#/components/schemas/ActivityKind"
+        actor:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        step_key:
+          type: [string, "null"]
+        field_key:
+          type: [string, "null"]
+        at:
+          type: string
+          format: date-time
+    ActivityList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+    PresenceUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        step_key:
+          type: string
+          maxLength: 64
+    Viewer:
+      type: object
+      additionalProperties: false
+      required: [user, step_key, seen_at]
+      properties:
+        user:
+          $ref: "#/components/schemas/MemberBrief"
+        step_key:
+          type: [string, "null"]
+        seen_at:
+          type: string
+          format: date-time
+    Presence:
+      type: object
+      additionalProperties: false
+      required: [viewers, versions]
+      properties:
+        viewers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Viewer"
+        versions:
+          type: object
+          description: Current version of every saved step, by step key.
+          additionalProperties:
+            type: integer
+
+    StepValues:
+      type: object
+      description: |
+        Answers by field key: a string (text, textarea, select, url), a number or null
+        (number), an array of strings (list) or an array of objects keyed by column (table).
+      additionalProperties: true
+    StepGap:
+      type: object
+      additionalProperties: false
+      required: [field, code]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+          enum: [required, minLength, minItems]
+        count:
+          type: integer
+    CheckStatus:
+      type: string
+      enum: [ok, weak, missing]
+    StepCheckItem:
+      type: object
+      additionalProperties: false
+      required: [criterion, status, advice]
+      properties:
+        criterion:
+          type: string
+        status:
+          $ref: "#/components/schemas/CheckStatus"
+        advice:
+          type: string
+    StepCheck:
+      type: object
+      description: An AI review of the step. It is a recommendation, not a grade.
+      additionalProperties: false
+      required: [ready, summary, items, model, prompt_version, checked_at, version]
+      properties:
+        ready:
+          type: boolean
+        summary:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepCheckItem"
+        model:
+          type: string
+        prompt_version:
+          type: string
+        checked_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          description: Version of the step the review was made for.
+    StepSummary:
+      type: object
+      additionalProperties: false
+      required: [key, status, version, filled, total, open_comments, updated_at, updated_by]
+      properties:
+        key:
+          type: string
+        status:
+          $ref: "#/components/schemas/StepStatus"
+        version:
+          type: integer
+        filled:
+          type: integer
+          description: Fields with an answer.
+        total:
+          type: integer
+        open_comments:
+          type: integer
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+        updated_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+    StepList:
+      type: object
+      additionalProperties: false
+      required: [items, progress]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepSummary"
+        progress:
+          $ref: "#/components/schemas/ProjectProgress"
+    Step:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - status
+        - version
+        - values
+        - missing
+        - check
+        - completed_at
+        - approved_by
+        - approval_comment
+        - updated_at
+        - updated_by
+      properties:
+        key:
+          type: string
+        status:
+          $ref: "#/components/schemas/StepStatus"
+        version:
+          type: integer
+        values:
+          $ref: "#/components/schemas/StepValues"
+        withheld:
+          type: array
+          description: |
+            Sensitive fields of the step left out of `values` (and of the history) because the
+            project hides them from the signed-in member; the AI review (`check`) of such a step
+            is left out too. Empty for the team and its supervisors.
+          items:
+            type: string
+        missing:
+          type: array
+          description: What the step lacks to be completed.
+          items:
+            $ref: "#/components/schemas/StepGap"
+        check:
+          anyOf:
+            - $ref: "#/components/schemas/StepCheck"
+            - type: "null"
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+        approved_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        approval_comment:
+          type: [string, "null"]
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+        updated_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+    StepUpdate:
+      type: object
+      additionalProperties: false
+      required: [values]
+      properties:
+        values:
+          $ref: "#/components/schemas/StepValues"
+        source:
+          type: string
+          enum: [edit, mentor]
+          default: edit
+          description: "`mentor` when the text comes from an applied mentor suggestion."
+    StepApprove:
+      type: object
+      additionalProperties: false
+      required: [comment]
+      properties:
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RevisionSource:
+      type: string
+      enum: [edit, mentor, restore]
+    Revision:
+      type: object
+      additionalProperties: false
+      required: [id, field, value, version, author, source, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        field:
+          type: string
+        value:
+          description: The field's value after the change.
+        version:
+          type: integer
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        source:
+          $ref: "#/components/schemas/RevisionSource"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    RevisionPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Revision"
+        next_cursor:
+          type: [string, "null"]
+
+    Comment:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - step_key
+        - field_key
+        - parent_id
+        - author
+        - body
+        - mentions
+        - resolved
+        - created_at
+        - updated_at
+        - editable
+      properties:
+        id:
+          type: string
+          format: uuid
+        step_key:
+          type: string
+        field_key:
+          type: [string, "null"]
+        parent_id:
+          type: [string, "null"]
+          format: uuid
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        body:
+          type: string
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberBrief"
+        resolved:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        editable:
+          type: boolean
+          description: The signed-in member wrote it and may edit it.
+    CommentPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        next_cursor:
+          type: [string, "null"]
+    CommentCreate:
+      type: object
+      additionalProperties: false
+      required: [step_key, body]
+      properties:
+        step_key:
+          type: string
+          maxLength: 64
+        field_key:
+          type: string
+          maxLength: 64
+        parent_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        mentions:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            format: uuid
+    CommentUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        resolved:
+          type: boolean
+
+    MentorSource:
+      type: object
+      additionalProperties: false
+      required: [document_id, title]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+    MentorMessage:
+      type: object
+      additionalProperties: false
+      required: [id, role, author, content, status, sources, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        content:
+          type: string
+        status:
+          type: string
+          enum: [ok, cancelled, error]
+        sources:
+          type: array
+          description: Knowledge base documents the answer could draw on.
+          items:
+            $ref: "#/components/schemas/MentorSource"
+        created_at:
+          type: string
+          format: date-time
+    MentorConversation:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, modes, external, can_ask]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentorMessage"
+        next_cursor:
+          type: [string, "null"]
+          description: Loads earlier messages.
+        modes:
+          type: array
+          description: Modes the university allows; the first is the default.
+          items:
+            $ref: "#/components/schemas/MentorMode"
+        external:
+          type: boolean
+          description: The mentor runs on a provider outside the university.
+        can_ask:
+          type: boolean
+          description: The signed-in member may ask (team members only).
+        withheld:
+          type: boolean
+          description: |
+            True when the project hides sensitive details from the signed-in member: the team's
+            questions may contain them, so the conversation is not shown (`items` is empty).
+    MentorMessageCreate:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        mode:
+          $ref: "#/components/schemas/MentorMode"
+
+    MaterialKind:
+      type: string
+      enum: [one_pager, pitch_deck, passport]
+    MaterialFormat:
+      type: string
+      enum: [pdf, pptx]
+    MaterialStatus:
+      type: string
+      enum: [pending, ready, failed]
+    Material:
+      type: object
+      additionalProperties: false
+      required: [id, kind, format, locale, status, error, download_url, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/MaterialKind"
+        format:
+          $ref: "#/components/schemas/MaterialFormat"
+        locale:
+          $ref: "#/components/schemas/Locale"
+        status:
+          $ref: "#/components/schemas/MaterialStatus"
+        error:
+          type: [string, "null"]
+        download_url:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MaterialList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Material"
+    MaterialCreate:
+      type: object
+      additionalProperties: false
+      required: [kind, format]
+      properties:
+        kind:
+          $ref: "#/components/schemas/MaterialKind"
+        format:
+          $ref: "#/components/schemas/MaterialFormat"
+        locale:
+          $ref: "#/components/schemas/Locale"
+
+    ReadinessLevel:
+      type: string
+      description: |
+        Readiness by total score: `idea` below 35, `validated_problem` from 35, `mvp_ready`
+        from 55, `investment_ready` from 75.
+      enum: [idea, validated_problem, mvp_ready, investment_ready]
+    EvaluationStatus:
+      type: string
+      enum: [pending, running, ready, failed]
+    RubricCriterion:
+      type: object
+      additionalProperties: false
+      required: [key, title, weight]
+      properties:
+        key:
+          type: string
+          examples: [problem]
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 100
+    Rubric:
+      type: object
+      additionalProperties: false
+      required: [criteria, customized]
+      properties:
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/RubricCriterion"
+        customized:
+          type: boolean
+          description: The university changed the default weights.
+    RubricUpdate:
+      type: object
+      additionalProperties: false
+      required: [weights]
+      properties:
+        weights:
+          type: object
+          description: Weight by criterion key; every criterion, adding up to 100.
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 100
+    CriterionScore:
+      type: object
+      additionalProperties: false
+      required: [key, title, weight, score, ai_score, justification, overridden, previous]
+      properties:
+        key:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        weight:
+          type: integer
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        ai_score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        justification:
+          type: string
+        overridden:
+          type: boolean
+        previous:
+          type: [integer, "null"]
+          description: The score in the previous ready evaluation, for the dynamics.
+    RedFlagSeverity:
+      type: string
+      enum: [low, medium, high]
+    RedFlag:
+      type: object
+      additionalProperties: false
+      required: [title, detail, severity]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        severity:
+          $ref: "#/components/schemas/RedFlagSeverity"
+    Experiment:
+      type: object
+      additionalProperties: false
+      required: [title, how, metric, success, day]
+      properties:
+        title:
+          type: string
+        how:
+          type: string
+        metric:
+          type: string
+        success:
+          type: string
+        day:
+          type: integer
+          minimum: 1
+          maximum: 7
+    ScoreOverrideRecord:
+      type: object
+      additionalProperties: false
+      required: [criterion, from, to, comment, author, created_at]
+      properties:
+        criterion:
+          type: string
+        from:
+          type: integer
+        to:
+          type: integer
+        comment:
+          type: string
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+    Evaluation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - total
+        - ai_total
+        - level
+        - criteria
+        - red_flags
+        - hypotheses
+        - experiments
+        - recommendations
+        - summary
+        - overrides
+        - previous_total
+        - provider
+        - model
+        - prompt_version
+        - locale
+        - error
+        - requested_by
+        - created_at
+        - completed_at
+        - can_override
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/EvaluationStatus"
+        total:
+          type: [integer, "null"]
+          description: Weighted score 0–100 after expert corrections.
+        ai_total:
+          type: [integer, "null"]
+          description: The score the AI gave.
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        criteria:
+          type: array
+          items:
+            $ref: "#/components/schemas/CriterionScore"
+        red_flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/RedFlag"
+        hypotheses:
+          type: array
+          items:
+            type: string
+        experiments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experiment"
+        recommendations:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreOverrideRecord"
+        previous_total:
+          type: [integer, "null"]
+        provider:
+          type: [string, "null"]
+        model:
+          type: [string, "null"]
+        prompt_version:
+          type: [string, "null"]
+        locale:
+          $ref: "#/components/schemas/Locale"
+        error:
+          type: [string, "null"]
+        requested_by:
+          anyOf:
+            - $ref: "#/components/schemas/MemberBrief"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+        can_override:
+          type: boolean
+    EvaluationSummary:
+      type: object
+      additionalProperties: false
+      required: [id, status, total, level, overridden, created_at, completed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/EvaluationStatus"
+        total:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        overridden:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: [string, "null"]
+          format: date-time
+    EvaluationList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationSummary"
+    ScoreOverride:
+      type: object
+      additionalProperties: false
+      required: [criterion, score, comment]
+      properties:
+        criterion:
+          type: string
+          maxLength: 64
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        comment:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    EvaluationBrief:
+      type: object
+      description: The latest ready evaluation of a project.
+      additionalProperties: false
+      required: [id, total, level, completed_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        total:
+          type: integer
+        level:
+          $ref: "#/components/schemas/ReadinessLevel"
+        completed_at:
+          type: string
+          format: date-time
+
+    ShowcaseStatus:
+      type: string
+      enum: [draft, in_review, published, rejected]
+    ShowcaseVisibility:
+      type: string
+      description: "`university` — members of the university; `public` — everyone, after review."
+      enum: [university, public]
+    ShowcaseStage:
+      type: string
+      description: Incubator stage of the project when it was published.
+      enum: [idea, market, product, launch]
+    ShowcaseNeed:
+      type: string
+      enum: [investment, team, partner, pilot, mentor]
+    ShowcaseSections:
+      type: object
+      additionalProperties: false
+      properties:
+        problem:
+          type: string
+          maxLength: 1500
+        solution:
+          type: string
+          maxLength: 1500
+        market:
+          type: string
+          maxLength: 1000
+        traction:
+          type: string
+          maxLength: 1000
+        ask:
+          type: string
+          maxLength: 800
+    ShowcaseTeamMember:
+      type: object
+      additionalProperties: false
+      required: [name, role, avatar_url]
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        avatar_url:
+          type: [string, "null"]
+    UniversityBrief:
+      type: object
+      additionalProperties: false
+      required: [slug, name, short_name, color, logo_url]
+      properties:
+        slug:
+          type: string
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        short_name:
+          $ref: "#/components/schemas/LocalizedText"
+        color:
+          type: string
+        logo_url:
+          type: [string, "null"]
+    ShowcaseEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - project_id
+        - saved
+        - slug
+        - status
+        - visibility
+        - title
+        - tagline
+        - industry
+        - stage
+        - cover_url
+        - video_url
+        - sections
+        - team
+        - needs
+        - tags
+        - show_score
+        - score
+        - level
+        - contact_enabled
+        - review_comment
+        - submitted_at
+        - published_at
+        - url
+        - version
+        - held
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        saved:
+          type: boolean
+          description: False while the page is a prefilled suggestion that was never saved.
+        version:
+          type: integer
+          description: The version of the page (its ETag is `"<version>"`); 0 before the first save.
+        held:
+          type: boolean
+          description: |
+            A moderator took the page off the showcase: it is published again only after a
+            moderator approves it.
+        slug:
+          type: string
+        status:
+          $ref: "#/components/schemas/ShowcaseStatus"
+        visibility:
+          $ref: "#/components/schemas/ShowcaseVisibility"
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        stage:
+          $ref: "#/components/schemas/ShowcaseStage"
+        cover_url:
+          type: [string, "null"]
+        video_url:
+          type: [string, "null"]
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseTeamMember"
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          items:
+            type: string
+        show_score:
+          type: boolean
+          description: Show the readiness score of the latest AI evaluation.
+        score:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        contact_enabled:
+          type: boolean
+        review_comment:
+          type: [string, "null"]
+        submitted_at:
+          type: [string, "null"]
+          format: date-time
+        published_at:
+          type: [string, "null"]
+          format: date-time
+        url:
+          type: [string, "null"]
+          description: Address of the published page.
+    ShowcaseEntryUpdate:
+      type: object
+      additionalProperties: false
+      required: [slug, title, tagline, sections, needs, tags, visibility, show_score, contact_enabled]
+      properties:
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 60
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+        title:
+          type: string
+          minLength: 2
+          maxLength: 120
+        tagline:
+          type: string
+          maxLength: 160
+        video_url:
+          type: string
+          maxLength: 500
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        needs:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 40
+        visibility:
+          $ref: "#/components/schemas/ShowcaseVisibility"
+        show_score:
+          type: boolean
+        contact_enabled:
+          type: boolean
+    ShowcaseCard:
+      type: object
+      additionalProperties: false
+      required: [slug, url, title, tagline, industry, stage, faculty, year, cover_url, needs, tags, score, level, university, published_at]
+      properties:
+        slug:
+          type: string
+        url:
+          type: string
+          description: Absolute address of the page on its university's site.
+        title:
+          type: string
+        tagline:
+          type: string
+        industry:
+          $ref: "#/components/schemas/Industry"
+        stage:
+          $ref: "#/components/schemas/ShowcaseStage"
+        faculty:
+          anyOf:
+            - $ref: "#/components/schemas/LocalizedText"
+            - type: "null"
+        year:
+          type: integer
+        cover_url:
+          type: [string, "null"]
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseNeed"
+        tags:
+          type: array
+          items:
+            type: string
+        score:
+          type: [integer, "null"]
+        level:
+          anyOf:
+            - $ref: "#/components/schemas/ReadinessLevel"
+            - type: "null"
+        university:
+          $ref: "#/components/schemas/UniversityBrief"
+        published_at:
+          type: string
+          format: date-time
+    ShowcasePage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseCard"
+        next_cursor:
+          type: [string, "null"]
+    FacetCount:
+      type: object
+      additionalProperties: false
+      required: [key, count]
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+    FacultyFacet:
+      type: object
+      additionalProperties: false
+      required: [id, name, count]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          $ref: "#/components/schemas/LocalizedText"
+        count:
+          type: integer
+    ShowcaseFacets:
+      type: object
+      additionalProperties: false
+      required: [total, industries, stages, needs, years, faculties, tags]
+      properties:
+        total:
+          type: integer
+        industries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        needs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        years:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+        faculties:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacultyFacet"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetCount"
+    ShowcaseCounters:
+      type: object
+      additionalProperties: false
+      required: [projects, published, students, evaluations]
+      properties:
+        projects:
+          type: integer
+        published:
+          type: integer
+        students:
+          type: integer
+        evaluations:
+          type: integer
+    ShowcaseHighlights:
+      type: object
+      additionalProperties: false
+      required: [counters, featured]
+      properties:
+        counters:
+          $ref: "#/components/schemas/ShowcaseCounters"
+        featured:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseCard"
+    ShowcaseProject:
+      type: object
+      additionalProperties: false
+      required: [card, video_url, sections, team, contact_enabled, image_url]
+      properties:
+        card:
+          $ref: "#/components/schemas/ShowcaseCard"
+        video_url:
+          type: [string, "null"]
+        sections:
+          $ref: "#/components/schemas/ShowcaseSections"
+        team:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseTeamMember"
+        contact_enabled:
+          type: boolean
+        image_url:
+          type: string
+          description: The link preview image.
+    ShowcaseReview:
+      type: object
+      additionalProperties: false
+      required: [approve]
+      properties:
+        approve:
+          type: boolean
+        comment:
+          type: string
+          maxLength: 1000
+          description: Required when rejecting.
+    ShowcaseReviewList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowcaseEntry"
+    ContactKind:
+      type: string
+      enum: [investment, partnership, pilot, mentoring, hiring, other]
+    ContactStatus:
+      type: string
+      enum: [pending, forwarded, rejected]
+    ContactCreate:
+      type: object
+      additionalProperties: false
+      required: [name, email, kind, message]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Checked by the server; an invalid address is a field error (`email`).
+          # A plain string in Go: a malformed address reaches the service and comes back as
+          # a 422 field error instead of failing to decode (400 request.malformed).
+          x-go-type: string
+        organization:
+          type: string
+          maxLength: 160
+        kind:
+          $ref: "#/components/schemas/ContactKind"
+        message:
+          type: string
+          minLength: 20
+          maxLength: 2000
+        website:
+          type: string
+          maxLength: 200
+          description: Leave empty (a trap for bots).
+    ContactAccepted:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, forwarded]
+    ContactRequest:
+      type: object
+      additionalProperties: false
+      required: [id, project_id, project_title, name, email, organization, kind, message, status, created_at, moderated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        project_title:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        organization:
+          type: [string, "null"]
+        kind:
+          $ref: "#/components/schemas/ContactKind"
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContactStatus"
+        created_at:
+          type: string
+          format: date-time
+        moderated_at:
+          type: [string, "null"]
+          format: date-time
+    ContactRequestList:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactRequest"
+        next_cursor:
+          type: [string, "null"]
+    ContactModeration:
+      type: object
+      additionalProperties: false
+      required: [forward]
+      properties:
+        forward:
+          type: boolean

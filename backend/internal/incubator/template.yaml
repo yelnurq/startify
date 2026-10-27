@@ -1,0 +1,870 @@
+# The default incubator template: 4 stages, 14 steps.
+#
+# Field types: text, textarea, number, select, list (of strings), table (rows
+# of columns), url. "required" fields with min_length / min_items are the
+# minimum a step needs to be completed; "criteria" describe a strong answer
+# (the AI checks them and the student sees them as a checklist). "sensitive"
+# fields — unit economics, the novelty and the unfair advantage of the
+# solution — are withheld outside the team and its supervisors when the
+# project hides sensitive details, and never reach the showcase.
+version: 1
+stages:
+  - key: idea
+    title: {kk: "Идея және мәселе", ru: "Идея и проблема", en: "Idea and problem"}
+    steps:
+      - key: problem
+        title: {kk: "Мәселе және ол кімге қатысты", ru: "Проблема и для кого она", en: "The problem and who has it"}
+        goal:
+          kk: "Мәселені кімде, қашан туындайтынын және оның қаншаға түсетінін түсінікті етіп сипаттаңыз."
+          ru: "Опишите проблему так, чтобы было понятно, у кого она возникает, когда и чего она стоит."
+          en: "Describe the problem so it is clear who has it, when it happens and what it costs."
+        method: {kk: "Customer Development", ru: "Customer Development", en: "Customer Development"}
+        criteria:
+          - fields: [statement]
+            text: {kk: "Тұжырымда нақты топ, жағдай және адамдар не істей алмайтыны аталған — шешімді сипаттамай.", ru: "Формулировка называет конкретную группу, ситуацию и то, что люди не могут сделать, — без описания решения.", en: "The statement names a specific group, a situation and what they cannot do, without describing the solution."}
+          - fields: [cost]
+            text: {kk: "Мәселенің құны сандармен көрсетілген: уақыт, ақша немесе жиілік.", ru: "Цена проблемы выражена в цифрах: время, деньги или частота.", en: "The cost of the problem is quantified: time, money or frequency."}
+          - fields: [alternatives]
+            text: {kk: "Қазіргі баламалар және олардың кемшіліктері аталған.", ru: "Названы текущие альтернативы и то, чем они не устраивают.", en: "Current alternatives are named together with what is wrong with them."}
+          - fields: [evidence]
+            text: {kk: "Фактілер болжамдардан ажыратылған; ең болмаса бірнеше дәлел бар (сұхбаттар, бақылаулар, деректер).", ru: "Факты отделены от допущений; есть хотя бы какие-то подтверждения (интервью, наблюдения, данные).", en: "Facts are separated from assumptions; there is at least some evidence (interviews, observations, data)."}
+        fields:
+          - key: statement
+            type: textarea
+            required: true
+            min_length: 80
+            max_length: 2000
+            label: {kk: "Мәселенің тұжырымы", ru: "Формулировка проблемы", en: "Problem statement"}
+            hint:
+              kk: "Кім, қандай жағдайда, нені істей алмайды және бұл неге маңызды. Шешімді сипаттамаңыз."
+              ru: "Кто, в какой ситуации, что не может сделать и почему это важно. Без описания решения."
+              en: "Who, in what situation, cannot do what, and why it matters. Do not describe the solution."
+            placeholder:
+              kk: "Бірінші курс студенттері өз бетінше дайындалуға бос аудитория іздеуге күніне орта есеппен 40 минут жұмсайды, себебі…"
+              ru: "Студенты первого курса тратят в среднем 40 минут в день на поиск свободной аудитории для самоподготовки, потому что…"
+              en: "First-year students spend about 40 minutes a day looking for a free room to study in, because…"
+          - key: who
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Мәселеге кім тап болады", ru: "Кто сталкивается с проблемой", en: "Who has the problem"}
+            hint:
+              kk: "Нақты адамдар немесе ұйымдар тобы: жасы, рөлі, орны, шамамен саны."
+              ru: "Конкретная группа людей или организаций: возраст, роль, место, примерное количество."
+              en: "A specific group of people or organisations: age, role, place, roughly how many."
+          - key: alternatives
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Қазір оны қалай шешеді", ru: "Как её решают сейчас", en: "How it is solved today"}
+            hint:
+              kk: "Балама және айналма жолдар, олардың несі ұнамайды."
+              ru: "Альтернативы и обходные пути и чем они не устраивают."
+              en: "Alternatives and workarounds, and what is wrong with them."
+          - key: cost
+            type: textarea
+            max_length: 1500
+            label: {kk: "Мәселенің құны", ru: "Цена проблемы", en: "Cost of the problem"}
+            hint:
+              kk: "Адамдар қанша уақыт, ақша немесе күш жоғалтады және бұл қаншалықты жиі болады."
+              ru: "Сколько времени, денег или сил теряют люди и как часто это происходит."
+              en: "How much time, money or effort people lose, and how often."
+          - key: evidence
+            type: textarea
+            max_length: 2000
+            label: {kk: "Дәлелдер", ru: "Подтверждения", en: "Evidence"}
+            hint:
+              kk: "Сұхбаттар, бақылаулар, деректер. Нені тексергеніңізді және нені болжам екенін белгілеңіз."
+              ru: "Интервью, наблюдения, данные. Отметьте, что проверено, а что — допущение."
+              en: "Interviews, observations, data. Mark what is verified and what is an assumption."
+
+      - key: audience
+        title: {kk: "Мақсатты аудитория және персоналар", ru: "Целевая аудитория и персоны", en: "Target audience and personas"}
+        goal:
+          kk: "Пайдаланушы сегменттерін анықтап, 1–3 персонаны — олардың типтік өкілдерін сипаттаңыз."
+          ru: "Определите сегменты пользователей и опишите 1–3 персоны — их типичных представителей."
+          en: "Define the user segments and describe 1–3 personas, their typical representatives."
+        method: {kk: "Персоналар", ru: "Персоны", en: "Personas"}
+        criteria:
+          - fields: [segments]
+            text: {kk: "Сегменттер бір-бірімен қабаттаспайды және тілектермен емес, байқалатын белгілермен сипатталған.", ru: "Сегменты не пересекаются и описаны наблюдаемыми признаками, а не пожеланиями.", en: "Segments are distinct and described by observable traits, not by wishes."}
+          - fields: [personas]
+            text: {kk: "Әр персонаның мәселеге байланысты жағдайы, мақсаттары және қиындықтары бар.", ru: "У каждой персоны есть контекст, цели и боли, связанные с проблемой.", en: "Each persona has a context, goals and pains tied to the problem."}
+          - fields: [early_adopters]
+            text: {kk: "Алғашқы пайдаланушылар және олардың неге бірінші келетіні аталған.", ru: "Названы первые пользователи и причина, по которой они придут первыми.", en: "Early adopters are named with a reason why they would come first."}
+        fields:
+          - key: segments
+            type: textarea
+            required: true
+            min_length: 60
+            max_length: 2000
+            label: {kk: "Сегменттер", ru: "Сегменты", en: "Segments"}
+            hint:
+              kk: "Аудитория қандай топтарға бөлінеді және олардың айырмашылығы неде."
+              ru: "На какие группы делится аудитория и чем они отличаются."
+              en: "Which groups the audience falls into and how they differ."
+          - key: personas
+            type: table
+            required: true
+            min_items: 1
+            max_items: 5
+            label: {kk: "Персоналар", ru: "Персоны", en: "Personas"}
+            hint:
+              kk: "Ойдан шығарылған, бірақ нақты адамдарға негізделген типтік пайдаланушылар."
+              ru: "Вымышленные, но основанные на реальных людях типичные пользователи."
+              en: "Fictional but grounded typical users."
+            columns:
+              - key: name
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Аты және рөлі", ru: "Имя и роль", en: "Name and role"}
+              - key: context
+                type: textarea
+                max_length: 800
+                label: {kk: "Жағдайы", ru: "Контекст", en: "Context"}
+                hint:
+                  kk: "Жасы, айналысатын ісі, мәселеге қай жерде және қалай тап болады."
+                  ru: "Возраст, занятие, где и как сталкивается с проблемой."
+                  en: "Age, occupation, where and how they meet the problem."
+              - key: goals
+                type: textarea
+                max_length: 800
+                label: {kk: "Мақсаттары", ru: "Цели", en: "Goals"}
+              - key: pains
+                type: textarea
+                max_length: 800
+                label: {kk: "Қиындықтары", ru: "Боли", en: "Pains"}
+              - key: quote
+                type: text
+                max_length: 200
+                label: {kk: "Дәйексөз", ru: "Цитата", en: "Quote"}
+          - key: early_adopters
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Алғашқы пайдаланушылар", ru: "Первые пользователи", en: "Early adopters"}
+            hint:
+              kk: "Кім бірінші болып сатып алады немесе қолдана бастайды және неге дәл солар."
+              ru: "Кто первым купит или начнёт пользоваться и почему именно они."
+              en: "Who will buy or start using it first, and why them."
+
+      - key: journey
+        title: {kk: "Тұтынушы жолы және қиындықтар", ru: "Customer Journey и боли", en: "Customer journey and pains"}
+        goal:
+          kk: "Пайдаланушының жолын кезең-кезеңімен өтіп, оған ең қиын тиетін сәттерді табыңыз."
+          ru: "Пройдите путь пользователя по этапам и найдите моменты, где ему труднее всего."
+          en: "Walk through the user's journey stage by stage and find where it is hardest for them."
+        method: {kk: "Jobs To Be Done", ru: "Jobs To Be Done", en: "Jobs To Be Done"}
+        criteria:
+          - fields: [job]
+            text: {kk: "Жұмыс «Қашан …, мен … қалаймын, … үшін» түрінде тұжырымдалған.", ru: "Работа сформулирована в виде «Когда …, я хочу …, чтобы …».", en: "The job to be done follows the form 'When …, I want to …, so I can …'."}
+          - fields: [stages]
+            text: {kk: "Жол қажеттілік пайда болғаннан бастап нәтижеге дейінгі бүкіл кезеңді қамтиды.", ru: "Путь охватывает всё: от появления потребности до результата.", en: "The journey covers the whole path from noticing the need to the result."}
+          - fields: [key_pains, stages]
+            text: {kk: "Қиындықтар — маңыздылығы бойынша реттелген нақты сәттер, олардың қасында мүмкіндіктер көрсетілген.", ru: "Боли — это конкретные моменты, упорядоченные по важности, и рядом с ними указаны возможности.", en: "Pains are concrete moments, ordered by importance, with opportunities next to them."}
+        fields:
+          - key: job
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 600
+            label: {kk: "Орындалуы тиіс жұмыс (JTBD)", ru: "Работа, которую нужно выполнить (JTBD)", en: "Job to be done"}
+            hint:
+              kk: "«Қашан …, мен … қалаймын, … үшін»."
+              ru: "«Когда …, я хочу …, чтобы …»."
+              en: "\"When …, I want to …, so I can …\"."
+          - key: stages
+            type: table
+            required: true
+            min_items: 3
+            max_items: 8
+            label: {kk: "Жол кезеңдері", ru: "Этапы пути", en: "Journey stages"}
+            columns:
+              - key: stage
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Кезең", ru: "Этап", en: "Stage"}
+              - key: actions
+                type: textarea
+                max_length: 600
+                label: {kk: "Әрекеттер", ru: "Действия", en: "Actions"}
+              - key: feelings
+                type: text
+                max_length: 200
+                label: {kk: "Ойлары мен сезімдері", ru: "Мысли и чувства", en: "Thoughts and feelings"}
+              - key: pain
+                type: textarea
+                max_length: 600
+                label: {kk: "Қиындық", ru: "Боль", en: "Pain"}
+              - key: opportunity
+                type: textarea
+                max_length: 600
+                label: {kk: "Мүмкіндік", ru: "Возможность", en: "Opportunity"}
+          - key: key_pains
+            type: list
+            required: true
+            min_items: 2
+            max_items: 7
+            max_length: 300
+            label: {kk: "Басты қиындықтар", ru: "Главные боли", en: "Key pains"}
+            hint:
+              kk: "Маңыздылығы бойынша кему ретімен орналастырыңыз."
+              ru: "Расположите по убыванию важности."
+              en: "Order from the most to the least important."
+
+      - key: solution
+        title: {kk: "Шешім және құндылық ұсынысы", ru: "Решение и ценностное предложение", en: "Solution and value proposition"}
+        goal:
+          kk: "Шешімнің басты қиындықтарды қалай жоятынын және баламалардан неге жақсы екенін көрсетіңіз."
+          ru: "Покажите, как решение закрывает главные боли и почему оно лучше альтернатив."
+          en: "Show how the solution removes the key pains and why it beats the alternatives."
+        method: {kk: "Value Proposition Canvas", ru: "Value Proposition Canvas", en: "Value Proposition Canvas"}
+        criteria:
+          - fields: [solution]
+            text: {kk: "Шешім бұрын аталған басты қиындықтарға жауап береді.", ru: "Решение отвечает на главные боли, названные раньше.", en: "The solution maps to the key pains named earlier."}
+          - fields: [uvp]
+            text: {kk: "Құндылық ұсынысы — клиентке берер нәтижесі мен айырмашылығы бар бір сөйлем.", ru: "Ценностное предложение — одно предложение с результатом для клиента и отличием.", en: "The value proposition is one sentence with a customer result and a difference."}
+          - fields: [novelty, unfair_advantage]
+            text: {kk: "Жаңалығы нақты: технология, тәсіл немесе бизнес-модель.", ru: "Новизна конкретна: технология, подход или бизнес-модель.", en: "Novelty is specific: technology, approach or business model."}
+        fields:
+          - key: solution
+            type: textarea
+            required: true
+            min_length: 80
+            max_length: 2000
+            label: {kk: "Шешім", ru: "Решение", en: "Solution"}
+            hint:
+              kk: "Не жасайсыз және ол пайдаланушы үшін қалай жұмыс істейді — қарапайым тілмен."
+              ru: "Что вы делаете и как это работает для пользователя — простыми словами."
+              en: "What you build and how it works for the user, in plain words."
+          - key: uvp
+            type: text
+            required: true
+            min_length: 20
+            max_length: 160
+            label: {kk: "Бірегей құндылық ұсынысы", ru: "Уникальное ценностное предложение", en: "Unique value proposition"}
+            hint:
+              kk: "Бір сөйлем: клиент қандай нәтиже алады және оның айырмашылығы неде."
+              ru: "Одно предложение: какой результат получает клиент и чем это отличается."
+              en: "One sentence: the result the customer gets and what makes it different."
+          - key: features
+            type: list
+            required: true
+            min_items: 2
+            max_items: 8
+            max_length: 300
+            label: {kk: "Негізгі мүмкіндіктер", ru: "Ключевые возможности", en: "Key features"}
+          - key: novelty
+            type: textarea
+            sensitive: true
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Жаңалығы", ru: "Новизна", en: "What is new"}
+            hint:
+              kk: "Басқаларда жоқ технология, тәсіл немесе модель."
+              ru: "Технология, подход или модель, которых нет у других."
+              en: "Technology, approach or model that others do not have."
+          - key: unfair_advantage
+            type: textarea
+            sensitive: true
+            max_length: 1000
+            label: {kk: "Теңдесі жоқ артықшылық", ru: "Нечестное преимущество", en: "Unfair advantage"}
+            hint:
+              kk: "Көшіру қиын нәрсе: сараптама, деректер, нарыққа қолжетімділік, серіктестер."
+              ru: "То, что сложно скопировать: экспертиза, данные, доступ к рынку, партнёры."
+              en: "What is hard to copy: expertise, data, market access, partners."
+
+  - key: market
+    title: {kk: "Нарық, команда, қаржы", ru: "Рынок, команда, деньги", en: "Market, team, money"}
+    steps:
+      - key: market_size
+        title: {kk: "Нарық көлемі TAM/SAM/SOM", ru: "Размер рынка TAM/SAM/SOM", en: "Market size TAM/SAM/SOM"}
+        goal:
+          kk: "Нарықты төменнен жоғары бағалаңыз: клиенттер саны × сатып алу жиілігі × чек. Дереккөздерді көрсетіңіз."
+          ru: "Оцените рынок снизу вверх: число клиентов × частота покупок × чек. Укажите источники."
+          en: "Size the market bottom-up: customers × purchase frequency × price. Name your sources."
+        method: {kk: "TAM/SAM/SOM bottom-up", ru: "TAM/SAM/SOM bottom-up", en: "Bottom-up TAM/SAM/SOM"}
+        criteria:
+          - fields: [tam_method, sam_method, som_method]
+            text: {kk: "Әр сан төменнен жоғары есептелген, формуласы көрсетілген.", ru: "Каждая цифра посчитана снизу вверх, формула видна.", en: "Each figure is calculated bottom-up with the formula visible."}
+          - fields: [tam, sam, som]
+            text: {kk: "TAM ≥ SAM ≥ SOM, ал SOM 1–3 жылға шынайы.", ru: "TAM ≥ SAM ≥ SOM, а SOM реалистичен на 1–3 года.", en: "TAM ≥ SAM ≥ SOM and SOM is realistic for 1–3 years."}
+          - fields: [sources]
+            text: {kk: "Дереккөздер аталған, болжамдар белгіленген. Ойдан шығарылған статистика жоқ.", ru: "Источники названы, допущения помечены. Нет выдуманной статистики.", en: "Sources are named; assumptions are marked as assumptions. No invented statistics."}
+        fields:
+          - key: tam
+            type: number
+            unit: kzt
+            required: true
+            label: {kk: "TAM, жылына теңге", ru: "TAM, тенге в год", en: "TAM, tenge per year"}
+            hint:
+              kk: "Мәселесі бар барлық адам шешімді қолданса, бүкіл нарық көлемі."
+              ru: "Весь рынок, если бы решением пользовались все, у кого есть проблема."
+              en: "The whole market if everyone with the problem used the solution."
+          - key: tam_method
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "TAM қалай есептелді", ru: "Как посчитан TAM", en: "How TAM was calculated"}
+          - key: sam
+            type: number
+            unit: kzt
+            required: true
+            label: {kk: "SAM, жылына теңге", ru: "SAM, тенге в год", en: "SAM, tenge per year"}
+            hint:
+              kk: "Сіздің моделіңіз бен арналарыңыз жете алатын нарық бөлігі (мысалы, Қазақстан, университеттер)."
+              ru: "Часть рынка, до которой можно дотянуться вашей моделью и каналами (например, Казахстан, вузы)."
+              en: "The part of the market your model and channels can reach (e.g. Kazakhstan, universities)."
+          - key: sam_method
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 1500
+            label: {kk: "SAM қалай есептелді", ru: "Как посчитан SAM", en: "How SAM was calculated"}
+          - key: som
+            type: number
+            unit: kzt
+            required: true
+            label: {kk: "SOM, жылына теңге", ru: "SOM, тенге в год", en: "SOM, tenge per year"}
+            hint:
+              kk: "1–3 жылда нақты иелене алатын үлес."
+              ru: "Доля, которую реально занять за 1–3 года."
+              en: "The share you can realistically win in 1–3 years."
+          - key: som_method
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 1500
+            label: {kk: "SOM қалай есептелді", ru: "Как посчитан SOM", en: "How SOM was calculated"}
+          - key: sources
+            type: list
+            max_items: 10
+            max_length: 300
+            label: {kk: "Дерек көздері", ru: "Источники данных", en: "Data sources"}
+            hint:
+              kk: "Ұлттық статистика бюросы (stat.gov.kz), салалық есептер, сіздің сұхбаттарыңыз. Болжамдарды белгілеңіз."
+              ru: "Бюро национальной статистики (stat.gov.kz), отраслевые отчёты, ваши интервью. Помечайте допущения."
+              en: "Bureau of National Statistics (stat.gov.kz), industry reports, your interviews. Mark assumptions."
+
+      - key: competitors
+        title: {kk: "Бәсекелестер және баламалар", ru: "Конкуренты и альтернативы", en: "Competitors and alternatives"}
+        goal:
+          kk: "Тікелей және жанама бәсекелестерді, сондай-ақ клиенттер сіздің орныңызға не қолданатынын атаңыз."
+          ru: "Назовите прямых и косвенных конкурентов и то, чем клиенты пользуются вместо вас."
+          en: "Name direct and indirect competitors and what customers use instead of you."
+        method: {kk: "Бәсекелестік талдау", ru: "Конкурентный анализ", en: "Competitive analysis"}
+        criteria:
+          - fields: [list]
+            text: {kk: "Кемінде үш бәсекелес немесе балама, оның ішінде «ештеңе істемеу» нұсқасы.", ru: "Не меньше трёх конкурентов или альтернатив, включая вариант «ничего не делать».", en: "At least three competitors or alternatives, including the 'do nothing' option."}
+          - fields: [list]
+            text: {kk: "Күшті және әлсіз жақтары әділ бағаланған, тек әлсіз жақтары емес.", ru: "Сильные и слабые стороны оценены честно, а не только слабые.", en: "Strengths and weaknesses are honest, not only weaknesses."}
+          - fields: [difference]
+            text: {kk: "Айырмашылық тек техникалық емес, клиент үшін маңызды.", ru: "Отличие важно для клиента, а не только технически.", en: "The difference is meaningful for the customer, not only technical."}
+        fields:
+          - key: list
+            type: table
+            required: true
+            min_items: 3
+            max_items: 10
+            label: {kk: "Бәсекелестер", ru: "Конкуренты", en: "Competitors"}
+            columns:
+              - key: name
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Атауы", ru: "Название", en: "Name"}
+              - key: kind
+                type: select
+                label: {kk: "Түрі", ru: "Тип", en: "Type"}
+                options:
+                  - {value: direct, label: {kk: "Тікелей", ru: "Прямой", en: "Direct"}}
+                  - {value: indirect, label: {kk: "Жанама", ru: "Косвенный", en: "Indirect"}}
+                  - {value: alternative, label: {kk: "Балама", ru: "Альтернатива", en: "Alternative"}}
+              - key: strengths
+                type: textarea
+                max_length: 600
+                label: {kk: "Күшті жақтары", ru: "Сильные стороны", en: "Strengths"}
+              - key: weaknesses
+                type: textarea
+                max_length: 600
+                label: {kk: "Әлсіз жақтары", ru: "Слабые стороны", en: "Weaknesses"}
+              - key: price
+                type: text
+                max_length: 120
+                label: {kk: "Бағасы", ru: "Цена", en: "Price"}
+          - key: difference
+            type: textarea
+            required: true
+            min_length: 60
+            max_length: 1500
+            label: {kk: "Сіздің айырмашылығыңыз", ru: "Чем вы отличаетесь", en: "How you are different"}
+          - key: barriers
+            type: textarea
+            max_length: 1000
+            label: {kk: "Нарыққа кіру кедергілері", ru: "Барьеры входа", en: "Barriers to entry"}
+
+      - key: business_model
+        title: {kk: "Бизнес-модель (Lean Canvas)", ru: "Бизнес-модель (Lean Canvas)", en: "Business model (Lean Canvas)"}
+        goal:
+          kk: "Lean Canvas-тың қалған блоктарын толтырыңыз: мәселе, сегменттер, шешім және құндылық ұсынысы алдыңғы қадамдардан алынады."
+          ru: "Заполните оставшиеся блоки Lean Canvas: проблема, сегменты, решение и ценностное предложение берутся из прошлых шагов."
+          en: "Fill in the remaining Lean Canvas blocks: problem, segments, solution and value proposition come from earlier steps."
+        method: {kk: "Lean Canvas", ru: "Lean Canvas", en: "Lean Canvas"}
+        criteria:
+          - fields: [revenue, pricing]
+            text: {kk: "Кім, не үшін және қанша төлейтіні түсінікті.", ru: "Понятно, кто платит, за что и сколько.", en: "It is clear who pays, for what and how much."}
+          - fields: [channels]
+            text: {kk: "Арналар нақты және студенттер командасына қолжетімді.", ru: "Каналы конкретны и доступны студенческой команде.", en: "Channels are concrete and reachable for a student team."}
+          - fields: [costs]
+            text: {kk: "Шығындарда негізгі тұрақты және ауыспалы баптар ескерілген.", ru: "В затратах учтены основные постоянные и переменные статьи.", en: "Costs include the main fixed and variable items."}
+        fields:
+          - key: revenue
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Табыс көздері", ru: "Потоки доходов", en: "Revenue streams"}
+            hint:
+              kk: "Кім және не үшін төлейді: жазылым, сату, комиссия, лицензия."
+              ru: "Кто и за что платит: подписка, продажа, комиссия, лицензия."
+              en: "Who pays and for what: subscription, sale, commission, licence."
+          - key: pricing
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 1000
+            label: {kk: "Баға белгілеу", ru: "Ценообразование", en: "Pricing"}
+          - key: channels
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 1000
+            label: {kk: "Арналар", ru: "Каналы", en: "Channels"}
+            hint:
+              kk: "Клиенттер сіз туралы қалай біледі және қалай сатып алады."
+              ru: "Как клиенты узнают о вас и как покупают."
+              en: "How customers learn about you and how they buy."
+          - key: costs
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 1000
+            label: {kk: "Шығындар құрылымы", ru: "Структура затрат", en: "Cost structure"}
+          - key: partners
+            type: textarea
+            max_length: 1000
+            label: {kk: "Негізгі серіктестер", ru: "Ключевые партнёры", en: "Key partners"}
+
+      - key: team
+        title: {kk: "Команда және рөлдер", ru: "Команда и роли", en: "Team and roles"}
+        goal:
+          kk: "Жобаны дәл осы команданың нәтижеге жеткізетінін және кім жетіспейтінін көрсетіңіз."
+          ru: "Покажите, почему именно эта команда доведёт проект до результата и кого не хватает."
+          en: "Show why this team will deliver and who is missing."
+        method: {kk: "Рөлдер матрицасы", ru: "Матрица ролей", en: "Role matrix"}
+        criteria:
+          - fields: [members, missing]
+            text: {kk: "Әр негізгі бағыттың (өнім, технология, сату) жауаптысы бар немесе ол жетіспейтін ретінде көрсетілген.", ru: "У каждого ключевого направления (продукт, технологии, продажи) есть ответственный или оно указано как недостающее.", en: "Every key area (product, technology, sales) has an owner or is listed as missing."}
+          - fields: [members, why_us]
+            text: {kk: "Мүшелердің тәжірибесі жобаға қатысты.", ru: "Опыт участников относится к проекту.", en: "Experience is relevant to the project."}
+          - fields: [members]
+            text: {kk: "Әр мүшенің жұмыспен қамтылуы көрсетілген.", ru: "Указана занятость каждого участника.", en: "Commitment of each member is stated."}
+        fields:
+          - key: members
+            type: table
+            required: true
+            min_items: 1
+            max_items: 10
+            label: {kk: "Команда мүшелері", ru: "Участники команды", en: "Team members"}
+            columns:
+              - key: name
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Аты-жөні", ru: "Имя", en: "Name"}
+              - key: role
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Рөлі", ru: "Роль", en: "Role"}
+              - key: skills
+                type: textarea
+                max_length: 600
+                label: {kk: "Тәжірибесі мен дағдылары", ru: "Опыт и навыки", en: "Experience and skills"}
+              - key: commitment
+                type: select
+                label: {kk: "Жұмыспен қамтылуы", ru: "Занятость", en: "Commitment"}
+                options:
+                  - {value: full_time, label: {kk: "Толық", ru: "Полная", en: "Full time"}}
+                  - {value: part_time, label: {kk: "Жартылай", ru: "Частичная", en: "Part time"}}
+                  - {value: advisor, label: {kk: "Кеңесші", ru: "Советник", en: "Advisor"}}
+          - key: missing
+            type: list
+            max_items: 6
+            max_length: 200
+            label: {kk: "Кім жетіспейді", ru: "Кого не хватает", en: "Missing roles"}
+          - key: why_us
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Неге біз", ru: "Почему мы", en: "Why us"}
+
+  - key: product
+    title: {kk: "Өнім, метрикалар, тәуекелдер", ru: "Продукт, метрики, риски", en: "Product, metrics, risks"}
+    steps:
+      - key: mvp
+        title: {kk: "MVP және негізгі функциялар", ru: "MVP и ключевые функции", en: "MVP and key features"}
+        goal:
+          kk: "Басты болжамды тексеретін өнімнің ең шағын нұсқасын анықтаңыз."
+          ru: "Определите минимальную версию продукта, которая проверит главную гипотезу."
+          en: "Define the smallest product that tests your main hypothesis."
+        method: {kk: "MoSCoW", ru: "MoSCoW", en: "MoSCoW"}
+        criteria:
+          - fields: [description]
+            text: {kk: "MVP бір басты болжамды тексереді және айлар емес, апталар ішінде жасалады.", ru: "MVP проверяет одну главную гипотезу и делается за недели, а не месяцы.", en: "The MVP tests one main hypothesis and can be built in weeks, not months."}
+          - fields: [features]
+            text: {kk: "Функциялар басымдық бойынша реттелген, «міндетті» тізімі қысқа.", ru: "Функции приоритизированы, список «обязательно» короткий.", en: "Features are prioritised; 'must have' is short."}
+          - fields: [test_plan]
+            text: {kk: "Өлшенетін нәтижесі бар тексеру жоспары бар.", ru: "Есть план проверки с измеримым результатом.", en: "There is a test plan with a measurable outcome."}
+        fields:
+          - key: description
+            type: textarea
+            required: true
+            min_length: 60
+            max_length: 2000
+            label: {kk: "MVP сипаттамасы", ru: "Описание MVP", en: "MVP description"}
+          - key: features
+            type: table
+            required: true
+            min_items: 2
+            max_items: 12
+            label: {kk: "Функциялар", ru: "Функции", en: "Features"}
+            columns:
+              - key: feature
+                type: text
+                required: true
+                max_length: 200
+                label: {kk: "Функция", ru: "Функция", en: "Feature"}
+              - key: priority
+                type: select
+                label: {kk: "Басымдығы", ru: "Приоритет", en: "Priority"}
+                options:
+                  - {value: must, label: {kk: "Міндетті", ru: "Обязательно", en: "Must have"}}
+                  - {value: should, label: {kk: "Қажет", ru: "Желательно", en: "Should have"}}
+                  - {value: could, label: {kk: "Кейінірек", ru: "Можно позже", en: "Could have"}}
+          - key: out_of_scope
+            type: list
+            max_items: 10
+            max_length: 200
+            label: {kk: "MVP-ге кірмейді", ru: "Не входит в MVP", en: "Out of scope"}
+          - key: status
+            type: select
+            required: true
+            label: {kk: "Қазіргі мәртебесі", ru: "Текущий статус", en: "Current status"}
+            options:
+              - {value: idea, label: {kk: "Идея", ru: "Идея", en: "Idea"}}
+              - {value: prototype, label: {kk: "Прототип", ru: "Прототип", en: "Prototype"}}
+              - {value: mvp, label: {kk: "Жұмыс істейтін MVP", ru: "Работающий MVP", en: "Working MVP"}}
+              - {value: launched, label: {kk: "Іске қосылған, пайдаланушылар бар", ru: "Запущен, есть пользователи", en: "Launched with users"}}
+          - key: test_plan
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "MVP-ді қалай тексересіз", ru: "Как проверите MVP", en: "How you will test the MVP"}
+
+      - key: metrics
+        title: {kk: "Метрикалар және North Star", ru: "Метрики и North Star", en: "Metrics and North Star"}
+        goal:
+          kk: "Құндылықтың бір басты метрикасын және оған әсер ететін 3–5 метриканы таңдаңыз."
+          ru: "Выберите одну главную метрику ценности и 3–5 метрик, которые на неё влияют."
+          en: "Pick one North Star metric of value and 3–5 metrics that drive it."
+        method: {kk: "North Star Framework", ru: "North Star Framework", en: "North Star Framework"}
+        criteria:
+          - fields: [north_star, why]
+            text: {kk: "North Star клиентке берілетін құндылықты көрсетеді, «бос мақтан» сандарын емес.", ru: "North Star отражает ценность для клиента, а не «тщеславные» цифры.", en: "The North Star reflects value delivered to the customer, not vanity numbers."}
+          - fields: [metrics]
+            text: {kk: "Әр метриканың қазіргі мәні, мақсаты және өлшеу тәсілі бар.", ru: "У каждой метрики есть текущее значение, цель и способ измерения.", en: "Each metric has a current value or baseline, a target and a way to measure."}
+        fields:
+          - key: north_star
+            type: text
+            required: true
+            min_length: 10
+            max_length: 200
+            label: {kk: "North Star метрикасы", ru: "North Star метрика", en: "North Star metric"}
+          - key: why
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1000
+            label: {kk: "Неге дәл осы", ru: "Почему именно она", en: "Why this metric"}
+          - key: metrics
+            type: table
+            required: true
+            min_items: 3
+            max_items: 8
+            label: {kk: "Метрикалар", ru: "Метрики", en: "Metrics"}
+            columns:
+              - key: name
+                type: text
+                required: true
+                max_length: 120
+                label: {kk: "Метрика", ru: "Метрика", en: "Metric"}
+              - key: current
+                type: text
+                max_length: 60
+                label: {kk: "Қазір", ru: "Сейчас", en: "Now"}
+              - key: target
+                type: text
+                max_length: 60
+                label: {kk: "Мақсат", ru: "Цель", en: "Target"}
+              - key: how
+                type: textarea
+                max_length: 400
+                label: {kk: "Қалай өлшейміз", ru: "Как измеряем", en: "How measured"}
+          - key: traction
+            type: textarea
+            max_length: 1500
+            label: {kk: "Қазіргі трекшн", ru: "Текущий трекшн", en: "Traction so far"}
+
+      - key: unit_economics
+        title: {kk: "Юнит-экономика", ru: "Юнит-экономика", en: "Unit economics"}
+        goal:
+          kk: "Бір клиенттен қанша табатыныңызды және оны тартуға қанша жұмсайтыныңызды есептеңіз."
+          ru: "Посчитайте, сколько вы зарабатываете на одном клиенте и сколько тратите на его привлечение."
+          en: "Work out what you earn per customer and what you spend to win them."
+        method: {kk: "LTV / CAC", ru: "LTV / CAC", en: "LTV / CAC"}
+        criteria:
+          - fields: [unit, price, variable_cost]
+            text: {kk: "Есеп бірлігі анықталған және барлық сандар соған қатысты.", ru: "Единица расчёта определена, и все цифры относятся к ней.", en: "The unit is defined and all numbers refer to it."}
+          - fields: [cac, purchases]
+            text: {kk: "LTV/CAC 3-тен жоғары немесе оған жету жоспары бар.", ru: "LTV/CAC больше 3 или есть план, как этого достичь.", en: "LTV/CAC is above 3 or there is a plan to get there."}
+          - fields: [assumptions]
+            text: {kk: "Әр санның артындағы болжамдар көрсетілген.", ru: "Для каждой цифры указаны допущения.", en: "Assumptions behind every number are stated."}
+        # Unit economics is sensitive as a whole (Project.hide_sensitive).
+        fields:
+          - key: unit
+            type: text
+            sensitive: true
+            required: true
+            min_length: 3
+            max_length: 120
+            label: {kk: "Есеп бірлігі", ru: "Единица расчёта", en: "Unit"}
+            hint:
+              kk: "Клиент, тапсырыс, айлық жазылым…"
+              ru: "Клиент, заказ, подписка в месяц…"
+              en: "Customer, order, monthly subscription…"
+          - key: price
+            type: number
+            sensitive: true
+            unit: kzt
+            required: true
+            label: {kk: "Орташа чек, теңге", ru: "Средний чек, тенге", en: "Average price, tenge"}
+          - key: variable_cost
+            type: number
+            sensitive: true
+            unit: kzt
+            required: true
+            label: {kk: "Бірлікке ауыспалы шығын, теңге", ru: "Переменные затраты на единицу, тенге", en: "Variable cost per unit, tenge"}
+          - key: cac
+            type: number
+            sensitive: true
+            unit: kzt
+            required: true
+            label: {kk: "Клиентті тарту құны (CAC), теңге", ru: "Стоимость привлечения клиента (CAC), тенге", en: "Customer acquisition cost (CAC), tenge"}
+          - key: purchases
+            type: number
+            sensitive: true
+            unit: count
+            required: true
+            label: {kk: "Клиенттің бүкіл кезеңдегі сатып алулары", ru: "Покупок за время жизни клиента", en: "Purchases per customer lifetime"}
+          - key: assumptions
+            type: textarea
+            sensitive: true
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Болжамдар және дереккөздер", ru: "Допущения и источники", en: "Assumptions and sources"}
+
+      - key: risks
+        title: {kk: "Тәуекелдер және болжамдар", ru: "Риски и гипотезы", en: "Risks and hypotheses"}
+        goal:
+          kk: "Басты тәуекелдерді және ең алдымен тексерілуі тиіс болжамдарды жазыңыз."
+          ru: "Запишите главные риски и гипотезы, которые нужно проверить в первую очередь."
+          en: "List the main risks and the hypotheses to test first."
+        method: {kk: "Тәуекелдер матрицасы", ru: "Матрица рисков", en: "Risk matrix"}
+        criteria:
+          - fields: [risks]
+            text: {kk: "Тәуекелдер нарықты, өнімді, команданы және реттеуді қамтиды, ықтималдығы мен әсері көрсетілген.", ru: "Риски охватывают рынок, продукт, команду и регулирование, с вероятностью и влиянием.", en: "Risks cover market, product, team and regulation, with probability and impact."}
+          - fields: [hypotheses]
+            text: {kk: "Әр болжамның эксперименті және өлшенетін табыс критерийі бар.", ru: "У каждой гипотезы есть эксперимент и измеримый критерий успеха.", en: "Every hypothesis has an experiment and a measurable success criterion."}
+        fields:
+          - key: risks
+            type: table
+            required: true
+            min_items: 3
+            max_items: 10
+            label: {kk: "Тәуекелдер", ru: "Риски", en: "Risks"}
+            columns:
+              - key: risk
+                type: text
+                required: true
+                max_length: 200
+                label: {kk: "Тәуекел", ru: "Риск", en: "Risk"}
+              - key: probability
+                type: select
+                label: {kk: "Ықтималдығы", ru: "Вероятность", en: "Probability"}
+                options: &levels
+                  - {value: low, label: {kk: "Төмен", ru: "Низкая", en: "Low"}}
+                  - {value: medium, label: {kk: "Орташа", ru: "Средняя", en: "Medium"}}
+                  - {value: high, label: {kk: "Жоғары", ru: "Высокая", en: "High"}}
+              - key: impact
+                type: select
+                label: {kk: "Әсері", ru: "Влияние", en: "Impact"}
+                options: *levels
+              - key: mitigation
+                type: textarea
+                max_length: 600
+                label: {kk: "Қалай азайтамыз", ru: "Как снизить", en: "Mitigation"}
+          - key: hypotheses
+            type: table
+            required: true
+            min_items: 3
+            max_items: 8
+            label: {kk: "Болжамдар", ru: "Гипотезы", en: "Hypotheses"}
+            columns:
+              - key: hypothesis
+                type: textarea
+                required: true
+                max_length: 400
+                label: {kk: "Болжам", ru: "Гипотеза", en: "Hypothesis"}
+              - key: experiment
+                type: textarea
+                max_length: 600
+                label: {kk: "Эксперимент", ru: "Эксперимент", en: "Experiment"}
+              - key: success
+                type: text
+                max_length: 200
+                label: {kk: "Табыс критерийі", ru: "Критерий успеха", en: "Success criterion"}
+              - key: status
+                type: select
+                label: {kk: "Мәртебесі", ru: "Статус", en: "Status"}
+                options:
+                  - {value: untested, label: {kk: "Тексерілмеген", ru: "Не проверена", en: "Untested"}}
+                  - {value: confirmed, label: {kk: "Расталды", ru: "Подтверждена", en: "Confirmed"}}
+                  - {value: rejected, label: {kk: "Жоққа шығарылды", ru: "Опровергнута", en: "Rejected"}}
+
+  - key: launch
+    title: {kk: "Материалдар және нарыққа шығу", ru: "Материалы и выход", en: "Materials and launch"}
+    steps:
+      - key: roadmap
+        title: {kk: "6–12 айлық жол картасы", ru: "Дорожная карта на 6–12 месяцев", en: "Roadmap for 6–12 months"}
+        goal:
+          kk: "Алдағы жылды өлшенетін нәтижелері бар кезеңдерге бөліп, қанша қаржы керек екенін есептеңіз."
+          ru: "Разбейте ближайший год на этапы с измеримыми результатами и посчитайте, сколько нужно денег."
+          en: "Split the coming year into milestones with measurable results and work out the funding you need."
+        method: {kk: "Жол картасы", ru: "Дорожная карта", en: "Roadmap"}
+        criteria:
+          - fields: [milestones]
+            text: {kk: "Кезеңдердің мерзімі және өлшенетін нәтижесі бар.", ru: "У этапов есть сроки и измеримый результат.", en: "Milestones are dated and each has a measurable result."}
+          - fields: [use_of_funds, funding]
+            text: {kk: "Қаржыны жұмсау кезеңдерге сәйкес келеді.", ru: "Расходование средств соответствует этапам.", en: "The use of funds matches the milestones."}
+          - fields: [support]
+            text: {kk: "Қолдау бағдарламалары жобаға сай және оларды ресми дереккөздерден тексеру керектігі белгіленген.", ru: "Программы поддержки подходят проекту, и отмечено, что их нужно проверить по официальным источникам.", en: "Support programmes are relevant and flagged to be checked on official sources."}
+        fields:
+          - key: milestones
+            type: table
+            required: true
+            min_items: 3
+            max_items: 12
+            label: {kk: "Кезеңдер", ru: "Этапы", en: "Milestones"}
+            columns:
+              - key: period
+                type: text
+                required: true
+                max_length: 60
+                label: {kk: "Мерзімі", ru: "Срок", en: "When"}
+              - key: goal
+                type: text
+                required: true
+                max_length: 200
+                label: {kk: "Мақсаты", ru: "Цель", en: "Goal"}
+              - key: result
+                type: textarea
+                max_length: 600
+                label: {kk: "Өлшенетін нәтиже", ru: "Измеримый результат", en: "Measurable result"}
+          - key: funding
+            type: number
+            unit: kzt
+            label: {kk: "Қажетті қаржыландыру, теңге", ru: "Нужное финансирование, тенге", en: "Funding needed, tenge"}
+          - key: use_of_funds
+            type: textarea
+            required: true
+            min_length: 40
+            max_length: 1500
+            label: {kk: "Қаржы неге жұмсалады", ru: "На что пойдут деньги", en: "Use of funds"}
+          - key: support
+            type: textarea
+            max_length: 1500
+            label: {kk: "Қолдау бағдарламалары", ru: "Программы поддержки", en: "Support programmes"}
+            hint:
+              kk: "Университет гранттары, акселераторлар, мемлекеттік бағдарламалар — ағымдағы шарттарды ресми сайттардан тексеріңіз."
+              ru: "Гранты вуза, акселераторы, госпрограммы — актуальные условия проверьте на официальных сайтах."
+              en: "University grants, accelerators, state programmes — check the current terms on official websites."
+
+      - key: pitch
+        title: {kk: "Питч және материалдар", ru: "Питч и материалы", en: "Pitch and materials"}
+        goal:
+          kk: "Питчті тұжырымдап, жоба деректерінен one-pager, питч-дек және стартап паспортын жинаңыз."
+          ru: "Сформулируйте питч и соберите из данных проекта one-pager, питч-дек и паспорт стартапа."
+          en: "Write your pitch and build the one-pager, pitch deck and startup passport from the project data."
+        method: {kk: "Питч құрылымы", ru: "Структура питча", en: "Pitch structure"}
+        criteria:
+          - fields: [one_liner]
+            text: {kk: "Бір сөйлемде жобаның не істейтіні және кім үшін екені айтылған.", ru: "В одном предложении сказано, что делает проект и для кого.", en: "The one-liner says what the project does and for whom."}
+          - fields: [pitch]
+            text: {kk: "Питч мәселе → шешім → нарық → команда → сұраныс құрылымымен жүреді және 60 секундқа сыяды.", ru: "Питч идёт по схеме проблема → решение → рынок → команда → запрос и укладывается в 60 секунд.", en: "The pitch follows problem → solution → market → team → ask and fits 60 seconds."}
+          - fields: [ask]
+            text: {kk: "Сұраныс нақты: сома, пилот, серіктес немесе ментор.", ru: "Запрос конкретен: сумма, пилот, партнёр или ментор.", en: "The ask is specific: amount, pilot, partner or mentor."}
+        fields:
+          - key: one_liner
+            type: text
+            required: true
+            min_length: 20
+            max_length: 140
+            label: {kk: "Жоба бір сөйлеммен", ru: "Проект в одном предложении", en: "The project in one sentence"}
+          - key: pitch
+            type: textarea
+            required: true
+            min_length: 200
+            max_length: 1200
+            label: {kk: "60 секундтық питч", ru: "Питч на 60 секунд", en: "60-second pitch"}
+            hint:
+              kk: "Мәселе → шешім → нарық → неге сіз → не қажет."
+              ru: "Проблема → решение → рынок → почему вы → что нужно."
+              en: "Problem → solution → market → why you → the ask."
+          - key: ask
+            type: textarea
+            required: true
+            min_length: 30
+            max_length: 800
+            label: {kk: "Жобаға не қажет", ru: "Что нужно проекту", en: "What the project needs"}
+            hint:
+              kk: "Инвестиция, пилот, серіктес, ментор…"
+              ru: "Инвестиции, пилот, партнёр, ментор…"
+              en: "Investment, a pilot, a partner, a mentor…"
+          - key: video_url
+            type: url
+            label: {kk: "Видео-питчке сілтеме", ru: "Ссылка на видео-питч", en: "Video pitch link"}
+          - key: contact
+            type: text
+            max_length: 200
+            label: {kk: "Байланыс", ru: "Контакты", en: "Contact"}

@@ -1,0 +1,8 @@
+dist
+coverage
+playwright-report
+test-results
+node_modules
+src/routeTree.gen.ts
+src/shared/api/schema.gen.ts
+package-lock.json

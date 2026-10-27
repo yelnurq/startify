@@ -1,0 +1,13 @@
+# Server interfaces and models are generated from api/openapi.yaml.
+# Regenerate with `make gen`; never edit internal/apigen by hand.
+package: apigen
+output: internal/apigen/apigen.gen.go
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+  embedded-spec: true
+compatibility:
+  # Enum constants are always named <Type><Value> (LocaleKk), so values shared by
+  # several enums ("draft", "active") never collide.
+  always-prefix-enum-values: true

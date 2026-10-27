@@ -1,0 +1,354 @@
+{
+  "app": {
+    "name": "Qadam",
+    "tagline": "The AI platform for university innovation and project work"
+  },
+  "language": {
+    "label": "Language",
+    "kk": "Қазақша",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "actions": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "undo": "Undo",
+    "remove": "Remove",
+    "search": "Search",
+    "openMenu": "Open menu",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "expandPanel": "Expand panel",
+    "collapsePanel": "Collapse panel",
+    "skipToContent": "Skip to content",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "copy": "Copy",
+    "copied": "Copied",
+    "loadMore": "Show more",
+    "edit": "Edit",
+    "open": "Open",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "delete": "Delete",
+    "retry": "Retry",
+    "send": "Send",
+    "create": "Create",
+    "apply": "Apply",
+    "reset": "Reset",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "toHome": "Home"
+  },
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "designSystem": "Design system"
+  },
+  "field": {
+    "optional": "optional",
+    "counter": "{{value}} / {{max}}"
+  },
+  "presence": {
+    "online": "Online"
+  },
+  "avatars": {
+    "more_one": "{{count, number}} more member",
+    "more_other": "{{count, number}} more members"
+  },
+  "breadcrumbs": "Breadcrumb",
+  "stepper": {
+    "done": "Completed",
+    "current": "Current step",
+    "todo": "Not started",
+    "locked": "Locked"
+  },
+  "trend": {
+    "up": "Increase",
+    "down": "Decrease",
+    "flat": "No change"
+  },
+  "commandPalette": {
+    "title": "Command palette",
+    "placeholder": "Find a section, project or action…",
+    "empty": "Nothing found",
+    "hintNavigate": "navigate",
+    "hintSelect": "select",
+    "hintClose": "close",
+    "groups": {
+      "navigation": "Go to",
+      "preferences": "Preferences"
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The link may be outdated or the page may have been removed.",
+    "back": "Go to the home page"
+  },
+  "errors": {
+    "internal": "Something went wrong. Please try again.",
+    "network": "No connection to the server. Check your internet connection.",
+    "route": {
+      "not_found": "The requested resource was not found.",
+      "method_not_allowed": "This action is not available for the resource."
+    },
+    "request": {
+      "malformed": "The server could not read the request.",
+      "invalid_parameter": "The request contains an invalid parameter.",
+      "invalid_limit": "The number of items per page must be between {{min}} and {{max}}.",
+      "too_large": "The amount of data is too large.",
+      "timeout": "The server did not respond in time. Please try again.",
+      "invalid_cursor": "The next part of the list could not be shown: the list is out of date. Reload the page."
+    },
+    "validation": {
+      "failed": "Some fields are filled in incorrectly."
+    },
+    "idempotency": {
+      "invalid_key": "The retry key of the request is invalid.",
+      "key_reused": "This request was already sent with different data.",
+      "in_progress": "The request is still being processed, please wait a moment."
+    },
+    "auth": {
+      "invalid_credentials": "Wrong e-mail or password.",
+      "email_taken": "This address is already registered. Sign in or reset your password.",
+      "signup_disabled": "Self sign-up is closed at this university. Please contact the administrator.",
+      "email_domain_not_allowed": "Please sign up with your university e-mail.",
+      "consent_required": "Consent to the processing of personal data is required.",
+      "password_weak": "The password is too simple: at least 10 characters, no common passwords, no name or e-mail.",
+      "password_incorrect": "The current password is wrong.",
+      "code_invalid": "The code is wrong or has expired. Request a new one.",
+      "too_many_attempts": "Too many attempts. Try again in {{retry_after_seconds}} s.",
+      "token_invalid": "The link is invalid or has expired. Request a new one.",
+      "unauthenticated": "Sign in to continue.",
+      "session_expired": "Your session has expired. Please sign in again.",
+      "session_revoked": "Your session was ended. Please sign in again.",
+      "csrf_failed": "The request could not be confirmed. Reload the page and try again.",
+      "forbidden": "You do not have permission to do this.",
+      "oidc_failed": "University SSO sign-in failed. Try again or sign in with e-mail.",
+      "not_a_member": "This account is not part of the university yet. Sign up with the same email and password, and the account will join it.",
+      "account_suspended": "Access to this account has been suspended by the university administrator.",
+      "unavailable": "Sign-in is temporarily unavailable. Try again in a few minutes.",
+      "email_unverified": "Your e-mail is not confirmed yet. Open the link from the letter or send it again.",
+      "sso_link_denied": "This account belongs to another university, so university SSO cannot be linked to it. Sign in with the password or an e-mailed code.",
+      "reauth_required": "To set your first password, confirm it with a code from the e-mail."
+    },
+    "tenant": {
+      "not_found": "No university was found at this address.",
+      "suspended": "Access to the platform is suspended for this university."
+    },
+    "profile": {
+      "slug_taken": "This profile address is already taken.",
+      "not_found": "The profile does not exist or is hidden by its owner."
+    },
+    "files": {
+      "too_large": "The file is too large.",
+      "unsupported_type": "This file type is not supported.",
+      "infected": "The file failed the malware check.",
+      "scanner_unavailable": "File checking is temporarily unavailable. Please try later.",
+      "not_found": "File not found.",
+      "image_too_large": "The image is too large: at most {{max_megapixels}} megapixels.",
+      "image_too_small": "The image is too small: at least {{min_pixels}} pixels on each side.",
+      "image_invalid": "The image could not be read. Try another file."
+    },
+    "team": {
+      "not_found": "The request was not found.",
+      "own_request": "You cannot respond to your own request.",
+      "already_responded": "You have already responded to this request.",
+      "closed": "The author has closed this request.",
+      "forbidden": "Only the author can change the request."
+    },
+    "import": {
+      "invalid_file": "The file could not be read. Use CSV (UTF-8) or XLSX with headers in the first row.",
+      "unknown_columns": "The file has columns that cannot be imported: {{columns}}. Compare it with the template.",
+      "already_committed": "This import has already been applied.",
+      "not_found": "The import was not found.",
+      "empty": "The file has no data rows.",
+      "too_many_rows": "Too many rows: at most {{max}} per import.",
+      "too_many_columns": "Too many columns: at most {{max}}.",
+      "missing_columns": "Required columns are missing: {{columns}}.",
+      "duplicate_columns": "Columns are repeated: {{columns}}.",
+      "too_many_invitations": "Too many invitations were sent today. Split the file and continue the import tomorrow."
+    },
+    "member": {
+      "not_found": "The member was not found.",
+      "cannot_demote_self": "You cannot remove the administrator role from yourself.",
+      "last_admin": "The last administrator of the university cannot lose the role or be suspended."
+    },
+    "rbac": {
+      "forbidden": "You do not have permission to do this."
+    },
+    "rate_limited": "Too many requests. Please wait a moment and try again.",
+    "session": {
+      "not_found": "The session was not found or has already ended."
+    },
+    "precondition": {
+      "failed": "Someone changed this in the meantime. Reload the page and try again.",
+      "required": "Reload the page and try the change again"
+    },
+    "ai": {
+      "unavailable": "AI is unavailable right now. Try again in a few minutes.",
+      "refused": "The model declined this request. Try rephrasing it.",
+      "invalid_output": "The model answer could not be understood. Try again.",
+      "limit_reached": "Today’s AI limit is used up; it resets at {{resets_at}}.",
+      "limit_reached_user": "Your AI limit for today is used up; it resets at {{resets_at}}.",
+      "limit_reached_university": "The university’s AI limit for today is used up; it resets at {{resets_at}}.",
+      "too_many_requests": "Too many AI requests. Try again in {{retry_after_seconds}} s."
+    },
+    "knowledge": {
+      "unsupported_file": "This file is not supported: use PDF, DOCX, TXT or MD.",
+      "no_text": "No text was found in the file. If it is a scan, upload a version with a text layer or paste the text.",
+      "not_found": "Document not found.",
+      "index_failed": "The document could not be indexed. Upload it again.",
+      "text_too_long": "The document has too much text. Split it into several documents."
+    },
+    "project": {
+      "not_found": "Project not found",
+      "archived": "The project is archived and cannot be changed",
+      "ip_policy_required": "Accept the university's intellectual property policy",
+      "already_member": "This person is already in the project",
+      "not_member": "You are not a member of this project",
+      "owner_cannot_leave": "The owner cannot leave the project — hand over ownership first",
+      "supervisor_role_required": "Only a teacher with the supervisor role can supervise a project",
+      "member_not_found": "Member not found",
+      "team_full_one": "A team can have at most {{count}} member",
+      "team_full_other": "A team can have at most {{count}} members",
+      "supervisors_full_one": "A project can have at most {{count}} supervisor",
+      "supervisors_full_other": "A project can have at most {{count}} supervisors",
+      "owner_active": "The owner is active: only they can hand the project over"
+    },
+    "incubator": {
+      "step_not_found": "There is no such step",
+      "step_incomplete": "The step is not ready yet: fill in the highlighted fields",
+      "field_unknown": "The step has no such field",
+      "revision_not_found": "This version was not found",
+      "comment_not_found": "Comment not found",
+      "parent_not_found": "The comment you are replying to was deleted",
+      "material_not_found": "Material not found",
+      "material_not_ready": "The material is still being prepared",
+      "mentor_forbidden": "Only the project team can ask the mentor",
+      "step_empty": "Fill in at least one field of the step first — there is nothing to check yet",
+      "too_many_materials": "Too many materials in a short time. Please wait a little",
+      "documents_unavailable": "The document service is unavailable. Try again later",
+      "material_failed": "The material could not be built. Please try again",
+      "material_timed_out": "The material was not ready in time. Please try again"
+    },
+    "evaluation": {
+      "not_found": "The evaluation was not found",
+      "not_ready": "The evaluation is not ready yet",
+      "in_progress": "The project is already being evaluated — opening it",
+      "project_empty": "Answer at least the first step of the incubator to get an evaluation",
+      "too_many_requests": "Enough evaluations for today. Try again in {{retry_after_seconds}} s",
+      "failed": "The evaluation could not be produced. Please try again",
+      "timed_out": "The evaluation did not finish in time. Please run it again"
+    },
+    "documents": {
+      "unavailable": "The document service is unavailable right now — the PDF cannot be downloaded"
+    },
+    "showcase": {
+      "not_found": "Project page not found",
+      "incomplete": "Fill in the problem and the solution to publish the page",
+      "not_in_review": "The page is no longer in review — refresh the list",
+      "contact_disabled": "The team does not accept contact requests now",
+      "too_many_requests": "Too many requests. Try again in {{retry_after_seconds}} s",
+      "own_page": "You cannot approve the page of your own project: another moderator will"
+    },
+    "contact": {
+      "not_found": "Contact request not found",
+      "already_moderated": "The request has already been handled — refresh the list"
+    },
+    "directory": {
+      "disabled": "Sign-in with the university directory is not turned on. Sign in with your e-mail.",
+      "unavailable": "The university directory is not answering. Try again later or sign in with your e-mail.",
+      "not_allowed": "This university account may not sign in to Qadam. Contact the university administrator.",
+      "email_missing": "Your university account has no e-mail address in the directory. Contact the university administrator.",
+      "password_expired": "Your password has expired. Change it in the university's systems and sign in again.",
+      "account_disabled": "The university account is disabled. Contact the university's IT department.",
+      "test_required": "First check the connection with these settings successfully, then turn sign-in on.",
+      "too_many_tests": "Too many checks. Try again in {{retry_after_seconds}} s."
+    }
+  },
+  "roles": {
+    "student": "Student",
+    "supervisor": "Supervisor",
+    "mentor": "Mentor",
+    "jury": "Jury expert",
+    "innovation_manager": "Innovation manager",
+    "tenant_admin": "Administrator",
+    "leadership": "Leadership",
+    "partner": "Partner"
+  },
+  "studyLevels": {
+    "bachelor": "Bachelor’s",
+    "master": "Master’s",
+    "doctorate": "Doctorate"
+  },
+  "validation": {
+    "required": "Please fill in this field",
+    "email": "Enter a valid e-mail address",
+    "url": "Enter a valid link",
+    "format": "Invalid format",
+    "invalid": "Invalid value",
+    "minLength_one": "At least {{count, number}} character",
+    "minLength_other": "At least {{count, number}} characters",
+    "maxLength_one": "No more than {{count, number}} character",
+    "maxLength_other": "No more than {{count, number}} characters",
+    "minItems_one": "Choose at least {{count, number}} option",
+    "minItems_other": "Choose at least {{count, number}} options",
+    "maxItems_one": "No more than {{count, number}} item",
+    "maxItems_other": "No more than {{count, number}} items",
+    "min": "The value must be at least {{value}}",
+    "max": "The value must be at most {{value}}",
+    "too_short": "The value is too short",
+    "too_long": "The value is too long",
+    "taken": "This value is already taken",
+    "not_found": "The value was not found",
+    "invalid_email": "Enter a valid e-mail address",
+    "passwordsMismatch": "The passwords do not match",
+    "choose": "Choose a value",
+    "duplicate": "This value is repeated",
+    "external_not_allowed": "External providers are switched off: “Local models only” is on",
+    "sum": "The total must be {{expected}}; now {{actual}}",
+    "not_supported": "The provider does not support this feature",
+    "ldap_url": "An address like ldaps://server:636 or ldap://server:389",
+    "ldap_dn": "Not a valid DN, e.g. OU=Students,DC=kazutb,DC=local",
+    "ldap_filter": "Not a valid LDAP filter: check the parentheses",
+    "ldap_placeholder": "The filter must contain {username}: the login takes its place",
+    "ldap_attribute": "An LDAP attribute name: Latin letters, digits and hyphens",
+    "pem": "Paste the certificate in PEM format (-----BEGIN CERTIFICATE-----)",
+    "plain_ldap": "Unencrypted connections are not allowed: use ldaps:// or turn on StartTLS"
+  },
+  "tags": {
+    "add": "Add",
+    "remove": "Remove “{{tag}}”",
+    "placeholder": "Type and press Enter",
+    "suggestions": "Suggestions",
+    "limit": "Maximum reached: {{max}}",
+    "counter": "{{value}} of {{max}}"
+  },
+  "diff": {
+    "added": "added:",
+    "removed": "removed:"
+  },
+  "errorPage": {
+    "title": "This page could not be opened",
+    "outdatedTitle": "A new version of Qadam is out",
+    "outdatedText": "The page is out of date after an update. Reload it to continue."
+  },
+  "pageTitles": {
+    "format": "{{page}} — Qadam",
+    "landing": "Qadam — innovation platform of {{university}}",
+    "login": "Sign in",
+    "loginCode": "Sign in with a code",
+    "register": "Sign up",
+    "forgotPassword": "Password recovery",
+    "resetPassword": "New password",
+    "verifyEmail": "Email confirmation",
+    "onboarding": "Getting started",
+    "design": "Design system",
+    "member": "Member profile",
+    "project": "{{project}} · {{page}}"
+  }
+}

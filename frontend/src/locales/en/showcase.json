@@ -1,0 +1,389 @@
+{
+  "site": {
+    "showcase": "Showcase",
+    "signIn": "Sign in",
+    "start": "Get started",
+    "toApp": "Workspace",
+    "register": "Sign up",
+    "footerLabel": "Footer navigation",
+    "rights": "© {{year}} Qadam",
+    "footerPlatform": "Platform",
+    "footerResources": "Resources"
+  },
+  "meta": {
+    "catalogTitle": "Project showcase — {{university}}",
+    "catalogDescription": "Student startups and innovation projects of {{university}}: search by industry, stage, faculty and what the team needs.",
+    "nationalTitle": "Project showcase of Kazakhstan's universities",
+    "nationalDescription": "Public student projects of Kazakhstan's universities on the Qadam platform.",
+    "projectTitle": "{{title}} — {{university}} showcase"
+  },
+  "industries": {
+    "agritech": "Agritech",
+    "edtech": "Education",
+    "fintech": "Fintech",
+    "healthtech": "Health and medicine",
+    "logistics": "Logistics",
+    "cleantech": "Ecology and clean tech",
+    "govtech": "Public services and cities",
+    "foodtech": "Food technology",
+    "fashion": "Light industry and fashion",
+    "ecommerce": "Retail and e-commerce",
+    "manufacturing": "Manufacturing",
+    "energy": "Energy",
+    "tourism": "Tourism",
+    "social": "Social impact",
+    "other": "Other"
+  },
+  "stages": {
+    "idea": "Idea",
+    "market": "Market",
+    "product": "Product",
+    "launch": "Launch"
+  },
+  "needs": {
+    "investment": "Investment",
+    "team": "Team",
+    "partner": "Partner",
+    "pilot": "Pilot",
+    "mentor": "Mentor"
+  },
+  "needsText": {
+    "investment": "Looking for investment",
+    "team": "Looking for team members",
+    "partner": "Looking for an industry partner",
+    "pilot": "Looking for a pilot site",
+    "mentor": "Looking for a mentor"
+  },
+  "levels": {
+    "idea": "Idea",
+    "validated_problem": "Validated problem",
+    "mvp_ready": "MVP-ready",
+    "investment_ready": "Investment-ready"
+  },
+  "contactKinds": {
+    "investment": "Investment",
+    "partnership": "Partnership",
+    "pilot": "Pilot",
+    "mentoring": "Mentoring",
+    "hiring": "Hiring",
+    "other": "Other"
+  },
+  "contactStatus": {
+    "pending": "New",
+    "forwarded": "Forwarded to the team",
+    "rejected": "Rejected"
+  },
+  "status": {
+    "draft": "Draft",
+    "in_review": "In review",
+    "published": "Published",
+    "rejected": "Rejected"
+  },
+  "visibility": {
+    "university": "University only",
+    "public": "Everyone"
+  },
+  "teamRoles": {
+    "owner": "Founder",
+    "member": "Team member",
+    "supervisor": "Supervisor"
+  },
+  "card": {
+    "score": "Readiness score {{score}} out of 100 — {{level}}",
+    "seeking": "Seeking",
+    "quickView": "Quick view",
+    "quickViewOf": "Quick view: {{title}}",
+    "external": "page on the {{university}} site",
+    "noCover": "No cover"
+  },
+  "catalog": {
+    "eyebrow": "Project showcase",
+    "title": "Projects looking for partners",
+    "titleNational": "Projects of Kazakhstan's universities",
+    "subtitle": "Student startups and innovation projects of {{university}}: search by industry, stage and what the team needs.",
+    "subtitleNational": "Public projects of every university on Qadam — from an idea to investment readiness.",
+    "count_one": "{{count, number}} project",
+    "count_other": "{{count, number}} projects",
+    "inCatalog_one": "project on the showcase",
+    "inCatalog_other": "projects on the showcase",
+    "scope": {
+      "label": "Where to search",
+      "university": "University",
+      "national": "Whole country"
+    },
+    "search": {
+      "label": "Search the showcase",
+      "placeholder": "Name, problem, technology…"
+    },
+    "filters": {
+      "title": "Filters",
+      "open": "Filters",
+      "openCount": "Filters ({{count}})",
+      "industry": "Industry",
+      "stage": "Stage",
+      "faculty": "Faculty",
+      "year": "Year",
+      "needs": "What the project needs",
+      "tags": "Tags",
+      "active": "Selected filters",
+      "remove": "Remove the “{{label}}” filter",
+      "reset": "Reset filters",
+      "show": "Show projects",
+      "clear": "Clear",
+      "more": "{{count}} more",
+      "less": "Show less"
+    },
+    "results": "Projects",
+    "found_one": "{{count, number}} project found",
+    "found_other": "{{count, number}} projects found",
+    "shown": "Showing {{shown}} of {{total}}",
+    "shownSome": "Showing {{shown}}",
+    "empty": {
+      "title": "The showcase fills up soon",
+      "text": "Teams are still preparing the pages of their projects. Come back later."
+    },
+    "noResults": {
+      "title": "Nothing found",
+      "text": "Try another query or remove some of the filters."
+    },
+    "error": "Could not load the showcase"
+  },
+  "quick": {
+    "description": "The project at a glance",
+    "problem": "Problem",
+    "solution": "Solution",
+    "needs": "What the project needs",
+    "open": "Open the project page",
+    "external": "A project of another university — the full page opens on its site."
+  },
+  "project": {
+    "sections": {
+      "label": "Page sections",
+      "problem": "Problem",
+      "solution": "Solution",
+      "market": "Market",
+      "team": "Team",
+      "traction": "Traction",
+      "ask": "What the project needs"
+    },
+    "video": {
+      "heading": "Video pitch",
+      "frame": "Video pitch of “{{title}}”",
+      "watch": "Watch the video pitch"
+    },
+    "score": {
+      "title": "Readiness score",
+      "text": "From the latest AI evaluation by the university's rubric",
+      "outOf": "out of 100"
+    },
+    "facts": {
+      "label": "About the project",
+      "industry": "Industry",
+      "stage": "Stage",
+      "faculty": "Faculty",
+      "year": "Year",
+      "university": "University",
+      "published": "Published"
+    },
+    "contact": "Contact the team",
+    "contactText": "Offer investment, a pilot or a partnership — the team will reply by email.",
+    "share": {
+      "label": "Share",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "text": "{{title}} — a project on the Qadam showcase"
+    },
+    "teamEmpty": "The team is not listed",
+    "notFound": {
+      "title": "Project page not found",
+      "text": "The team may have taken it off the showcase, or the page is open to members of the university only.",
+      "back": "To the showcase",
+      "signIn": "Sign in to the university"
+    },
+    "error": "Could not load the project page"
+  },
+  "contact": {
+    "title": "Contact the team",
+    "description": "A message to the “{{title}}” team. Members' addresses stay hidden — the team will reply to your email.",
+    "name": "Your name",
+    "email": "Email",
+    "organization": "Organisation",
+    "kind": "Subject",
+    "kindPlaceholder": "Choose a subject",
+    "message": "Message",
+    "messageHint": "Who you are and what you offer — at least 20 characters",
+    "website": "Website",
+    "consent": "By sending the form you agree to share your name, email and message with the project team and the university's innovation office.",
+    "submit": "Send",
+    "success": {
+      "title": "Request sent",
+      "pending": "The university's innovation office will review it and pass it on to the team.",
+      "forwarded": "The team has your message and will reply by email.",
+      "close": "Done"
+    }
+  },
+  "editor": {
+    "title": "Showcase",
+    "intro": "The project's page on the university showcase. Students and staff see it, and after review — investors and partners.",
+    "nav": {
+      "none": "Not published"
+    },
+    "prefilled": {
+      "title": "A draft from the incubator",
+      "text": "We filled the page with answers from the incubator steps. Check the texts and save."
+    },
+    "state": {
+      "draft": "The page is not on the showcase.",
+      "in_review": "The page is already visible inside the university. The innovation office reviews it before it is published for everyone.",
+      "in_reviewHidden": "The page is waiting for the innovation office and is visible to no one until approved.",
+      "published": "The page is on the university's showcase — changes show up as soon as you save.",
+      "publishedPublic": "The page is open to everyone. Changing its texts, address, video, tags or cover sends it back to review: until approved it is visible inside the university only.",
+      "heldTitle": "Taken off the showcase by a moderator",
+      "held": "The page can be published again only after the innovation office reviews it: send it for review.",
+      "rejectedTitle": "Rejected by the reviewer",
+      "rejected": "The page is visible inside the university only. Address the comments and send it again.",
+      "comment": "Reviewer's comment",
+      "open": "Open the page"
+    },
+    "actions": {
+      "publish": "Publish",
+      "submit": "Send for review",
+      "unpublish": "Take off the showcase",
+      "saved": "Changes saved",
+      "published": "The page is published",
+      "submitted": "The page is sent for review",
+      "unpublished": "The page is taken off the showcase",
+      "stale": "The page was changed in another tab — the latest version is loaded",
+      "merged": "The page was changed in another tab — the changes were merged and your edits saved"
+    },
+    "conflict": {
+      "title": "You and someone else changed these fields",
+      "text": "The form keeps your version of: {{fields}}. Save it or take the version from the server.",
+      "theirs": "Take the server version",
+      "mine": "Keep mine"
+    },
+    "unpublish": {
+      "title": "Take the page off the showcase?",
+      "text": "The page goes back to drafts and disappears from the catalogue. You can publish it again at any time."
+    },
+    "groups": {
+      "page": "Page",
+      "media": "Cover and video",
+      "content": "Content",
+      "needs": "What the project needs",
+      "settings": "Visibility and contact"
+    },
+    "fields": {
+      "slug": "Page address",
+      "slugHint": "Latin letters, digits and hyphens, 3 to 60 characters",
+      "slugPreview": "The page will be at {{url}}",
+      "slugGenerate": "From the name",
+      "title": "Name",
+      "tagline": "Tagline",
+      "taglineHint": "One sentence: what the project does and for whom",
+      "cover": "Cover",
+      "coverHint": "JPEG, PNG or WebP up to 10 MB — stored at 1600×900",
+      "coverUpload": "Upload a cover",
+      "coverReplace": "Replace",
+      "coverRemove": "Remove",
+      "coverUploaded": "Cover updated",
+      "coverRemoved": "Cover removed",
+      "coverAlt": "Cover of “{{title}}”",
+      "video": "Video pitch",
+      "videoHint": "A YouTube or Vimeo link",
+      "problem": "Problem",
+      "problemHint": "Whose pain it is and why it matters",
+      "solution": "Solution",
+      "solutionHint": "What you built and why it beats the alternatives",
+      "market": "Market",
+      "marketHint": "Market size, first customers, competitors",
+      "traction": "Traction",
+      "tractionHint": "Pilots, users, revenue, awards",
+      "ask": "What the project needs",
+      "askHint": "How much money and what for, whom you want in the team",
+      "needs": "Looking for",
+      "needsHint": "Choose up to 5",
+      "tags": "Tags",
+      "tagsHint": "Technologies and topics — up to 8",
+      "visibility": "Who sees the page",
+      "universityHint": "University students and staff after signing in. Published at once.",
+      "publicHint": "An open page for investors and partners. Published after the innovation office reviews it.",
+      "showScore": "Show the AI evaluation score",
+      "showScoreHint": "The latest readiness score is {{score}} out of 100",
+      "showScoreNone": "The project has no AI evaluation yet: the score appears after one",
+      "contactEnabled": "Accept contact requests",
+      "contactEnabledHint": "Partners write through the form on the page; members' addresses stay hidden"
+    },
+    "preview": {
+      "title": "Preview",
+      "card": "Card in the catalogue"
+    },
+    "contacts": {
+      "title": "Contact requests",
+      "empty": "No one has written yet",
+      "emptyText": "When a partner sends a request and it is passed on to the team, it appears here.",
+      "reply": "Reply by email",
+      "received": "Received {{time}}"
+    }
+  },
+  "moderation": {
+    "title": "Showcase review",
+    "subtitle": "Public project pages are reviewed before everyone can see them.",
+    "tabs": {
+      "in_review": "In review",
+      "published": "Published",
+      "rejected": "Rejected",
+      "draft": "Drafts"
+    },
+    "empty": {
+      "in_review": "No pages to review",
+      "in_reviewText": "When a team sends a public page, it appears here.",
+      "other": "Nothing here yet",
+      "otherText": "There are no pages with this status."
+    },
+    "submitted": "Sent {{time}}",
+    "published": "Published {{time}}",
+    "approve": "Approve",
+    "reject": "Reject",
+    "open": "Open the page",
+    "openProject": "Open in the project",
+    "approved": "The page is published",
+    "rejected": "The page is rejected",
+    "stale": "The team changed the page while you were reviewing it — open the latest version",
+    "held": "A moderator took the page down: it returns to the showcase only once approved.",
+    "takeDown": "Take off the showcase",
+    "takenDown": "The page is off the showcase",
+    "takeDownDialog": {
+      "title": "Take the page “{{title}}” off the showcase?",
+      "text": "The page leaves the catalogue for students and for everyone. The team can bring it back only through review."
+    },
+    "rejectDialog": {
+      "title": "Reject the page “{{title}}”?",
+      "text": "The team will see the comment and can fix the page.",
+      "comment": "Comment for the team"
+    }
+  },
+  "contacts": {
+    "title": "Showcase contact requests",
+    "subtitle": "Partners' requests to teams: pass them on or reject spam.",
+    "tabs": {
+      "pending": "New",
+      "forwarded": "Forwarded",
+      "rejected": "Rejected"
+    },
+    "empty": {
+      "pending": "No new requests",
+      "pendingText": "Requests from the showcase appear here before the team sees them.",
+      "other": "Nothing here yet",
+      "otherText": "There are no requests with this status."
+    },
+    "project": "Project",
+    "received": "Received {{time}}",
+    "forward": "Forward to the team",
+    "reject": "Reject",
+    "forwarded": "The request is forwarded to the team",
+    "rejected": "The request is rejected"
+  }
+}

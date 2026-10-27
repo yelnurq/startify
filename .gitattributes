@@ -1,2 +1,21 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalise everything to LF in the repo and in the working tree:
+# the product is built and deployed in Linux containers, CRLF breaks shell scripts.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.pptx binary
+*.xlsx binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# Generated code: collapse in diffs.
+backend/internal/apigen/*.gen.go linguist-generated=true
+backend/internal/**/*db/*.go linguist-generated=true
+frontend/src/shared/api/schema.gen.ts linguist-generated=true
+frontend/src/routeTree.gen.ts linguist-generated=true
