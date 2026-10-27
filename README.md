@@ -43,8 +43,8 @@ make seed        # демо-данные КазУТБ: структура, ак�
 наружу публикует только веб-приложение; Valkey закрыт паролем, а API и worker ходят в MinIO
 отдельным пользователем с доступом только к своему бакету (его создаёт `minio-init`).
 `deploy/docker-compose.dev.yml` — только для машины разработчика: открывает порты API, PostgreSQL,
-Valkey, MinIO, Gotenberg и ClamAV на `127.0.0.1` (`DEV_BIND`) и добавляет Mailpit. Это ещё не
-конфигурация для установки в вузе: TLS, резервные копии, мониторинг и хранение секретов — фаза 12.
+Valkey, MinIO, Gotenberg и ClamAV на `127.0.0.1` (`DEV_BIND`) и добавляет Mailpit. На сервере
+вместо него — `deploy/docker-compose.prod.yml` с HTTPS (см. «Установка на сервер»).
 Без `make` стек разработки запускается так:
 
 ```bash
@@ -176,8 +176,21 @@ deploy/     docker-compose.yml (базовый) и docker-compose.dev.yml (ра�
 docs/       ARCHITECTURE, DECISIONS, BACKLOG, PROGRESS, дизайн экранов
 ```
 
+## Установка на сервер
+
+```bash
+git clone -b feat/qadam-platform <адрес репозитория> /opt/qadam && cd /opt/qadam
+make prod-init         # адрес, HTTPS (Let's Encrypt, свой CA или сертификат вуза), почта; пароли создаются сами
+make prod-up           # сборка и запуск: Caddy с HTTPS перед приложением
+make prod-bootstrap ADMIN_EMAIL=admin@kaztbu.edu.kz ADMIN_NAME="Имя Фамилия"   # КазУТБ и первый администратор
+```
+
+Требования, почта, языковые модели, обновление, резервные копии и неполадки — в
+[docs/OPERATIONS.md](docs/OPERATIONS.md).
+
 ## Документация
 
+- [Установка на сервер, обновление и резервные копии](docs/OPERATIONS.md)
 - [Архитектура](docs/ARCHITECTURE.md)
 - [Принятые решения](docs/DECISIONS.md)
 - [Ход работ по фазам](docs/PROGRESS.md)
