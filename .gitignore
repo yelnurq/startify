@@ -34,3 +34,6 @@ frontend/.vite/
 deploy/data/
 tmp/
 .cache/
+
+# Backups of a production installation (deploy/scripts/backup.sh)
+backups/

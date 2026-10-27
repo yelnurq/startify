@@ -1,0 +1,34 @@
+# The edge of a production installation (docker-compose.prod.yml): HTTPS for
+# the university's address, then the web container. Both values come from
+# .env (deploy/scripts/prod-init.sh writes them):
+#   QADAM_DOMAIN  the address students open: qadam.kaztbu.edu.kz, or the
+#                 server's IP address when it has no name yet
+#   CADDY_TLS     where the certificate comes from:
+#                 an e-mail          Let's Encrypt (public name, ports 80/443 open)
+#                 internal           Caddy's own CA (a name only the campus knows,
+#                                    or an IP address; browsers warn until the CA
+#                                    is trusted)
+#                 /certs/fullchain.pem /certs/privkey.pem
+#                                    the university's certificate (deploy/certs)
+{
+	# The configuration changes only by restarting the container.
+	admin off
+}
+
+{$QADAM_DOMAIN} {
+	tls {$CADDY_TLS}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# Caddy sets X-Forwarded-For to the client's address (it ignores what the
+	# client sent); Nginx restores it from there (nginx/realip-proxy.conf).
+	# No access log here: links in letters carry one-time tokens in the query
+	# string, and Nginx logs paths without it.
+	reverse_proxy web:8080 {
+		# Server-sent events of the AI mentor go out as they come.
+		flush_interval -1
+	}
+}
