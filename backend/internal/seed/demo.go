@@ -221,14 +221,32 @@ func AllKazUTBMembers() []Member {
 // accounts, team requests, knowledge base and student projects at every
 // stage of the incubator, and the sandbox university.
 func Demo(ctx context.Context, database *db.DB) error {
-	kazutb, err := Tenant(ctx, database, KazUTB)
+	return DemoWith(ctx, database, DemoOptions{Password: DemoPassword, Sandbox: true})
+}
+
+// DemoOptions adapt the demonstration data to a presentation server.
+type DemoOptions struct {
+	// Password of every demo account.
+	Password string
+	// Sandbox adds the second university used to check tenant isolation.
+	Sandbox bool
+	// Domains are KazUTB's addresses (the server's host on a presentation
+	// server, so that links in letters lead to it).
+	Domains []string
+}
+
+// DemoWith creates the demonstration installation with the given options.
+func DemoWith(ctx context.Context, database *db.DB, opts DemoOptions) error {
+	spec := KazUTB
+	spec.Domains = opts.Domains
+	kazutb, err := Tenant(ctx, database, spec)
 	if err != nil {
 		return err
 	}
 	if err := Structure(ctx, database, kazutb.ID, KazUTBStructure); err != nil {
 		return err
 	}
-	hash, err := auth.HashPassword(DemoPassword)
+	hash, err := auth.HashPassword(opts.Password)
 	if err != nil {
 		return err
 	}
@@ -263,6 +281,9 @@ func Demo(ctx context.Context, database *db.DB) error {
 		return err
 	}
 
+	if !opts.Sandbox {
+		return nil
+	}
 	sandbox, err := Tenant(ctx, database, Sandbox)
 	if err != nil {
 		return err

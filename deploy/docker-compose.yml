@@ -6,9 +6,10 @@
 #   make dev        # build and start everything
 #   make down       # stop
 #
-# This is not a production configuration yet: TLS, backups, monitoring and
-# secret management come in phase 12 (docs/OPERATIONS.md). Values come from
-# the repository-level .env (see .env.example).
+# A server adds docker-compose.prod.yml instead: Caddy with HTTPS in front and
+# rotated logs (`make prod-up`, docs/OPERATIONS.md). Values come from the
+# repository-level .env (.env.example for development, deploy/scripts/prod-init.sh
+# on a server).
 name: qadam
 
 x-backend-env: &backend-env

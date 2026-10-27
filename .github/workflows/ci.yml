@@ -78,6 +78,9 @@ jobs:
         run: |
           cp .env.example .env
           docker compose --env-file .env -f deploy/docker-compose.yml config --quiet
+          # The production layer with an .env written the way a server gets it.
+          deploy/scripts/prod-init.sh --domain qadam.example.kz --tls admin@example.kz             --smtp-host smtp.example.kz --smtp-user "" --smtp-from qadam@example.kz --output "$RUNNER_TEMP/prod.env" </dev/null
+          docker compose --env-file "$RUNNER_TEMP/prod.env" -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml config --quiet
           $COMPOSE up -d --build --wait api worker web mailpit openldap
           $COMPOSE run --rm --no-deps worker /app/seed
       - uses: actions/setup-node@v7

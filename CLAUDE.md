@@ -15,8 +15,8 @@ Qadam — мультитенантная AI-платформа проектно�
   `src/app/routes`) и Query, Tailwind v4 + собственная дизайн-система на Radix,
   i18next (kk / ru / en), openapi-fetch с типами из `openapi.yaml`.
 - **Infra**: Docker Compose (`deploy/docker-compose.yml` — базовый, наружу только web;
-  `deploy/docker-compose.dev.yml` — порты служб на 127.0.0.1 и Mailpit, только для разработки),
-  Nginx, GitHub Actions.
+  `deploy/docker-compose.dev.yml` — порты служб на 127.0.0.1 и Mailpit, только для разработки;
+  `deploy/docker-compose.prod.yml` — Caddy с HTTPS перед web, для сервера), Nginx, GitHub Actions.
 
 ## Команды
 
@@ -28,7 +28,12 @@ make gen            # oapi-codegen + sqlc (Docker) + openapi-typescript
 make lint           # golangci-lint, tsc, eslint, prettier, i18n:check
 make test           # go test (+ интеграционные на testcontainers) и vitest
 make e2e            # Playwright против запущенного стека
-make compose-check  # docker compose config для базового файла и для пары с dev-файлом
+make compose-check  # docker compose config: базовый файл, с dev-файлом и с prod-файлом
+# сервер (docs/OPERATIONS.md):
+make prod-init      # .env продакшна: адрес, HTTPS, почта, сгенерированные секреты
+make prod-up        # базовый файл + deploy/docker-compose.prod.yml (Caddy, HTTPS)
+make prod-bootstrap ADMIN_EMAIL=… ADMIN_NAME="…"   # КазУТБ и первый администратор
+make prod-backup    # резервная копия базы и файлов в backups/
 ```
 
 На Windows без `make`: команды из Makefile запускаются напрямую (compose — всегда с

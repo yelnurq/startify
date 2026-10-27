@@ -12,9 +12,13 @@ GO_TOOL := go tool -modfile=tools.mod
 # The race detector needs cgo; set GO_TEST_FLAGS= on machines without a C compiler.
 GO_TEST_FLAGS ?= -race -count=1
 
+# Development commands see .env as Make variables too. Production commands
+# (prod-*) leave .env to Docker Compose: Make would expand "$" in passwords.
+ifeq (,$(filter prod-%,$(MAKECMDGOALS)))
 ifneq (,$(wildcard .env))
 include .env
 export
+endif
 endif
 
 .PHONY: help
@@ -23,7 +27,7 @@ help: ## Show this help
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 .env:
-	@echo "No .env file: run 'cp .env.example .env' first." >&2; exit 1
+	@echo "No .env file: on a server run 'make prod-init'; for development 'cp .env.example .env'." >&2; exit 1
 
 # ── Stack ──────────────────────────────────────────────────────────────────
 .PHONY: dev down logs ps infra seed compose-check
@@ -54,9 +58,10 @@ infra: .env ## Start only infrastructure, for running api/worker/web natively
 seed: .env ## Load demo data into the running stack (KazUTB, demo accounts)
 	$(COMPOSE) run --rm --no-deps worker /app/seed
 
-compose-check: .env ## Validate the base compose file alone and with the development file
+compose-check: .env ## Validate the base compose file alone, with the development file and with the production file
 	$(COMPOSE_BASE) config --quiet
 	$(COMPOSE) config --quiet
+	QADAM_DOMAIN=qadam.example.kz CADDY_TLS=internal $(COMPOSE_BASE) -f deploy/docker-compose.prod.yml config --quiet
 
 # ── Native development (after `make infra`) ────────────────────────────────
 .PHONY: migrate migrate-down migrate-status run-api run-worker run-web
@@ -121,6 +126,44 @@ e2e: ## Run Playwright end-to-end tests against the running stack (cleans up aft
 
 e2e-clean: .env ## Remove what end-to-end runs left in the development database (e2e.* accounts and their projects)
 	$(COMPOSE) run --rm --no-deps worker /app/seed clean-e2e
+
+# ── Production (docs/OPERATIONS.md) ──────────────────────────────────────────
+# Caddy terminates HTTPS in front of the base stack (deploy/docker-compose.prod.yml).
+COMPOSE_PROD := $(COMPOSE_BASE) -f deploy/docker-compose.prod.yml
+PROD_BUILD_ARGS := COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) BUILT_AT=$$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+.PHONY: prod-init prod-up prod-down prod-ps prod-logs prod-bootstrap prod-demo prod-backup prod-update
+prod-init: ## Write the production .env: address, HTTPS, mail and generated secrets
+	deploy/scripts/prod-init.sh
+
+prod-up: .env ## Build and start the production stack behind HTTPS (migrations apply on start)
+	$(PROD_BUILD_ARGS) $(COMPOSE_PROD) up -d --build --remove-orphans
+	$(COMPOSE_PROD) up -d --wait caddy api worker web
+	@echo ""
+	@echo "  Qadam is up: $$(grep -E '^PUBLIC_URL=' .env | cut -d= -f2-)"
+
+prod-down: .env ## Stop the production stack (data volumes are kept)
+	$(COMPOSE_PROD) down
+
+prod-ps: .env ## Show the state of the production services
+	$(COMPOSE_PROD) ps -a
+
+prod-logs: .env ## Follow the logs of the production application services
+	$(COMPOSE_PROD) logs -f --tail=200 caddy api worker web
+
+prod-bootstrap: .env ## Create KazUTB and its first administrator: make prod-bootstrap ADMIN_EMAIL=… ADMIN_NAME="…"
+	@test -n "$(ADMIN_EMAIL)" -a -n "$(ADMIN_NAME)" || { echo 'Usage: make prod-bootstrap ADMIN_EMAIL=admin@kaztbu.edu.kz ADMIN_NAME="Имя Фамилия" [BOOTSTRAP_FLAGS="-email-domains kaztbu.edu.kz"]' >&2; exit 2; }
+	$(COMPOSE_PROD) run --rm --no-deps worker /app/seed bootstrap -admin-email "$(ADMIN_EMAIL)" -admin-name "$(ADMIN_NAME)" $(BOOTSTRAP_FLAGS)
+
+prod-demo: .env ## Demo data on a presentation server (asks for the demo accounts' password)
+	@read -r -s -p "Password for every demo account (at least 10 characters): " password; echo; 	  SEED_DEMO_PASSWORD="$$password" $(COMPOSE_PROD) run --rm --no-deps -e SEED_DEMO_PASSWORD worker /app/seed demo
+
+prod-backup: .env ## Back up the database and the uploaded files into backups/
+	deploy/scripts/backup.sh
+
+prod-update: .env ## Take the new version from git and restart (backup first: make prod-backup)
+	git pull --ff-only
+	$(MAKE) prod-up
 
 # ── Images ─────────────────────────────────────────────────────────────────
 .PHONY: build
