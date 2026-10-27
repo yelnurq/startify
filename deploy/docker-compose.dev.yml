@@ -67,6 +67,9 @@ services:
       LDAP_CONFIG_PASSWORD: ${LDAP_ADMIN_PASSWORD:-qadam-dev-ldap-admin}
       LDAP_TLS_VERIFY_CLIENT: never
       LDAP_SEED_INTERNAL_LDIF_PATH: /ldif
+      # Keep the image's bootstrap directory: on a restart it copies /ldif
+      # there again and stops the container if the directory is gone.
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "false"
     volumes:
       - ./ldap:/ldif:ro
     ports:
